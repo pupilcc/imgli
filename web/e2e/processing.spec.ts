@@ -197,6 +197,8 @@ test('admin 图片处理区块:UI 填 text+开启+保存再还原', async ({ bro
   const page = await ctx.newPage()
   try {
     await page.goto('/admin/settings')
+    // 设置页已 tab 化,默认停在「基本」,先切到目标区块
+    await page.getByRole('button', { name: '图片处理' }).click()
     await expect(page.getByRole('heading', { name: '图片处理' })).toBeVisible()
 
     const tw = page.getByRole('switch', { name: '启用文字水印' })

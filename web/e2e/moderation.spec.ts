@@ -55,6 +55,8 @@ test.afterEach(async ({ browser }) => {
 test('机器审核:provider 切换条件渲染 + 还原', async ({ page }) => {
   await login(page, BOSS.username, BOSS.password)
   await page.goto('/admin/settings')
+  // 设置页已 tab 化,默认停在「基本」,先切到目标区块
+  await page.getByRole('button', { name: '机器审核' }).click()
   await expect(page.getByRole('heading', { name: '机器审核' })).toBeVisible()
 
   // 默认 webhook:Webhook 地址 + API Key 可见

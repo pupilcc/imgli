@@ -21,6 +21,8 @@ test('邮件流(未配置 SMTP):忘记密码恒成功文案/设置页邮件区�
   await page.getByTestId('auth-submit').click()
   await expect(page.getByTestId('dropzone')).toBeVisible()
   await page.goto('/admin/settings')
+  // 设置页已 tab 化,默认停在「基本」,先切到目标区块
+  await page.getByRole('button', { name: '邮件 SMTP' }).click()
   await expect(page.getByLabel('SMTP 服务器')).toBeVisible()
   await page.getByLabel('测试收件人').fill('probe@img.li')
   await page.getByRole('button', { name: '发送测试邮件' }).click()

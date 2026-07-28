@@ -80,6 +80,8 @@ test('防盗链全链:未开放行→开启拦截→详情 ACCESS', async ({ pag
     const adminPage = await adminCtx.newPage()
     await login(adminPage, BOSS.username, BOSS.password)
     await adminPage.goto('/admin/settings')
+    // 设置页已 tab 化,默认停在「基本」,先切到目标区块
+    await adminPage.getByRole('button', { name: '防盗链' }).click()
     await expect(adminPage.getByRole('heading', { name: '防盗链' })).toBeVisible()
 
     const enabled = adminPage.getByRole('switch', { name: '启用防盗链' })

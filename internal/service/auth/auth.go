@@ -11,6 +11,7 @@ import (
 	"unicode/utf8"
 
 	"gorm.io/gorm"
+	"gorm.io/gorm/clause"
 
 	"github.com/yixian-huang/imgli/internal/model"
 	"github.com/yixian-huang/imgli/internal/service/settings"
@@ -140,16 +141,19 @@ func (s *Service) Register(username, email, password, inviteCode string) (*model
 				return ErrInviteInvalid
 			}
 		}
-		// 首管理员认领：settings 主键唯一性保证恰有一人成功（双方言安全）
-		claim := tx.Create(&model.Setting{Key: "first_admin_claimed", Value: fmt.Sprintf("%d", u.ID)})
-		if claim.Error == nil {
-			u.IsAdmin = true
-			return tx.Model(u).Update("is_admin", true).Error
+		// 首管理员认领：settings 主键唯一性保证恰有一人成功。必须用 ON CONFLICT
+		// DO NOTHING 而非「插入失败再认错」——Postgres 里语句一失败整个事务即
+		// aborted,后续 COMMIT 会变 rollback(SQLite 无此语义,曾因此只在 PG 上炸)。
+		claim := tx.Clauses(clause.OnConflict{DoNothing: true}).
+			Create(&model.Setting{Key: "first_admin_claimed", Value: fmt.Sprintf("%d", u.ID)})
+		if claim.Error != nil {
+			return claim.Error
 		}
-		if errors.Is(claim.Error, gorm.ErrDuplicatedKey) {
+		if claim.RowsAffected == 0 {
 			return nil // 已有首管理员
 		}
-		return claim.Error
+		u.IsAdmin = true
+		return tx.Model(u).Update("is_admin", true).Error
 	})
 	if err != nil {
 		if errors.Is(err, gorm.ErrDuplicatedKey) {

@@ -37,7 +37,9 @@ func (h *ImageHandlers) imageItemDTO(row *imagesvc.Row) map[string]any {
 	links.ThumbnailURL = base + "/t/" + row.Img.Key + ".jpg"
 	var expiresAt any
 	if row.Img.ExpiresAt != nil {
-		expiresAt = row.Img.ExpiresAt.Format(time.RFC3339)
+		// 与 upload.go 同口径归一 UTC:Postgres timestamptz 按会话时区返回,
+		// 不归一会让同一时刻在非 UTC 服务器上序列化出带偏移的字符串。
+		expiresAt = row.Img.ExpiresAt.UTC().Format(time.RFC3339)
 	}
 	var slug any
 	if row.Img.Slug != nil {

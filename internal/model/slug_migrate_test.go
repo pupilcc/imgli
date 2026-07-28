@@ -8,11 +8,9 @@ import (
 
 func TestSlugColumnMigrated(t *testing.T) {
 	db := model.TestDB(t)
-	var n int64
-	if err := db.Raw("SELECT count(*) FROM pragma_table_info('images') WHERE name='slug'").Scan(&n).Error; err != nil {
-		t.Fatal(err)
-	}
-	if n != 1 {
-		t.Fatalf("slug column count=%d", n)
+	// Migrator 走各方言的 information_schema/pragma,双方言可跑
+	// (裸 pragma_table_info 只有 SQLite 认识)。
+	if !db.Migrator().HasColumn(&model.Image{}, "slug") {
+		t.Fatal("images 表缺 slug 列")
 	}
 }
