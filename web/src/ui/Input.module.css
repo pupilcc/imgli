@@ -1,0 +1,14 @@
+.field { display: flex; flex-direction: column; gap: 7px; }
+.labelRow { display: flex; justify-content: space-between; align-items: baseline; }
+.label { font-size: 12px; font-weight: 600; color: var(--muted); }
+.input {
+  border: 1px solid var(--border);
+  border-radius: 3px;
+  background: var(--surface);
+  color: var(--text);
+  font-family: inherit;
+  font-size: 13.5px;
+  padding: 10px 12px;
+  outline: none;
+}
+.input:focus { border-color: var(--muted); }

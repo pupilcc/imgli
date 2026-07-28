@@ -1,0 +1,190 @@
+// Package storagesvc 按存储策略解析出 storage.Driver 并渲染存储路径。
+package storagesvc
+
+import (
+	"crypto/rand"
+	"fmt"
+	"net/url"
+	"path/filepath"
+	"sort"
+	"strings"
+	"sync"
+	"time"
+
+	"gorm.io/gorm"
+
+	"github.com/yixian-huang/imgli/internal/config"
+	"github.com/yixian-huang/imgli/internal/model"
+	"github.com/yixian-huang/imgli/internal/storage"
+	"github.com/yixian-huang/imgli/internal/storage/local"
+	"github.com/yixian-huang/imgli/internal/storage/s3"
+	"github.com/yixian-huang/imgli/internal/storage/webdav"
+)
+
+type cachedDriver struct {
+	d  storage.Driver
+	fp string // 策略 driver+config 指纹;变了即缓存失效(codex 终审:改凭据/桶后不再用旧驱动)
+}
+
+type Resolver struct {
+	cfg   *config.Config
+	db    *gorm.DB
+	mu    sync.Mutex
+	cache map[uint64]cachedDriver // policyID → 缓存驱动+指纹
+}
+
+func New(cfg *config.Config, db *gorm.DB) *Resolver {
+	return &Resolver{cfg: cfg, db: db, cache: map[uint64]cachedDriver{}}
+}
+
+// policyFP 计算策略 driver+config 的稳定指纹:任一字段变化即不同,用于缓存失效。
+func policyFP(p *model.StoragePolicy) string {
+	keys := make([]string, 0, len(p.Config))
+	for k := range p.Config {
+		keys = append(keys, k)
+	}
+	sort.Strings(keys)
+	var b strings.Builder
+	b.WriteString(p.Driver)
+	b.WriteByte('|')
+	for _, k := range keys {
+		b.WriteString(k)
+		b.WriteByte('=')
+		b.WriteString(p.Config[k])
+		b.WriteByte(';')
+	}
+	return b.String()
+}
+
+// Driver 返回策略对应驱动（local/s3/webdav）。按 (policyID, 配置指纹) 缓存——策略配置更新后
+// 指纹变化,自动重建驱动,不会无限沿用旧 endpoint/凭据（codex 终审）。
+func (r *Resolver) Driver(p *model.StoragePolicy) (storage.Driver, error) {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	fp := policyFP(p)
+	if c, ok := r.cache[p.ID]; ok && c.fp == fp {
+		return c.d, nil
+	}
+	var d storage.Driver
+	var err error
+	switch p.Driver {
+	case "local":
+		root := p.Config["root"]
+		if root == "" {
+			root = "uploads"
+		}
+		d, err = local.New(filepath.Join(r.cfg.DataDir, root))
+	case "s3":
+		d, err = s3.New(p.Config)
+	case "webdav":
+		d, err = webdav.New(p.Config)
+	default:
+		return nil, fmt.Errorf("storagesvc: 暂不支持的驱动 %q", p.Driver)
+	}
+	if err != nil {
+		return nil, err
+	}
+	r.cache[p.ID] = cachedDriver{d: d, fp: fp}
+	return d, nil
+}
+
+const base62 = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz"
+
+// randBase62 返回 n 位随机 base62（拒绝取模偏置：用 62 的整数倍上限重采样）。
+func randBase62(n int) (string, error) {
+	out := make([]byte, n)
+	buf := make([]byte, n)
+	if _, err := rand.Read(buf); err != nil {
+		return "", err
+	}
+	for i := 0; i < n; i++ {
+		out[i] = base62[int(buf[i])%62]
+	}
+	return string(out), nil
+}
+
+// RenderPath 渲染 {Y}/{m}/{d}/{uniqid}.{ext}（uniqid 12 位 base62）。
+func (r *Resolver) RenderPath(tmpl, ext string, now time.Time) (string, error) {
+	uniq, err := randBase62(12)
+	if err != nil {
+		return "", err
+	}
+	rep := strings.NewReplacer(
+		"{Y}", now.Format("2006"),
+		"{m}", now.Format("01"),
+		"{d}", now.Format("02"),
+		"{uniqid}", uniq,
+		"{ext}", ext,
+	)
+	return rep.Replace(tmpl), nil
+}
+
+// ObjectURL 返回公开图 302 回源目标:CDNDomain(对象存储 CDN 前缀)+ 编码后的
+// prefix+key。CDNDomain 空返空串(不可 302,调用方走流式)。对象键含特殊字符
+// (空格/#/?/非ASCII)时按 path segment 编码,保留 / 层级,防 Location 路径语义
+// 被改致重定向到错地址(codex 终审)。
+func (r *Resolver) ObjectURL(p *model.StoragePolicy, key string) string {
+	if p.CDNDomain == "" {
+		return ""
+	}
+	return strings.TrimRight(p.CDNDomain, "/") + "/" + encodeObjectPath(p.Config["prefix"]+key)
+}
+
+// encodeObjectPath 按 / 分段 url.PathEscape,保留层级分隔——CDN/浏览器解码后还原
+// 为存储对象键。安全键(字母数字/./-)为无操作。
+func encodeObjectPath(objectKey string) string {
+	segs := strings.Split(objectKey, "/")
+	for i, s := range segs {
+		segs[i] = url.PathEscape(s)
+	}
+	return strings.Join(segs, "/")
+}
+
+// LinkBase 复制/嵌入链基址,恒 BaseURL(app /i 路由,门禁生效)。CDNDomain 改由
+// ObjectURL 用作公开图 302 目标(裁决 5:CDNDomain 语义 = 对象存储 CDN 前缀)。
+func (r *Resolver) LinkBase(p *model.StoragePolicy) string {
+	return strings.TrimRight(r.cfg.BaseURL, "/")
+}
+
+// ThumbGen 缩略图生成世代。算法/最长边/编码策略变更时递增；新图写 g{N} 前缀，
+// 读取 dual-probe 旧无版本路径，避免 immutable 长缓存在「同 key 键布局变更」后脏读(C2)。
+const ThumbGen = "1"
+
+// ThumbKey 当前世代 JPEG 缩略图键（按 surface 前缀 + 内容寻址）。
+func ThumbKey(surface, hash string) string {
+	return SurfacePrefix(surface) + ".thumbs/g" + ThumbGen + "/" + hash + ".jpg"
+}
+
+// ThumbKeyWebP 当前世代 WebP 缩略图键(vips 构建)。
+func ThumbKeyWebP(surface, hash string) string {
+	return SurfacePrefix(surface) + ".thumbs/g" + ThumbGen + "/" + hash + ".webp"
+}
+
+// ThumbKeyCandidates 打开缩略图时的探测顺序：surface 前缀现行世代 webp/jpg。
+// public surface 额外探测无前缀遗留路径——S1 之前的公开缩略图落在扁平 .thumbs/,
+// 需向后兼容。private surface 不探遗留:私密图在 S1 前不存在,且遗留路径是公开可读
+// 位置,私密不应回退到那里(防跨 surface 生命周期耦合)。
+func ThumbKeyCandidates(surface, hash string) []string {
+	c := []string{
+		ThumbKeyWebP(surface, hash),
+		ThumbKey(surface, hash),
+	}
+	if surface == model.SurfacePublic {
+		c = append(c,
+			".thumbs/g"+ThumbGen+"/"+hash+".webp", // 遗留:S1 前扁平现行世代
+			".thumbs/g"+ThumbGen+"/"+hash+".jpg",
+			".thumbs/"+hash+".webp", // 遗留:pre-ThumbGen
+			".thumbs/"+hash+".jpg",
+		)
+	}
+	return c
+}
+
+// SurfacePrefix 返回 surface 对应的对象键前缀。public→"public/"（匿名可读,i.img.li 直服）；
+// 其余（含 private 与未知值）→"private/"（fail-closed:未知 surface 落非匿名可读位置,绝不误暴露）。
+func SurfacePrefix(surface string) string {
+	if surface == model.SurfacePublic {
+		return "public/"
+	}
+	return "private/"
+}

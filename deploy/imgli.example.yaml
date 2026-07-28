@@ -1,0 +1,16 @@
+# imgli 配置示例。优先级:默认值 → 本文件(imgli serve -config)→ IMGLI_* 环境变量。
+# 业务参数(站点名、注册模式、用户组、存储策略、SMTP、机审)都在管理后台配置,不在这里。
+
+listen: ":8686"
+base_url: "https://img.example.com" # 生成外链/邮件链接的基础地址
+data_dir: "/opt/imgli/data"         # 本地存储与 SQLite 落盘目录
+
+database:
+  driver: sqlite # sqlite | postgres;sqlite 缺省 DSN 为 <data_dir>/imgli.db
+  # dsn: "host=127.0.0.1 user=imgli password=change-me dbname=imgli port=5432 sslmode=disable"
+
+trust_proxy: true # 仅在可信反代之后打开;影响限速的客户端 IP 归因
+
+# URL 抓取上传默认拒绝内网地址;确需放行的 host/CIDR 在此追加:
+# fetch_allow:
+#   - "10.0.0.0/8"

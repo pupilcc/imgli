@@ -1,0 +1,35 @@
+# imgli OCR sidecar — paddlepaddle 3.0.0 + paddleocr 2.9.x
+# Prefer this over paddle 3.3 + paddleocr 3.x: the latter hits oneDNN/PIR
+# ConvertPirAttribute2RuntimeAttribute on predict (DigitalFyre Zen5 AND Tencent EPYC).
+# Use host network / China mirrors when building on Tencent light VPS.
+FROM python:3.10-slim-bookworm
+
+ENV DEBIAN_FRONTEND=noninteractive \
+    FLAGS_use_mkldnn=0 \
+    FLAGS_use_onednn=0 \
+    FLAGS_enable_pir_api=0 \
+    OMP_NUM_THREADS=2 \
+    PORT=3199 \
+    HOST=0.0.0.0 \
+    OCR_LANG=ch \
+    OCR_USE_ANGLE_CLS=1
+
+RUN apt-get update -qq \
+    && apt-get install -y -qq --no-install-recommends \
+        libgomp1 libgl1 libglib2.0-0 libsm6 libxext6 libxrender1 \
+    && rm -rf /var/lib/apt/lists/*
+
+RUN pip install --no-cache-dir \
+        "paddlepaddle==3.0.0" \
+        "paddleocr==2.9.1" \
+        opencv-python-headless \
+        "numpy==1.26.4" \
+        pillow
+
+WORKDIR /app
+COPY server_pocr29.py /app/server.py
+
+RUN python3 -c "import os; os.environ['FLAGS_use_mkldnn']='0'; from paddleocr import PaddleOCR; PaddleOCR(use_angle_cls=True, lang='ch', use_gpu=False, enable_mkldnn=False, show_log=False); print('models_ok')"
+
+EXPOSE 3199
+CMD ["python3", "/app/server.py"]

@@ -1,0 +1,8 @@
+# imgli OCR lexicon example — NOT for production as-is
+# Copy to your private core.txt, replace with real terms, then import in Admin.
+#
+# Demo terms used only for pipeline smoke tests (remove after go-live):
+# hello
+# TESTWORD
+
+# Add one high-confidence term per line below:

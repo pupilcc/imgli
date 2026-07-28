@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+body{margin:0;font-family:'Manrope',system-ui,'PingFang SC','Hiragino Sans GB','Microsoft YaHei',sans-serif;background:var(--bg);color:var(--text);transition:background .25s,color .25s;
+--bg:#fafafa;--surface:#ffffff;--border:#e7e7e4;--text:#17171a;--muted:#77777f;--soft:#f1f1ef;--btn:#17171a;--btnText:#ffffff;--ok:#1a9b5c;}
+body[data-theme="dark"]{--bg:#0f0f11;--surface:#19191d;--border:#2a2a30;--text:#f4f4f5;--muted:#8e8e97;--soft:#232328;--btn:#f4f4f5;--btnText:#17171a;--ok:#3ecf8e;}
+a{color:var(--text);text-decoration:none}
+::selection{background:var(--text);color:var(--bg)}
+</style>
+</helmet>
+
+<div style="min-height:100vh;max-width:1080px;margin:0 auto;padding:52px 32px 120px;box-sizing:border-box">
+  <div style="display:flex;align-items:flex-end;justify-content:space-between;border-bottom:1px solid var(--border);padding-bottom:22px;margin-bottom:40px">
+    <div>
+      <div style="font-family:ui-monospace,Menlo,monospace;font-size:11px;color:var(--muted);letter-spacing:.14em;margin-bottom:10px">BRAND — LOGO v1.0</div>
+      <h1 style="margin:0;font-size:30px;font-weight:800;letter-spacing:-.02em">图鲤 · img.li · 标识</h1>
+      <p style="margin:10px 0 0;font-size:13px;color:var(--muted);max-width:620px;line-height:1.6">域名即品牌：字标就写 <span style="font-family:ui-monospace,Menlo,monospace">img.li</span>（读作「图鲤」，img=图、li=鲤）。那个点是几何鲤鱼上跃溅起的水花，也是域名的分隔点——图形与网址合一，看到 logo 就记住网址。</p>
+    </div>
+    <button onClick="{{ toggleTheme }}" style="border:1px solid var(--border);border-radius:3px;background:var(--surface);color:var(--text);padding:9px 16px;font-size:12.5px;font-weight:700;cursor:pointer;font-family:inherit;flex:none" style-hover="background:var(--soft)">{{ themeLabel }}</button>
+  </div>
+
+  <!-- 01 PRIMARY MARK -->
+  <section style="margin-bottom:44px">
+    <div style="font-family:ui-monospace,Menlo,monospace;font-size:11px;color:var(--muted);letter-spacing:.14em;margin-bottom:16px">01 — PRIMARY MARK · 主标</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px">
+      <!-- light lockup -->
+      <div style="border:1px solid var(--border);border-radius:3px;background:var(--surface);padding:48px;display:flex;align-items:center;justify-content:center;gap:18px">
+        {{ markLarge }}
+        <div style="display:flex;flex-direction:column;gap:4px">
+          <span style="font-size:36px;font-weight:800;letter-spacing:-.03em;line-height:1;font-family:ui-monospace,Menlo,monospace">img<span style="color:var(--muted)">.</span>li</span>
+          <span style="font-family:ui-monospace,Menlo,monospace;font-size:11px;color:var(--muted);letter-spacing:.24em">图鲤 · TULI</span>
+        </div>
+      </div>
+      <!-- inverted lockup -->
+      <div style="border:1px solid var(--border);border-radius:3px;background:var(--btn);padding:48px;display:flex;align-items:center;justify-content:center;gap:18px">
+        {{ markLargeInv }}
+        <div style="display:flex;flex-direction:column;gap:4px">
+          <span style="font-size:36px;font-weight:800;letter-spacing:-.03em;line-height:1;color:var(--btnText);font-family:ui-monospace,Menlo,monospace">img<span style="opacity:.5">.</span>li</span>
+          <span style="font-family:ui-monospace,Menlo,monospace;font-size:11px;color:var(--btnText);opacity:.6;letter-spacing:.24em">图鲤 · TULI</span>
+        </div>
+      </div>
+    </div>
+    <p style="margin:14px 2px 0;font-size:12px;color:var(--muted);line-height:1.6">构型说明：菱形鱼身（呼应图片文件的矩形），向上折角尾鳍 = 上跃；正上方一枚方点 = 溅起的水花，同时是字标 <span style="font-family:ui-monospace,Menlo,monospace">img·li</span> 里的那个分隔点。字标用等宽体，弱化中间的点，让 img / li 两段清晰——读作「图鲤」。</p>
+  </section>
+
+  <!-- 02 MARK CONSTRUCTION / WEIGHTS -->
+  <section style="margin-bottom:44px">
+    <div style="font-family:ui-monospace,Menlo,monospace;font-size:11px;color:var(--muted);letter-spacing:.14em;margin-bottom:16px">02 — WEIGHTS · 权重与网格</div>
+    <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:14px">
+      <div style="border:1px solid var(--border);border-radius:3px;background:var(--surface);padding:32px;display:flex;flex-direction:column;align-items:center;gap:14px">
+        {{ markSolid }}
+        <span style="font-family:ui-monospace,Menlo,monospace;font-size:10px;color:var(--muted);letter-spacing:.08em">SOLID · 实心</span>
+      </div>
+      <div style="border:1px solid var(--border);border-radius:3px;background:var(--surface);padding:32px;display:flex;flex-direction:column;align-items:center;gap:14px">
+        {{ markLine }}
+        <span style="font-family:ui-monospace,Menlo,monospace;font-size:10px;color:var(--muted);letter-spacing:.08em">LINE · 描边</span>
+      </div>
+      <div style="border:1px solid var(--border);border-radius:3px;background:var(--surface);padding:32px;display:flex;flex-direction:column;align-items:center;gap:14px">
+        {{ markGrid }}
+        <span style="font-family:ui-monospace,Menlo,monospace;font-size:10px;color:var(--muted);letter-spacing:.08em">GRID · 构型网格</span>
+      </div>
+      <div style="border:1px solid var(--border);border-radius:3px;background:var(--surface);padding:32px;display:flex;flex-direction:column;align-items:center;gap:14px">
+        <div style="width:52px;height:52px;background:var(--btn);color:var(--btnText);display:flex;align-items:center;justify-content:center;font-weight:800;font-size:26px">白</div>
+        <span style="font-family:ui-monospace,Menlo,monospace;font-size:10px;color:var(--muted);letter-spacing:.08em">FALLBACK · 「白」字</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- 03 APP ICON -->
+  <section style="margin-bottom:44px">
+    <div style="font-family:ui-monospace,Menlo,monospace;font-size:11px;color:var(--muted);letter-spacing:.14em;margin-bottom:16px">03 — APP ICON · 应用图标</div>
+    <div style="display:flex;gap:20px;align-items:flex-end;flex-wrap:wrap">
+      <div style="display:flex;flex-direction:column;align-items:center;gap:10px">
+        <div style="width:104px;height:104px;border-radius:22px;background:var(--btn);display:flex;align-items:center;justify-content:center;box-shadow:0 8px 28px rgba(0,0,0,.14)">{{ iconInv }}</div>
+        <span style="font-family:ui-monospace,Menlo,monospace;font-size:10px;color:var(--muted)">iOS · 深底</span>
+      </div>
+      <div style="display:flex;flex-direction:column;align-items:center;gap:10px">
+        <div style="width:104px;height:104px;border-radius:22px;background:var(--surface);border:1px solid var(--border);display:flex;align-items:center;justify-content:center">{{ iconLight }}</div>
+        <span style="font-family:ui-monospace,Menlo,monospace;font-size:10px;color:var(--muted)">浅底</span>
+      </div>
+      <div style="display:flex;flex-direction:column;align-items:center;gap:10px">
+        <div style="width:64px;height:64px;border-radius:14px;background:var(--btn);display:flex;align-items:center;justify-content:center">{{ iconInvSm }}</div>
+        <span style="font-family:ui-monospace,Menlo,monospace;font-size:10px;color:var(--muted)">64</span>
+      </div>
+      <div style="display:flex;flex-direction:column;align-items:center;gap:10px">
+        <div style="width:32px;height:32px;border-radius:7px;background:var(--btn);display:flex;align-items:center;justify-content:center">{{ iconInvXs }}</div>
+        <span style="font-family:ui-monospace,Menlo,monospace;font-size:10px;color:var(--muted)">32</span>
+      </div>
+      <div style="display:flex;flex-direction:column;align-items:center;gap:10px">
+        <div style="width:16px;height:16px;border-radius:3px;background:var(--btn);display:flex;align-items:center;justify-content:center">{{ iconInvFav }}</div>
+        <span style="font-family:ui-monospace,Menlo,monospace;font-size:10px;color:var(--muted)">16 favicon</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- 04 IN CONTEXT -->
+  <section style="margin-bottom:44px">
+    <div style="font-family:ui-monospace,Menlo,monospace;font-size:11px;color:var(--muted);letter-spacing:.14em;margin-bottom:16px">04 — IN CONTEXT · 导航栏应用</div>
+    <div style="border:1px solid var(--border);border-radius:3px;overflow:hidden">
+      <div style="display:flex;align-items:center;gap:36px;padding:0 24px;height:56px;background:var(--surface);border-bottom:1px solid var(--border)">
+        <div style="display:flex;align-items:center;gap:9px">
+          {{ iconNav }}
+          <span style="font-weight:700;font-size:14.5px;letter-spacing:.01em;font-family:ui-monospace,Menlo,monospace">img<span style="color:var(--muted)">.</span>li</span>
+          <span style="font-family:ui-monospace,Menlo,monospace;font-size:10px;color:var(--muted);border:1px solid var(--border);padding:1px 5px;margin-left:2px;letter-spacing:.08em">BETA</span>
+        </div>
+        <nav style="display:flex;align-items:center;gap:26px;font-size:13.5px;font-weight:600">
+          <span style="color:var(--text)">上传</span><span style="color:var(--muted)">我的图片</span><span style="color:var(--muted)">相册</span><span style="color:var(--muted)">广场</span>
+        </nav>
+        <div style="margin-left:auto;font-family:ui-monospace,Menlo,monospace;font-size:11px;color:var(--muted)">img.li</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 05 RULES -->
+  <section>
+    <div style="font-family:ui-monospace,Menlo,monospace;font-size:11px;color:var(--muted);letter-spacing:.14em;margin-bottom:16px">05 — RULES · 使用规范</div>
+    <div style="border:1px solid var(--border);border-radius:3px;background:var(--surface);padding:22px;display:grid;grid-template-columns:1fr 1fr;gap:8px 32px;font-size:12.5px;line-height:1.9">
+      <span>· 单色 only：`--text` 或 `--btn`/反白，绝不上彩</span>
+      <span>· 最小尺寸：主标 20px，favicon 16px 用实心版</span>
+      <span>· 留白 ≥ 鱼身高度的 40%，勿与其他元素贴边</span>
+      <span>· 深底用反白版，浅底用深色版，禁止低对比灰</span>
+      <span>· 小尺寸（≤32px）优先实心版，描边版仅 ≥48px</span>
+      <span>· 字标 = 等宽体 `img.li`，中点用 muted 弱化；降级用鲤鱼图形块</span>
+    </div>
+  </section>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;theme&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;light&quot;,&quot;dark&quot;],&quot;default&quot;:&quot;light&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;外观&quot;}}">
+class Component extends DCLogic {
+  state = { theme: null };
+  eff() { return this.state.theme ?? localStorage.getItem('baize-theme') ?? this.props.theme ?? 'light'; }
+  componentDidMount() { document.body.dataset.theme = this.eff(); }
+  componentDidUpdate() { document.body.dataset.theme = this.eff(); }
+
+  // Geometric koi mark: diamond body leaping up-right, folded tail, splash dot above.
+  koi(size, color, mode, bg) {
+    const h = React.createElement;
+    const solid = mode === 'solid';
+    const line = mode === 'line';
+    const grid = mode === 'grid';
+    const eyeBg = bg || 'var(--surface)';
+    const els = [];
+    // splash dot / upload landing point
+    els.push(h('rect', { key: 'dot', x: 62, y: 8, width: 12, height: 12, rx: 2, fill: color }));
+    // body: rotated square (diamond) = image file leaping
+    if (solid) {
+      els.push(h('path', { key: 'body', d: 'M44 30 L74 60 L44 90 L14 60 Z', fill: color }));
+      // eye gap (negative) — must match the surface BEHIND the mark
+      els.push(h('rect', { key: 'eye', x: 38, y: 52, width: 8, height: 8, rx: 1.5, fill: eyeBg }));
+      // tail fin folded down-left
+      els.push(h('path', { key: 'tail', d: 'M14 60 L2 48 L6 60 L2 72 Z', fill: color }));
+    } else if (line) {
+      els.push(h('path', { key: 'body', d: 'M44 30 L74 60 L44 90 L14 60 Z', fill: 'none', stroke: color, strokeWidth: 5, strokeLinejoin: 'round' }));
+      els.push(h('rect', { key: 'eye', x: 38, y: 52, width: 8, height: 8, rx: 1.5, fill: color }));
+      els.push(h('path', { key: 'tail', d: 'M14 60 L2 48 L6 60 L2 72 Z', fill: 'none', stroke: color, strokeWidth: 5, strokeLinejoin: 'round' }));
+    } else if (grid) {
+      // construction grid
+      els.length = 0;
+      for (let i = 0; i <= 80; i += 20) {
+        els.push(h('line', { key: 'gx' + i, x1: i, y1: 0, x2: i, y2: 100, stroke: 'var(--border)', strokeWidth: 1 }));
+        els.push(h('line', { key: 'gy' + i, x1: 0, y1: i, x2: 80, y2: i, stroke: 'var(--border)', strokeWidth: 1 }));
+      }
+      els.push(h('rect', { key: 'dot', x: 62, y: 8, width: 12, height: 12, rx: 2, fill: 'none', stroke: color, strokeWidth: 2 }));
+      els.push(h('path', { key: 'body', d: 'M44 30 L74 60 L44 90 L14 60 Z', fill: 'none', stroke: color, strokeWidth: 2 }));
+      els.push(h('path', { key: 'tail', d: 'M14 60 L2 48 L6 60 L2 72 Z', fill: 'none', stroke: color, strokeWidth: 2 }));
+    }
+    return h('svg', { width: size, height: size * 1.25, viewBox: '0 0 80 100', style: { display: 'block', overflow: 'visible' } }, els);
+  }
+
+  renderVals() {
+    const eff = this.eff();
+    return {
+      themeLabel: eff === 'light' ? '◑ 切到深色' : '◐ 切到浅色',
+      toggleTheme: () => {
+        const t = eff === 'light' ? 'dark' : 'light';
+        localStorage.setItem('baize-theme', t);
+        document.body.dataset.theme = t;
+        this.setState({ theme: t });
+      },
+      markLarge: this.koi(58, 'var(--text)', 'solid', 'var(--surface)'),
+      markLargeInv: this.koi(58, 'var(--btnText)', 'solid', 'var(--btn)'),
+      markSolid: this.koi(48, 'var(--text)', 'solid', 'var(--surface)'),
+      markLine: this.koi(48, 'var(--text)', 'line'),
+      markGrid: this.koi(48, 'var(--text)', 'grid'),
+      iconInv: this.koi(52, 'var(--btnText)', 'solid', 'var(--btn)'),
+      iconLight: this.koi(52, 'var(--text)', 'solid', 'var(--surface)'),
+      iconInvSm: this.koi(34, 'var(--btnText)', 'solid', 'var(--btn)'),
+      iconInvXs: this.koi(17, 'var(--btnText)', 'solid', 'var(--btn)'),
+      iconInvFav: this.koi(9, 'var(--btnText)', 'solid', 'var(--btn)'),
+      iconNav: this.koi(20, 'var(--text)', 'solid', 'var(--surface)')
+    };
+  }
+}
+</script>
+</body>
+</html>

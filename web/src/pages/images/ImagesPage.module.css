@@ -1,0 +1,12 @@
+.page { max-width: 1120px; margin: 0 auto; padding-top: 44px; }
+.headRight { display: flex; align-items: baseline; gap: 16px; }
+.stat { font-family: var(--font-mono); font-size: 11px; color: var(--muted); letter-spacing: 0.05em; }
+.trashLink { font-size: 12px; font-weight: 600; color: var(--muted); text-decoration: underline; }
+.trashLink:hover { color: var(--text); }
+.skeletonGrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(170px, 1fr)); gap: 14px; }
+.skeletonCard { border: 1px solid var(--border); border-radius: 3px; overflow: hidden; background: var(--surface); }
+.skeletonThumb { aspect-ratio: 1; background: var(--soft); animation: pulse 1.4s infinite; }
+.skeletonLine { height: 9px; width: 70%; background: var(--soft); border-radius: 1px; margin: 9px 10px; animation: pulse 1.4s infinite; }
+.noResults { text-align: center; padding: 80px 0; color: var(--muted); animation: fadeIn 0.2s; }
+.noResultsKicker { font-family: var(--font-mono); font-size: 11px; letter-spacing: 0.14em; margin-bottom: 10px; }
+.noResultsText { font-size: 13px; margin-bottom: 16px; }

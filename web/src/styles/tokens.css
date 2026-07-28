@@ -1,0 +1,51 @@
+:root {
+  --bg: #fafafa;
+  --surface: #ffffff;
+  --soft: #f1f1ef;
+  --border: #e7e7e4;
+  --text: #17171a;
+  --muted: #77777f;
+  --btn: #17171a;
+  --btnText: #ffffff;
+  --ok: #1a9b5c;
+  --warn: #b07d00;
+  --err: #c0392b;
+  --font-mono: ui-monospace, Menlo, monospace;
+}
+body[data-theme='dark'] {
+  --bg: #0f0f11;
+  --surface: #19191d;
+  --soft: #232328;
+  --border: #2a2a30;
+  --text: #f4f4f5;
+  --muted: #8e8e97;
+  --btn: #f4f4f5;
+  --btnText: #17171a;
+  --ok: #3ecf8e;
+  --warn: #d9a521;
+  --err: #e06555;
+}
+
+body {
+  margin: 0;
+  font-family: 'Manrope', system-ui, 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', sans-serif;
+  font-size: 13px;
+  background: var(--bg);
+  color: var(--text);
+  transition: background 0.25s, color 0.25s;
+}
+a { color: var(--text); text-decoration: none; }
+a:hover { color: var(--muted); }
+::selection { background: var(--text); color: var(--bg); }
+input::placeholder { color: var(--muted); }
+button { font-family: inherit; }
+
+.mono { font-family: var(--font-mono); }
+.stripe {
+  background: repeating-linear-gradient(45deg, var(--soft), var(--soft) 5px, var(--surface) 5px, var(--surface) 10px);
+}
+
+@keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.45; } }
+@keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+@keyframes rise { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+@keyframes toastUp { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }

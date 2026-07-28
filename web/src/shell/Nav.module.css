@@ -1,0 +1,92 @@
+.nav {
+  display: flex;
+  align-items: center;
+  gap: 36px;
+  padding: 0 32px;
+  height: 56px;
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+  position: sticky;
+  top: 0;
+  z-index: 10;
+}
+.brand {
+  display: flex;
+  align-items: center;
+  color: var(--text);
+}
+.brand:hover { color: var(--text); }
+.links { display: flex; align-items: stretch; gap: 26px; font-size: 13.5px; font-weight: 600; height: 56px; }
+.links a { display: flex; align-items: center; color: var(--muted); }
+.links a:hover { color: var(--text); }
+.links a.active { color: var(--text); box-shadow: inset 0 -2px 0 var(--text); }
+.right { margin-left: auto; display: flex; align-items: center; gap: 14px; }
+.themeBtn {
+  width: 30px;
+  height: 30px;
+  border-radius: 3px;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--text);
+  cursor: pointer;
+  font-size: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.themeBtn:hover { background: var(--soft); }
+.avatarWrap { position: relative; }
+.avatar {
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  background: var(--soft);
+  border: 1px solid var(--border);
+  color: var(--text);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  padding: 0;
+  overflow: hidden;
+}
+.avatarImg { width: 100%; height: 100%; border-radius: 50%; object-fit: cover; display: block; }
+.menu {
+  position: absolute;
+  top: 38px;
+  right: 0;
+  min-width: 180px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 3px;
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.12);
+  padding: 6px;
+  display: flex;
+  flex-direction: column;
+  animation: rise 0.2s;
+  z-index: 20;
+}
+.menuUser { padding: 8px 10px; border-bottom: 1px solid var(--border); margin-bottom: 4px; }
+.menuName { font-size: 12.5px; font-weight: 700; }
+.menuEmail { font-family: var(--font-mono); font-size: 10.5px; color: var(--muted); margin-top: 2px; }
+.menuItem {
+  display: block;
+  text-align: left;
+  border: none;
+  background: none;
+  padding: 8px 10px;
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--text);
+  cursor: pointer;
+  border-radius: 2px;
+}
+.menuItem:hover { background: var(--soft); color: var(--text); }
+.menuDanger { color: var(--err); }
+
+@media (max-width: 768px) {
+  .nav { padding: 0 16px; gap: 16px; }
+  .links { display: none; }
+}

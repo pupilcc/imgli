@@ -1,0 +1,15 @@
+.wrap { text-align: center; padding: 48px 16px; animation: fadeIn 0.2s; }
+.thumb {
+  width: 120px;
+  height: 90px;
+  border: 1px solid var(--border);
+  border-radius: 3px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 14px;
+}
+.badge { font-family: var(--font-mono); font-size: 9px; color: var(--muted); letter-spacing: 0.1em; }
+.title { font-size: 13px; font-weight: 700; margin-bottom: 4px; }
+.desc { font-size: 11px; color: var(--muted); margin-bottom: 14px; }
+.action { display: flex; justify-content: center; }

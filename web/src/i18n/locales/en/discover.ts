@@ -1,0 +1,15 @@
+export default {
+  title: 'Plaza',
+  sortNew: 'Latest',
+  sortHot: 'Popular',
+  loading: 'Loading…',
+  loadMore: 'Load more',
+  emptyPublic: 'No public images yet',
+  plazaClosed: 'Plaza is closed',
+  profileNotFound: 'Profile not found or not public',
+  joinedAt: 'Joined {date}',
+  publicCount: '{count} public images',
+  copyExternal: 'Copy link',
+  externalLink: 'link',
+  close: 'Close',
+}

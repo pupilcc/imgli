@@ -1,0 +1,69 @@
+.page { max-width: 1120px; margin: 0 auto; padding-top: 44px; }
+.grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 16px; }
+.card {
+  border: 1px solid var(--border); border-radius: 3px; background: var(--surface);
+  overflow: hidden; cursor: pointer; animation: rise 0.28s both; position: relative;
+}
+.card:hover { border-color: var(--muted); }
+.collage {
+  display: grid; grid-template-columns: 2fr 1fr; grid-template-rows: 1fr 1fr;
+  gap: 1px; background: var(--border); aspect-ratio: 16 / 9;
+}
+.coverMain { grid-row: 1 / 3; background: var(--soft); display: flex; align-items: center; justify-content: center; overflow: hidden; }
+.coverImg { width: 100%; height: 100%; object-fit: cover; display: block; }
+.coverPh { font-family: var(--font-mono); font-size: 10px; color: var(--muted); letter-spacing: 0.08em; }
+.coverCell { background-color: var(--surface); display: flex; align-items: center; justify-content: center; }
+.moreLabel { font-family: var(--font-mono); font-size: 10px; color: var(--muted); }
+.privacy {
+  position: absolute; top: 10px; right: 10px;
+  font-family: var(--font-mono); font-size: 9.5px; letter-spacing: 0.1em;
+  padding: 2px 7px; border-radius: 2px;
+  border: 1px solid var(--border); background: var(--surface); color: var(--muted);
+}
+.privacyPub { background: var(--btn); color: var(--btnText); border-color: var(--btn); }
+.meta { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 11px 13px; border-top: 1px solid var(--border); }
+.metaLeft { min-width: 0; }
+.name { font-size: 13.5px; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.sub { font-family: var(--font-mono); font-size: 10px; color: var(--muted); margin-top: 3px; letter-spacing: 0.05em; }
+.delBtn { border: none; background: none; color: var(--muted); font-size: 15px; cursor: pointer; padding: 4px 6px; flex: none; line-height: 1; }
+.delBtn:hover { color: var(--err); }
+.ghost {
+  border: 1px dashed var(--muted); border-radius: 3px;
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 10px;
+  cursor: pointer; min-height: 220px; color: var(--muted);
+  transition: border-color 0.15s, color 0.15s;
+}
+.ghost:hover { border-color: var(--text); color: var(--text); }
+.ghostIcon {
+  width: 34px; height: 34px; border-radius: 3px;
+  border: 1px solid var(--border); background: var(--soft);
+  display: flex; align-items: center; justify-content: center; font-size: 16px;
+}
+.ghostText { font-size: 12.5px; font-weight: 600; }
+.modalKicker { font-family: var(--font-mono); font-size: 10px; color: var(--muted); letter-spacing: 0.14em; margin-bottom: 6px; }
+.modalKickerErr { font-family: var(--font-mono); font-size: 10px; color: var(--err); letter-spacing: 0.14em; margin-bottom: 6px; }
+.modalTitle { font-size: 16px; font-weight: 700; margin-bottom: 14px; }
+.modalDesc { margin: -6px 0 14px; font-size: 12.5px; color: var(--muted); line-height: 1.6; }
+.field { display: flex; flex-direction: column; gap: 8px; margin-bottom: 16px; }
+.label { font-size: 12px; font-weight: 600; color: var(--muted); }
+.input {
+  border: 1px solid var(--border); border-radius: 3px; background: var(--bg); color: var(--text);
+  font-family: inherit; font-size: 13.5px; padding: 9px 12px; outline: none;
+}
+.input:focus { border-color: var(--muted); }
+.visRow { display: flex; border: 1px solid var(--border); border-radius: 3px; overflow: hidden; }
+.visBtn { flex: 1; border: none; background: var(--surface); color: var(--muted); padding: 9px 0; font-size: 12px; font-weight: 600; cursor: pointer; transition: background 0.15s, color 0.15s; }
+.visBl { border-left: 1px solid var(--border); }
+.visActive { background: var(--btn); color: var(--btnText); }
+.createBtn { width: 100%; padding: 11px 0; font-size: 13px; }
+.delCol { display: flex; flex-direction: column; gap: 8px; }
+.delOpt {
+  border: 1px solid var(--border); border-radius: 3px; background: var(--surface); color: var(--text);
+  padding: 11px 14px; font-size: 12.5px; font-weight: 600; cursor: pointer; text-align: left;
+}
+.delOpt:hover { background: var(--soft); }
+.delOptErr { border-color: var(--err); color: var(--err); }
+.delOptSub { display: block; font-size: 11px; color: var(--muted); font-weight: 400; margin-top: 2px; }
+.delOptErr .delOptSub { color: inherit; opacity: 0.75; }
+.delCancel { border: none; background: none; color: var(--muted); padding: 8px; font-size: 12.5px; font-weight: 600; cursor: pointer; }
+.delCancel:hover { color: var(--text); }

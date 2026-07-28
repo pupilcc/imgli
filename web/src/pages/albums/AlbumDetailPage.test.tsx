@@ -1,0 +1,85 @@
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
+import { render, screen, waitFor } from '@testing-library/react'
+import userEvent from '@testing-library/user-event'
+import { MemoryRouter, Route, Routes } from 'react-router'
+import { AlbumDetailPage } from './AlbumDetailPage'
+
+function jsonRes(body: unknown): Response {
+  return { ok: true, status: 200, json: () => Promise.resolve(body) } as unknown as Response
+}
+const env = (data: unknown) => ({ status: true, message: 'ok', data })
+const LINKS = { url: 'http://x/i/a.png', markdown: 'm', html: 'h', bbcode: 'b', thumbnail_url: 'http://x/t/a.jpg' }
+
+class FakeIO {
+  cb: IntersectionObserverCallback
+  constructor(cb: IntersectionObserverCallback) {
+    this.cb = cb
+  }
+  observe() {}
+  disconnect() {}
+  unobserve() {}
+}
+
+function mockBackend() {
+  vi.stubGlobal(
+    'fetch',
+    vi.fn((url: RequestInfo | URL, init?: RequestInit) => {
+      const u = String(url)
+      if (u.includes('/albums') && (!init || !init.method))
+        return Promise.resolve(jsonRes(env({ items: [{ id: 7, name: '工作', visibility: 'private', image_count: 1, cover_key: 'a', created_at: '2026-07-16T00:00:00Z' }] })))
+      if (init?.method === 'PATCH') return Promise.resolve(jsonRes(env({ id: 7, name: '改名', visibility: 'public' })))
+      if (u.includes('/images?'))
+        return Promise.resolve(
+          jsonRes(env({ items: [{ key: 'a', name: 'a.png', ext: 'png', size: 1, width: 1, height: 1, visibility: 'public', album_id: 7, created_at: '2026-07-16T00:00:00Z', expires_at: null, links: LINKS }], next_cursor: '' })),
+        )
+      return Promise.resolve(jsonRes(env(null)))
+    }),
+  )
+}
+
+function renderPage() {
+  const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } })
+  render(
+    <QueryClientProvider client={qc}>
+      <MemoryRouter initialEntries={['/albums/7']}>
+        <Routes>
+          <Route path="/albums/:id" element={<AlbumDetailPage />} />
+          <Route path="/albums" element={<div>LIST</div>} />
+        </Routes>
+      </MemoryRouter>
+    </QueryClientProvider>,
+  )
+}
+
+beforeEach(() => {
+  vi.stubGlobal('IntersectionObserver', FakeIO as unknown as typeof IntersectionObserver)
+  mockBackend()
+})
+afterEach(() => vi.unstubAllGlobals())
+
+it('详情页：相册筛选取数、页头徽章、返回链接', async () => {
+  renderPage()
+  expect(await screen.findByText('工作')).toBeInTheDocument()
+  expect(screen.getByText('PRIVATE')).toBeInTheDocument()
+  expect(await screen.findByText('a.png')).toBeInTheDocument()
+  const f = vi.mocked(fetch)
+  expect(f.mock.calls.some((c) => String(c[0]).includes('album=7'))).toBe(true)
+  expect(screen.getByRole('link', { name: /ALBUMS/ })).toHaveAttribute('href', '/albums')
+})
+
+it('内联重命名 PATCH 相册名', async () => {
+  const user = userEvent.setup()
+  renderPage()
+  await screen.findByText('工作')
+  await user.click(screen.getByRole('button', { name: '重命名' }))
+  const input = screen.getByDisplayValue('工作')
+  await user.clear(input)
+  await user.type(input, '改名')
+  await user.click(screen.getByRole('button', { name: '保存' }))
+  await waitFor(() => {
+    const f = vi.mocked(fetch)
+    const call = f.mock.calls.find((c) => (c[1] as RequestInit)?.method === 'PATCH')
+    expect(String(call![0])).toContain('/albums/7')
+    expect(JSON.parse((call![1] as RequestInit).body as string)).toEqual({ name: '改名' })
+  })
+})

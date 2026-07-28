@@ -1,0 +1,59 @@
+.page { max-width: 880px; margin: 0 auto; padding-top: 44px; }
+.tabs { display: flex; gap: 22px; border-bottom: 1px solid var(--border); margin-bottom: 26px; }
+.tab {
+  border: none; background: none; color: var(--muted);
+  padding: 0 2px 11px; font-size: 13px; font-weight: 600; cursor: pointer;
+}
+.tab:hover { color: var(--text); }
+.tabActive { color: var(--text); box-shadow: inset 0 -2px 0 var(--text); }
+
+.kicker { font-family: var(--font-mono); font-size: 10px; color: var(--muted); letter-spacing: 0.14em; margin-bottom: 12px; }
+.card { border: 1px solid var(--border); border-radius: 3px; background: var(--surface); padding: 18px; display: flex; flex-direction: column; gap: 14px; }
+.grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+.field { display: flex; flex-direction: column; gap: 6px; }
+.label { font-size: 12px; font-weight: 600; color: var(--muted); }
+.input {
+  border: 1px solid var(--border); border-radius: 3px; background: var(--bg); color: var(--text);
+  font-family: inherit; font-size: 13px; padding: 9px 12px; outline: none;
+}
+.input:focus { border-color: var(--muted); }
+.inputRO { background: var(--soft); color: var(--muted); font-family: var(--font-mono); font-size: 12px; }
+.saveBtn { align-self: flex-start; }
+.errLine { font-size: 12px; color: var(--err); animation: fadeIn 0.15s; }
+.section { margin-bottom: 28px; }
+
+@media (max-width: 560px) {
+  .grid2 { grid-template-columns: 1fr; }
+}
+
+.adminEntry {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border: 1px solid var(--border);
+  border-radius: 3px;
+  background: var(--surface);
+  padding: 12px 14px;
+  font-size: 13px;
+  font-weight: 600;
+  margin-bottom: 16px;
+}
+.adminEntry:hover {
+  background: var(--soft);
+}
+
+.avatarRow { display: flex; align-items: center; gap: 16px; margin-bottom: 16px; }
+.avatarPreview { width: 64px; height: 64px; border-radius: 50%; object-fit: cover; border: 1px solid var(--border); }
+.avatarFallback {
+  width: 64px; height: 64px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 24px; font-weight: 700;
+  background: var(--soft); color: var(--text); border: 1px solid var(--border);
+}
+.avatarActions { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+.toggleRow { display: flex; align-items: center; justify-content: space-between; }
+.slider { width: 100%; }
+.mono { font-variant-numeric: tabular-nums; font-size: 13px; color: var(--muted); }
+.dangerCard { border-color: var(--err); }
+.dangerText { margin: 0 0 12px; font-size: 13px; color: var(--muted); line-height: 1.55; }
+.dangerText strong { color: var(--err); font-weight: 700; }

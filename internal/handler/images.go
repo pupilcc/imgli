@@ -1,0 +1,206 @@
+package handler
+
+import (
+	"errors"
+	"net/http"
+	"strconv"
+	"time"
+
+	"github.com/go-chi/chi/v5"
+
+	"github.com/yixian-huang/imgli/internal/linkbuilder"
+	"github.com/yixian-huang/imgli/internal/service/imagesvc"
+	"github.com/yixian-huang/imgli/internal/service/stats"
+	"github.com/yixian-huang/imgli/internal/service/storagesvc"
+)
+
+// ImageDeps 图片 handler 依赖。
+type ImageDeps struct {
+	Img   *imagesvc.Service
+	Res   *storagesvc.Resolver
+	Stats *stats.Service
+}
+
+type ImageHandlers struct{ D ImageDeps }
+
+const maxListLimit = 100
+
+// imageItemDTO 列表项（精简）。
+func (h *ImageHandlers) imageItemDTO(row *imagesvc.Row) map[string]any {
+	base := h.D.Res.LinkBase(&row.Policy)
+	ref := row.Img.Key
+	if row.Img.Slug != nil && *row.Img.Slug != "" {
+		ref = *row.Img.Slug
+	}
+	links := linkbuilder.Build(base, ref, row.Img.Ext, row.Img.Name)
+	// 缩略图仍用稳定 key（存储与缓存键）
+	links.ThumbnailURL = base + "/t/" + row.Img.Key + ".jpg"
+	var expiresAt any
+	if row.Img.ExpiresAt != nil {
+		expiresAt = row.Img.ExpiresAt.Format(time.RFC3339)
+	}
+	var slug any
+	if row.Img.Slug != nil {
+		slug = *row.Img.Slug
+	}
+	return map[string]any{
+		"key":        row.Img.Key,
+		"slug":       slug,
+		"name":       row.Img.Name,
+		"ext":        row.Img.Ext,
+		"size":       row.File.Size,
+		"width":      row.File.Width,
+		"height":     row.File.Height,
+		"visibility": row.Img.Visibility,
+		"album_id":   row.Img.AlbumID,
+		"created_at": row.Img.CreatedAt.Format(time.RFC3339),
+		"expires_at": expiresAt,
+		"links":      links,
+	}
+}
+
+// List GET /api/v1/images
+func (h *ImageHandlers) List(w http.ResponseWriter, r *http.Request) {
+	q := r.URL.Query()
+	limit := 24
+	if v := q.Get("limit"); v != "" {
+		if n, err := strconv.Atoi(v); err == nil && n > 0 {
+			limit = n
+		}
+	}
+	if limit > maxListLimit {
+		limit = maxListLimit
+	}
+	f := imagesvc.Filter{
+		Q: q.Get("q"), Format: q.Get("format"), Album: q.Get("album"),
+		Visibility: q.Get("visibility"), Sort: q.Get("sort"),
+	}
+	rows, next, err := h.D.Img.List(PrincipalFrom(r).User.ID, f, q.Get("cursor"), limit)
+	if err != nil {
+		Fail(w, http.StatusBadRequest, CodeInvalidRequest, "列表参数无效")
+		return
+	}
+	items := make([]map[string]any, 0, len(rows))
+	for i := range rows {
+		items = append(items, h.imageItemDTO(&rows[i]))
+	}
+	OK(w, map[string]any{"items": items, "next_cursor": next})
+}
+
+// imageDetailDTO 详情（含 mime、仅属主 upload_ip）。
+func (h *ImageHandlers) imageDetailDTO(row *imagesvc.Row) map[string]any {
+	m := h.imageItemDTO(row)
+	m["mime"] = row.File.MIME
+	m["upload_ip"] = row.Img.UploadIP // 仅属主可达此端点，故直接给出
+	return m
+}
+
+// Detail GET /api/v1/images/{key}
+func (h *ImageHandlers) Detail(w http.ResponseWriter, r *http.Request) {
+	row, err := h.D.Img.Get(PrincipalFrom(r).User.ID, chi.URLParam(r, "key"))
+	if err != nil {
+		Fail(w, http.StatusNotFound, CodeNotFound, "图片不存在")
+		return
+	}
+	OK(w, h.imageDetailDTO(row))
+}
+
+// Stats GET /api/v1/images/{key}/stats——属主访问统计(详情弹窗 ACCESS 区块)。
+func (h *ImageHandlers) Stats(w http.ResponseWriter, r *http.Request) {
+	total, daily, err := h.D.Stats.ImageStats(PrincipalFrom(r).User.ID, chi.URLParam(r, "key"))
+	switch {
+	case errors.Is(err, stats.ErrNotFound):
+		Fail(w, http.StatusNotFound, CodeNotFound, "图片不存在")
+	case err != nil:
+		Fail(w, http.StatusInternalServerError, CodeInternal, "服务器内部错误")
+	default:
+		OK(w, map[string]any{"total": total, "daily": daily})
+	}
+}
+
+// Update PATCH /api/v1/images/{key}
+func (h *ImageHandlers) Update(w http.ResponseWriter, r *http.Request) {
+	var req struct {
+		Name       *string `json:"name"`
+		Visibility *string `json:"visibility"`
+		AlbumID    *int64  `json:"album_id"`
+		ExpiresIn  *int    `json:"expires_in"`
+		Slug       *string `json:"slug"`
+	}
+	if err := DecodeJSON(r, &req); err != nil {
+		Fail(w, http.StatusBadRequest, CodeInvalidRequest, "请求体无效")
+		return
+	}
+	var expAt *time.Time
+	setExp := false
+	if req.ExpiresIn != nil {
+		setExp = true
+		if *req.ExpiresIn > MaxExpiresInSec {
+			Fail(w, http.StatusBadRequest, CodeInvalidRequest, "expires_in 不合法")
+			return
+		}
+		if *req.ExpiresIn > 0 {
+			t := time.Now().Add(time.Duration(*req.ExpiresIn) * time.Second)
+			expAt = &t
+		}
+		// <=0 → expAt=nil（清除）
+	}
+	row, err := h.D.Img.Update(PrincipalFrom(r).User.ID, chi.URLParam(r, "key"),
+		req.Name, req.Visibility, req.AlbumID, expAt, setExp, req.Slug)
+	switch {
+	case err == nil:
+		OK(w, h.imageDetailDTO(row))
+	case errors.Is(err, imagesvc.ErrNotFound):
+		Fail(w, http.StatusNotFound, CodeNotFound, "图片不存在")
+	case errors.Is(err, imagesvc.ErrAlbumNotFound):
+		Fail(w, http.StatusNotFound, CodeNotFound, "相册不存在")
+	case errors.Is(err, imagesvc.ErrInvalidVisibility), errors.Is(err, imagesvc.ErrInvalidName),
+		errors.Is(err, imagesvc.ErrInvalidSlug), errors.Is(err, imagesvc.ErrSlugTaken):
+		Fail(w, http.StatusBadRequest, CodeInvalidRequest, err.Error())
+	default:
+		Fail(w, http.StatusInternalServerError, CodeInternal, "服务器内部错误")
+	}
+}
+
+// Delete DELETE /api/v1/images/{key} —— 软删进回收站。
+func (h *ImageHandlers) Delete(w http.ResponseWriter, r *http.Request) {
+	err := h.D.Img.SoftDelete(PrincipalFrom(r).User.ID, chi.URLParam(r, "key"))
+	switch {
+	case err == nil:
+		OK(w, map[string]any{"key": chi.URLParam(r, "key"), "deleted": true})
+	case errors.Is(err, imagesvc.ErrNotFound):
+		Fail(w, http.StatusNotFound, CodeNotFound, "图片不存在")
+	default:
+		Fail(w, http.StatusInternalServerError, CodeInternal, "服务器内部错误")
+	}
+}
+
+const maxBatchKeys = 100
+
+// Batch POST /api/v1/images/batch
+func (h *ImageHandlers) Batch(w http.ResponseWriter, r *http.Request) {
+	var req struct {
+		Action     string   `json:"action"`
+		Keys       []string `json:"keys"`
+		Visibility string   `json:"visibility"`
+		AlbumID    *int64   `json:"album_id"`
+	}
+	if err := DecodeJSON(r, &req); err != nil {
+		Fail(w, http.StatusBadRequest, CodeInvalidRequest, "请求体无效")
+		return
+	}
+	if len(req.Keys) == 0 || len(req.Keys) > maxBatchKeys {
+		Fail(w, http.StatusBadRequest, CodeInvalidRequest, "keys 数量需为 1-100")
+		return
+	}
+	results, err := h.D.Img.Batch(PrincipalFrom(r).User.ID, req.Action, req.Keys, req.Visibility, req.AlbumID)
+	if errors.Is(err, imagesvc.ErrInvalidAction) {
+		Fail(w, http.StatusBadRequest, CodeInvalidRequest, "action 仅支持 delete|visibility|move")
+		return
+	}
+	if err != nil {
+		Fail(w, http.StatusInternalServerError, CodeInternal, "服务器内部错误")
+		return
+	}
+	OK(w, map[string]any{"results": results})
+}

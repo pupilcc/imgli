@@ -1,0 +1,67 @@
+.card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 3px;
+  padding: 12px 14px;
+  animation: rise 0.25s both;
+}
+.cardFailed { border-color: var(--err); }
+.row { display: flex; gap: 14px; align-items: center; }
+.thumb {
+  width: 48px; height: 48px; border-radius: 2px; flex: none;
+  background-color: var(--soft); background-size: cover; background-position: center;
+}
+.thumbPh {
+  width: 48px; height: 48px; border-radius: 2px; flex: none;
+  border: 1px solid var(--border);
+  display: flex; align-items: center; justify-content: center;
+  font-family: var(--font-mono); font-size: 9px; color: var(--muted);
+}
+.mid { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 6px; }
+.titleRow { display: flex; align-items: baseline; gap: 10px; }
+.name { font-size: 13.5px; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.size { font-family: var(--font-mono); font-size: 10.5px; color: var(--muted); flex: none; }
+.badge {
+  font-family: var(--font-mono); font-size: 9.5px; letter-spacing: 0.08em;
+  padding: 1px 7px; border-radius: 2px; border: 1px solid var(--border); flex: none;
+}
+.bQueued { color: var(--muted); }
+.bUploading { color: var(--text); }
+.bProcessing { color: var(--text); background: var(--soft); }
+.bSuccess { color: var(--ok); }
+.bInstant { color: var(--btnText); background: var(--btn); border-color: var(--btn); }
+.bFailed { color: var(--err); border-color: var(--err); }
+.barRow { display: flex; align-items: center; gap: 10px; }
+.track { flex: 1; height: 2px; background: var(--soft); overflow: hidden; }
+.fill { height: 100%; background: var(--btn); transition: width 0.15s; }
+.pct { font-size: 11px; color: var(--muted); font-family: var(--font-mono); flex: none; min-width: 34px; text-align: right; }
+.sub { font-size: 11.5px; color: var(--muted); font-family: var(--font-mono); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.subErr { color: var(--err); }
+.retryBtn {
+  flex: none; border: 1px solid var(--border); border-radius: 3px;
+  background: var(--surface); color: var(--text);
+  padding: 6px 14px; font-size: 11.5px; font-weight: 700; cursor: pointer;
+}
+.retryBtn:hover { background: var(--soft); }
+.removeBtn {
+  border: none; background: none; color: var(--muted);
+  font-size: 16px; cursor: pointer; padding: 4px 6px; flex: none; line-height: 1;
+}
+.removeBtn:hover { color: var(--text); }
+.linksRow {
+  display: flex; align-items: center; gap: 8px;
+  margin-top: 11px; padding-top: 11px; border-top: 1px solid var(--border);
+  animation: fadeIn 0.2s;
+}
+.copyGroup { display: flex; flex: none; border: 1px solid var(--border); border-radius: 3px; overflow: hidden; }
+.copyBtn {
+  border: none; background: var(--surface); color: var(--text);
+  padding: 6px 11px; font-size: 10.5px; font-weight: 600; cursor: pointer;
+  font-family: var(--font-mono); letter-spacing: 0.04em;
+}
+.copyBtn + .copyBtn { border-left: 1px solid var(--border); }
+.copyBtn:hover { background: var(--soft); }
+.urlText {
+  flex: 1; min-width: 0; font-family: var(--font-mono); font-size: 10.5px; color: var(--muted);
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis; text-align: right;
+}

@@ -1,0 +1,28 @@
+# imgli OCR sidecar — RapidOCR (PP-OCR ONNX). Fallback when paddlepaddle
+# native wheels segfault on host CPU.
+FROM python:3.10-slim-bookworm
+
+ENV DEBIAN_FRONTEND=noninteractive \
+    OMP_NUM_THREADS=2 \
+    PORT=3199 \
+    HOST=0.0.0.0
+
+RUN apt-get update -qq \
+    && apt-get install -y -qq --no-install-recommends libgomp1 libgl1 libglib2.0-0 \
+    && rm -rf /var/lib/apt/lists/*
+
+RUN pip install --no-cache-dir \
+        rapidocr-onnxruntime \
+        onnxruntime \
+        opencv-python-headless \
+        pillow \
+        "numpy==1.26.4"
+
+WORKDIR /app
+COPY server_rapidocr.py /app/server.py
+
+# Warm models into image layer
+RUN python3 -c "from rapidocr_onnxruntime import RapidOCR; RapidOCR(); print('models_ok')"
+
+EXPOSE 3199
+CMD ["python3", "/app/server.py"]

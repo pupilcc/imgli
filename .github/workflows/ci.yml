@@ -1,0 +1,76 @@
+name: ci
+on:
+  push: { branches: [main] }
+  pull_request:
+
+jobs:
+  go:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: imgli
+          POSTGRES_PASSWORD: imgli
+          POSTGRES_DB: imgli_test
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U imgli" --health-interval 5s
+          --health-timeout 5s --health-retries 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with: { go-version-file: go.mod, cache: true }
+      - name: vet + test (sqlite)
+        run: |
+          go vet ./...
+          go test ./... -count=1
+      - name: test (postgres)
+        env:
+          IMGLI_TEST_PG_DSN: host=localhost user=imgli password=imgli dbname=imgli_test port=5432 sslmode=disable
+        run: go test ./... -count=1
+
+  web:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 24, cache: npm, cache-dependency-path: web/package-lock.json }
+      - name: test + build
+        working-directory: web
+        run: |
+          npm ci
+          npm test
+          npm run build
+
+  binary:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with: { go-version-file: go.mod, cache: true }
+      - uses: actions/setup-node@v4
+        with: { node-version: 24, cache: npm, cache-dependency-path: web/package-lock.json }
+      - name: make build + smoke
+        run: |
+          make build
+          IMGLI_DATA_DIR=$(mktemp -d) ./imgli serve &
+          sleep 2
+          curl -sf http://localhost:8686/healthz
+          curl -sf http://localhost:8686/ | grep -q 'id="root"'
+
+  e2e:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with: { go-version-file: go.mod, cache: true }
+      - uses: actions/setup-node@v4
+        with: { node-version: 24, cache: npm, cache-dependency-path: web/package-lock.json }
+      - name: build binary
+        run: make build
+      - name: e2e
+        working-directory: web
+        run: |
+          npx playwright install --with-deps chromium
+          npm run e2e

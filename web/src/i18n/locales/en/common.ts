@@ -1,0 +1,17 @@
+export default {
+  save: 'Save',
+  cancel: 'Cancel',
+  delete: 'Delete',
+  confirm: 'Confirm',
+  close: 'Close',
+  back: 'Back',
+  loading: 'Loading…',
+  more: 'Load more',
+  copied: 'Copied {label}',
+  copyFailed: 'Copy failed',
+  saved: 'Saved',
+  empty: 'No data',
+  retry: 'Retry',
+  notFound: 'Page not found',
+  notFoundDesc: 'The link may be broken or mistyped',
+}

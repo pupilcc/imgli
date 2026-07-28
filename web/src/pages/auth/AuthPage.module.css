@@ -1,0 +1,92 @@
+.page { min-height: 100vh; display: flex; }
+.brand {
+  flex: 1;
+  background: var(--btn);
+  color: var(--btnText);
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  padding: 44px 48px;
+  box-sizing: border-box;
+  position: relative;
+  overflow: hidden;
+}
+.brandLogo { display: flex; align-items: center; gap: 9px; position: relative; z-index: 1; }
+.slogan {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.14em;
+  opacity: 0.55;
+  margin-bottom: 16px;
+  position: relative;
+  z-index: 1;
+}
+.headline {
+  font-size: 34px;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  line-height: 1.25;
+  max-width: 420px;
+  position: relative;
+  z-index: 1;
+}
+.copyright { font-family: var(--font-mono); font-size: 10.5px; opacity: 0.45; position: relative; z-index: 1; }
+.deco {
+  position: absolute;
+  right: -60px;
+  bottom: -60px;
+  width: 340px;
+  height: 340px;
+  background: repeating-linear-gradient(45deg, transparent, transparent 7px, rgba(128, 128, 128, 0.25) 7px, rgba(128, 128, 128, 0.25) 8px);
+  border: 1px solid rgba(128, 128, 128, 0.3);
+}
+.formPane { flex: 1; display: flex; flex-direction: column; background: var(--bg); position: relative; }
+.topBar {
+  position: absolute;
+  top: 20px;
+  right: 24px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  z-index: 1;
+}
+.themeBtn {
+  width: 30px;
+  height: 30px;
+  border-radius: 3px;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--text);
+  cursor: pointer;
+  font-size: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.themeBtn:hover { background: var(--soft); }
+.formBox { width: 360px; max-width: 100%; margin: auto; padding: 48px 24px; animation: rise 0.3s both; }
+.kicker { font-family: var(--font-mono); font-size: 11px; color: var(--muted); letter-spacing: 0.14em; margin-bottom: 10px; }
+.heading { margin: 0 0 24px; font-size: 24px; font-weight: 700; letter-spacing: -0.015em; }
+.switch { margin-bottom: 24px; }
+.switch :global(button) { padding: 9px 0; font-size: 12.5px; font-weight: 700; }
+.fields { display: flex; flex-direction: column; gap: 14px; }
+.error { font-size: 12px; color: var(--err); animation: fadeIn 0.15s; }
+.submit { padding: 12px 0; font-size: 13.5px; margin-top: 4px; }
+
+.regClosed {
+  font-size: 12px;
+  color: var(--muted);
+  border: 1px dashed var(--border);
+  padding: 8px 12px;
+}
+
+.flowText { font-size: 13.5px; line-height: 1.8; color: var(--muted); margin: 8px 0 0; }
+.flowLink { display: inline-block; margin-top: 22px; font-size: 12.5px; color: var(--muted); }
+.flowLink:hover { color: var(--text); }
+.forgotRow { text-align: right; margin-top: -6px; }
+.forgotLink { font-size: 12px; color: var(--muted); }
+.forgotLink:hover { color: var(--text); }
+
+@media (max-width: 900px) {
+  .brand { display: none; }
+}

@@ -1,0 +1,19 @@
+services:
+  imgli:
+    build: .
+    ports:
+      - "8686:8686"
+    environment:
+      # 对外访问地址,决定复制链/邮件里的 URL
+      IMGLI_BASE_URL: http://localhost:8686
+      # 反代(nginx/caddy)后面部署时打开:
+      # IMGLI_TRUST_PROXY: "true"
+      # 用 Postgres 替代默认 SQLite 时:
+      # IMGLI_DATABASE_DRIVER: postgres
+      # IMGLI_DATABASE_DSN: host=db user=imgli password=imgli dbname=imgli port=5432 sslmode=disable
+    volumes:
+      - imgli-data:/data
+    restart: unless-stopped
+
+volumes:
+  imgli-data:

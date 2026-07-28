@@ -1,0 +1,232 @@
+.filters {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  border: 1px solid var(--border);
+  border-radius: 2px;
+  background: var(--soft);
+  padding: 4px 8px;
+}
+.chip button {
+  border: none;
+  background: none;
+  color: var(--muted);
+  cursor: pointer;
+  font-size: 12px;
+  padding: 0;
+  line-height: 1;
+}
+.chip button:hover {
+  color: var(--err);
+}
+.select {
+  border: 1px solid var(--border);
+  border-radius: 3px;
+  background: var(--surface);
+  color: var(--text);
+  font-family: inherit;
+  font-size: 12.5px;
+  height: 34px;
+  padding: 0 10px;
+}
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(170px, 1fr));
+  gap: 14px;
+}
+.card {
+  border: 1px solid var(--border);
+  border-radius: 3px;
+  background: var(--surface);
+  overflow: hidden;
+  cursor: pointer;
+  position: relative;
+  animation: rise 0.28s both;
+}
+.card:hover {
+  border-color: var(--muted);
+}
+.thumbBox {
+  position: relative;
+  aspect-ratio: 1;
+  background: var(--soft);
+}
+.thumb {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+.badges {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  display: flex;
+  gap: 4px;
+}
+.bWarn,
+.bErr,
+.bWl {
+  font-family: var(--font-mono);
+  font-size: 9px;
+  letter-spacing: 0.08em;
+  padding: 1px 6px;
+  border-radius: 2px;
+  border: 1px solid var(--warn);
+  color: var(--warn);
+  background: var(--surface);
+}
+.bErr {
+  border-color: var(--err);
+  color: var(--err);
+}
+.bWl {
+  border-color: var(--btn);
+  background: var(--btn);
+  color: var(--btnText);
+}
+.hoverBar {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  display: flex;
+  justify-content: flex-end;
+  gap: 4px;
+  padding: 6px;
+  background: linear-gradient(transparent, rgba(0, 0, 0, 0.28));
+  opacity: 0;
+  transition: opacity 0.12s;
+}
+.card:hover .hoverBar {
+  opacity: 1;
+}
+.quickBtn {
+  border: none;
+  border-radius: 2px;
+  background: var(--surface);
+  color: var(--text);
+  width: 24px;
+  height: 24px;
+  font-size: 11px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.quickBtn:hover {
+  background: var(--soft);
+}
+.quickDanger {
+  color: var(--err);
+  font-size: 12px;
+}
+.quickArmed {
+  background: var(--err);
+  color: #fff;
+}
+.meta {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 10px;
+  border-top: 1px solid var(--border);
+}
+.metaName {
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  color: var(--text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  flex: 1;
+}
+.metaUser {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--muted);
+  flex: none;
+}
+.metaSize {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--muted);
+  flex: none;
+}
+.stat {
+  margin: 10px 2px 0;
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  color: var(--muted);
+}
+.detail {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+.detailImg {
+  width: 100%;
+  max-height: 320px;
+  object-fit: contain;
+  background: var(--soft);
+  border-radius: 3px;
+}
+.detailMeta {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.detailName {
+  font-size: 14px;
+  font-weight: 700;
+  word-break: break-all;
+}
+.detailList {
+  display: grid;
+  grid-template-columns: 64px 1fr;
+  gap: 4px 12px;
+  margin: 0;
+  font-size: 12.5px;
+}
+.detailList dt {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--muted);
+  letter-spacing: 0.08em;
+  align-self: center;
+}
+.detailList dd {
+  margin: 0;
+  font-family: var(--font-mono);
+  font-size: 11.5px;
+}
+.detailUrl {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  border: 1px solid var(--border);
+  border-radius: 3px;
+  background: var(--soft);
+  padding: 6px 6px 6px 10px;
+}
+.detailUrl span {
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  color: var(--muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  flex: 1;
+}
+.detailBtns {
+  display: flex;
+  gap: 8px;
+  justify-content: flex-end;
+}

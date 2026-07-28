@@ -1,0 +1,98 @@
+<p align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="docs/brand/svg/lockup-dark.svg">
+    <img src="docs/brand/svg/lockup-light.svg" alt="imgli" width="360">
+  </picture>
+</p>
+
+<p align="center"><b>Self-hosted image hosting — one leap to a link.</b></p>
+<p align="center">
+  <a href="LICENSE"><img alt="MIT" src="https://img.shields.io/badge/license-MIT-blue.svg"></a>
+  <a href=".github/workflows/ci.yml"><img alt="CI" src="https://github.com/yixian-huang/imgli/actions/workflows/ci.yml/badge.svg"></a>
+</p>
+
+<p align="center">English · <a href="README.zh-CN.md">简体中文</a></p>
+
+**imgli** is a single-binary image hosting service written in Go, with an
+embedded React frontend. Upload a screenshot, get a link. Runs the public
+instance at [img.li](https://img.li).
+
+## Features
+
+- **Single binary** — frontend embedded via `go:embed`; SQLite by default,
+  PostgreSQL supported. No CGO required.
+- **Storage backends** — local disk, **S3-compatible** (verified against
+  MinIO/RustFS; vendor test toolkit included), WebDAV. Per-policy CDN domain
+  with `302` offloading, presigned-URL direct serving for private images.
+- **Content safety** — pluggable moderation pipeline: NSFW detection endpoint
+  + OCR keyword screening (self-hosted sidecar in `deploy/ocr-paddle/`),
+  review queue, per-group policies.
+- **Accounts & sharing** — user groups with quotas/rate limits, guest upload,
+  invite codes, SMTP email (verification/reset/reject notices), albums,
+  public gallery, recycle bin, image expiry.
+- **Integrations** — clean upload API with API tokens; works with
+  PicGo/Typora/VS Code out of the box ([guide](docs/picgo.md)).
+- **Polish** — bilingual UI (中文/English), PWA, dark mode, text watermark
+  (embedded CJK font subset), admin dashboard with audit logs.
+
+## Quick start
+
+### Docker Compose
+
+```bash
+git clone https://github.com/yixian-huang/imgli && cd imgli
+docker compose up -d
+# → http://localhost:8686  (first registered user becomes admin)
+```
+
+### From source
+
+```bash
+make build          # needs Go ≥ 1.26 and Node ≥ 24
+./imgli serve       # → http://localhost:8686
+```
+
+## Configuration
+
+Ops-level config only — everything product-facing (site name, registration
+mode, groups, storage policies, SMTP, moderation) lives in the admin panel.
+
+Precedence: defaults → YAML file (`imgli serve -config imgli.yaml`, see
+[`deploy/imgli.example.yaml`](deploy/imgli.example.yaml)) → environment:
+
+| Env | Default | Meaning |
+|---|---|---|
+| `IMGLI_LISTEN` | `:8686` | Listen address |
+| `IMGLI_BASE_URL` | `http://localhost:8686` | Public base URL used in generated links |
+| `IMGLI_DATA_DIR` | `./data` | Local storage + SQLite directory |
+| `IMGLI_DATABASE_DRIVER` | `sqlite` | `sqlite` \| `postgres` |
+| `IMGLI_DATABASE_DSN` | `<data_dir>/imgli.db` | DSN when using postgres |
+| `IMGLI_TRUST_PROXY` | `false` | Trust `X-Forwarded-For` (behind a trusted reverse proxy only) |
+| `IMGLI_FETCH_ALLOW` | *(empty)* | Extra hosts/CIDRs allowed for URL-fetch upload |
+
+## Upload API
+
+```bash
+curl -X POST https://your-host/api/v1/upload \
+  -H "Authorization: Bearer <API_TOKEN>" \
+  -F file=@shot.png -F visibility=public
+# → data.links.{url,markdown,html,bbcode,thumbnail_url}
+```
+
+Create tokens under **Settings → API Token**. See [docs/picgo.md](docs/picgo.md)
+for PicGo/Typora/VS Code setup.
+
+## Development
+
+```bash
+make test        # go vet + go test (sqlite; set IMGLI_TEST_PG_DSN for postgres)
+make test-web    # vitest
+cd web && npm run e2e   # Playwright, builds the binary first
+```
+
+See [CONTRIBUTING.md](CONTRIBUTING.md). Security reports: [SECURITY.md](SECURITY.md).
+
+## License
+
+[MIT](LICENSE) © 2026 Yixian Huang. Embedded Noto Sans SC subset under the
+[SIL OFL](internal/imaging/fonts/OFL.txt).

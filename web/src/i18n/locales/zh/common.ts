@@ -1,0 +1,17 @@
+export default {
+  save: '保存',
+  cancel: '取消',
+  delete: '删除',
+  confirm: '确认',
+  close: '关闭',
+  back: '返回',
+  loading: '加载中…',
+  more: '加载更多',
+  copied: '已复制 {label}',
+  copyFailed: '复制失败',
+  saved: '已保存',
+  empty: '暂无数据',
+  retry: '重试',
+  notFound: '页面不存在',
+  notFoundDesc: '链接可能已失效或输入有误',
+}

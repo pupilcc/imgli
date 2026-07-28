@@ -1,0 +1,12 @@
+.pager {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  margin-top: 18px;
+}
+.stat {
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  color: var(--muted);
+}

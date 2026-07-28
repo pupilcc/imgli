@@ -1,0 +1,15 @@
+export default {
+  title: '广场',
+  sortNew: '最新',
+  sortHot: '热门',
+  loading: '加载中…',
+  loadMore: '加载更多',
+  emptyPublic: '还没有公开图片',
+  plazaClosed: '广场未开启',
+  profileNotFound: '主页不存在或未公开',
+  joinedAt: '加入于 {date}',
+  publicCount: '{count} 张公开图',
+  copyExternal: '复制外链',
+  externalLink: '外链',
+  close: '关闭',
+}
