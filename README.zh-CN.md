@@ -27,7 +27,7 @@
   (自托管旁路服务见 `deploy/ocr-paddle/`),审核队列,按用户组配策略。
 - **账号与分享**:用户组配额/限速、游客上传、邀请码、SMTP 邮件
   (验证/重置/拒审通知)、相册、公开画廊、回收站、图片过期。
-- **生态对接**:干净的上传 API + API Token;PicGo/Typora/VS Code
+- **生态对接**:干净的上传 API + API Token;`imgli upload` CLI;PicGo/Typora/VS Code
   开箱即用([指南](docs/picgo.md))。
 - **细节**:中英双语界面、PWA、深色模式、文字水印(内嵌中文字体子集)、
   带审计日志的管理后台。
@@ -113,6 +113,24 @@ curl -X POST https://your-host/api/v1/upload \
 
 Token 在 **设置 → API Token** 创建;PicGo/Typora/VS Code 配置见
 [docs/picgo.md](docs/picgo.md)。
+
+### CLI 上传
+
+已构建二进制（或 `go run ./cmd/imgli`）后，可上传本地文件或 stdin：
+
+```bash
+export IMGLI_BASE_URL=https://your-host
+export IMGLI_TOKEN='粘贴一次性显示的 token'
+imgli upload shot.png
+# → https://your-host/i/….png
+
+imgli upload -format markdown shot.png
+imgli upload -format json -visibility private shot.png
+cat shot.png | imgli upload -name shot.png -
+```
+
+参数：`-base-url`、`-token`、`-format url|markdown|json`、`-visibility`、
+`-expires-in`、`-name`（stdin 时的文件名）。
 
 ## 开发
 

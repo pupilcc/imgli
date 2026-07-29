@@ -1,4 +1,4 @@
-// imgli 图床 CLI 入口：serve | migrate | storage-migrate | version。
+// imgli 图床 CLI 入口：serve | upload | migrate | storage-migrate | version。
 package main
 
 import (
@@ -27,6 +27,14 @@ func main() {
 	switch os.Args[1] {
 	case "serve":
 		if err := runServe(os.Args[2:]); err != nil {
+			fmt.Fprintln(os.Stderr, "imgli:", err)
+			os.Exit(1)
+		}
+	case "upload":
+		if err := runUpload(os.Args[2:]); err != nil {
+			if err == flag.ErrHelp {
+				os.Exit(0)
+			}
 			fmt.Fprintln(os.Stderr, "imgli:", err)
 			os.Exit(1)
 		}
@@ -65,7 +73,8 @@ func main() {
 }
 
 func usage() {
-	fmt.Fprintln(os.Stderr, "用法: imgli <serve|migrate|storage-migrate|version> [flags]")
+	fmt.Fprintln(os.Stderr, "用法: imgli <serve|upload|migrate|storage-migrate|version> [flags]")
+	fmt.Fprintln(os.Stderr, "  upload  上传文件或 stdin 到图床（IMGLI_BASE_URL / IMGLI_TOKEN）")
 }
 
 func runStorageMigrate(args []string) error {

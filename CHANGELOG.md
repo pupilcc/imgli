@@ -18,6 +18,9 @@ separate version in `go.mod` or `web/package.json`.
 
 ### Added
 
+- **CLI `imgli upload`:** multipart upload to `/api/v1/upload` via
+  `IMGLI_BASE_URL` / `IMGLI_TOKEN` (or flags); file or stdin; output
+  `url|markdown|json` (`internal/cliupload`).
 - **Monthly bandwidth hard cap (v1):** user-group `bandwidth_quota_month` (Free/default
   seed **5 GiB/month**, Asia/Shanghai calendar month); meter on successful `/i`/`/t`
   gate release by object size; block upload + 429 when exceeded; usage on

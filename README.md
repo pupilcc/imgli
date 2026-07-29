@@ -31,8 +31,8 @@ instance at [img.li](https://img.li).
 - **Accounts & sharing** — user groups with quotas/rate limits, guest upload,
   invite codes, SMTP email (verification/reset/reject notices), albums,
   public gallery, recycle bin, image expiry.
-- **Integrations** — clean upload API with API tokens; works with
-  PicGo/Typora/VS Code out of the box ([guide](docs/picgo.md)).
+- **Integrations** — clean upload API with API tokens; `imgli upload` CLI;
+  works with PicGo/Typora/VS Code out of the box ([guide](docs/picgo.md)).
 - **Polish** — bilingual UI (中文/English), PWA, dark mode, text watermark
   (embedded CJK font subset), admin dashboard with audit logs.
 
@@ -116,6 +116,24 @@ curl -X POST https://your-host/api/v1/upload \
 
 Create tokens under **Settings → API Token**. See [docs/picgo.md](docs/picgo.md)
 for PicGo/Typora/VS Code setup.
+
+### CLI upload
+
+With a built binary (or `go run ./cmd/imgli`), upload a file or stdin:
+
+```bash
+export IMGLI_BASE_URL=https://your-host
+export IMGLI_TOKEN='paste-token-once'
+imgli upload shot.png
+# → https://your-host/i/….png
+
+imgli upload -format markdown shot.png
+imgli upload -format json -visibility private shot.png
+cat shot.png | imgli upload -name shot.png -
+```
+
+Flags: `-base-url`, `-token`, `-format url|markdown|json`, `-visibility`,
+`-expires-in`, `-name` (stdin filename).
 
 ## Development
 
