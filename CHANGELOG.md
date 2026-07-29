@@ -10,6 +10,13 @@ separate version in `go.mod` or `web/package.json`.
 
 ## [Unreleased]
 
+### Changed
+
+- **License:** project default changed from MIT to **AGPL-3.0-only** to reduce
+  closed SaaS / white-label freeloading of network-served modifications, while
+  offering optional **commercial licenses** (see `COMMERCIAL.md`). Tags
+  `v0.1.0` and `v0.1.1` remain MIT snapshots.
+
 ## [0.1.1] - 2026-07-29
 
 ### Added

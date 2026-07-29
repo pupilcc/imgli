@@ -7,7 +7,7 @@
 
 <p align="center"><b>Self-hosted image hosting — one leap to a link.</b></p>
 <p align="center">
-  <a href="LICENSE"><img alt="MIT" src="https://img.shields.io/badge/license-MIT-blue.svg"></a>
+  <a href="LICENSE"><img alt="License: AGPL-3.0-only" src="https://img.shields.io/badge/license-AGPL--3.0--only-blue.svg"></a>
   <a href="https://github.com/yixian-huang/imgli/releases/latest"><img alt="Release" src="https://img.shields.io/github/v/release/yixian-huang/imgli"></a>
   <a href=".github/workflows/ci.yml"><img alt="CI" src="https://github.com/yixian-huang/imgli/actions/workflows/ci.yml/badge.svg"></a>
 </p>
@@ -130,5 +130,13 @@ Changelog: [CHANGELOG.md](CHANGELOG.md). Security reports: [SECURITY.md](SECURIT
 
 ## License
 
-[MIT](LICENSE) © 2026 Yixian Huang. Embedded Noto Sans SC subset under the
-[SIL OFL](internal/imaging/fonts/OFL.txt).
+**[AGPL-3.0-only](LICENSE)** © 2026 Yixian Huang.
+
+- Self-host and modify freely under the AGPL (network use of modified versions
+  requires offering corresponding source).
+- Need proprietary / multi-tenant use without AGPL obligations? See
+  **[COMMERCIAL.md](COMMERCIAL.md)** for paid licensing.
+- Tags **v0.1.0** / **v0.1.1** remain available under **MIT** (historical).
+
+Embedded Noto Sans SC subset: [SIL OFL](internal/imaging/fonts/OFL.txt).
+Third-party notices: [NOTICE](NOTICE).

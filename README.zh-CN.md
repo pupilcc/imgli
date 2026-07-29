@@ -8,7 +8,7 @@
 <p align="center"><b>自托管图床——一跃成链。</b></p>
 
 <p align="center">
-  <a href="LICENSE"><img alt="MIT" src="https://img.shields.io/badge/license-MIT-blue.svg"></a>
+  <a href="LICENSE"><img alt="License: AGPL-3.0-only" src="https://img.shields.io/badge/license-AGPL--3.0--only-blue.svg"></a>
   <a href="https://github.com/yixian-huang/imgli/releases/latest"><img alt="Release" src="https://img.shields.io/github/v/release/yixian-huang/imgli"></a>
   <a href=".github/workflows/ci.yml"><img alt="CI" src="https://github.com/yixian-huang/imgli/actions/workflows/ci.yml/badge.svg"></a>
 </p>
@@ -127,5 +127,12 @@ cd web && npm run e2e   # Playwright,会先构建二进制
 
 ## 许可
 
-[MIT](LICENSE) © 2026 Yixian Huang。内嵌 Noto Sans SC 子集遵循
-[SIL OFL](internal/imaging/fonts/OFL.txt)。
+**[AGPL-3.0-only](LICENSE)** © 2026 Yixian Huang。
+
+- 可自托管与修改；若修改后通过网络提供服务，需按 AGPL 提供对应源码。
+- 需要闭源商用、多租户 SaaS 或无法接受 AGPL 义务时，见
+  **[COMMERCIAL.md](COMMERCIAL.md)** 付费许可说明。
+- 历史标签 **v0.1.0** / **v0.1.1** 仍为 **MIT**。
+
+内嵌 Noto Sans SC 子集：[SIL OFL](internal/imaging/fonts/OFL.txt)。  
+第三方说明：[NOTICE](NOTICE)。

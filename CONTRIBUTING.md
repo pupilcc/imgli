@@ -3,6 +3,30 @@
 Issues and pull requests are welcome — bug reports, S3-compatible vendor test
 results, translations, and features alike.
 
+## License of contributions
+
+The project is **[AGPL-3.0-only](LICENSE)** (see also [COMMERCIAL.md](COMMERCIAL.md)
+for dual commercial licensing by the copyright holder).
+
+By opening a pull request you agree that:
+
+1. You have the right to submit the contribution.
+2. Your contribution is licensed to the project under **AGPL-3.0-only**.
+3. You grant the copyright holder (Yixian Huang) a **perpetual, worldwide,
+   royalty-free right to relicense your contribution** as part of dual-licensed
+   distributions (including proprietary commercial licenses of imgli that
+   include your contribution).
+
+Please include a **Developer Certificate of Origin** sign-off on each commit:
+
+```bash
+git commit -s -m "your message"
+# adds: Signed-off-by: Your Name <you@example.com>
+```
+
+Substantial contributions may later require a short CLA form; we will not merge
+external code into the commercial dual-license tree without clear rights.
+
 ## Development setup
 
 ```bash

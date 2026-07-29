@@ -1,0 +1,18 @@
+imgli
+Copyright (C) 2026 Yixian Huang
+
+This product is licensed under AGPL-3.0-only (see LICENSE), with optional
+commercial licensing (see COMMERCIAL.md).
+
+Third-party components
+----------------------
+
+### Noto Sans SC (font subset)
+
+Location: internal/imaging/fonts/
+License: SIL Open Font License 1.1 — see internal/imaging/fonts/OFL.txt
+
+### Go module dependencies
+
+See go.mod / go.sum. Each module retains its own license (typically MIT,
+BSD-3-Clause, or Apache-2.0). Review those licenses before redistribution.

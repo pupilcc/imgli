@@ -16,6 +16,9 @@ Only the latest release tag (and `main`) receives security fixes. There is no
 LTS branch while the project is on `0.x`. Check the running build with
 `imgli version`.
 
+Historical MIT tags (`v0.1.0`, `v0.1.1`) are snapshots only; prefer current
+AGPL-3.0-only releases for fixes.
+
 ## Scope Notes for Self-Hosters
 
 - Image keys are 12-char random base62; **private images rely on key
