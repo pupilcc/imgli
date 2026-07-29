@@ -133,7 +133,7 @@ it('clearDone 只清 success/instant', async () => {
 })
 
 it('选相册/策略的项成功后直传完整 QueueOpts 且 finish 不再 PATCH album', async () => {
-  const opts = { visibility: 'private' as const, albumId: 7, policyId: 3, expiresIn: 604800 }
+  const opts = { visibility: 'private' as const, albumId: 7, policyId: 3, expiresIn: 604800, maxViews: 0 }
   useUploadQueue.getState().addFiles([makeFile('a.png')], opts, LIMITS)
   await flush()
   expect(uploader.uploadFile).toHaveBeenCalledWith(expect.any(File), opts, expect.any(Function))

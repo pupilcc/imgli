@@ -86,7 +86,7 @@ it('uploadFile 显式 album/policy 写入 FormData', async () => {
 })
 
 it('uploadFile expiresIn>0 写入 expires_in，永久不带', async () => {
-  uploadFile(makeFile(), { visibility: 'public', albumId: null, policyId: null, expiresIn: 604800 }, vi.fn())
+  uploadFile(makeFile(), { visibility: 'public', albumId: null, policyId: null, expiresIn: 604800, maxViews: 0 }, vi.fn())
   expect((FakeXHR.last!.sent as FormData).get('expires_in')).toBe('604800')
 
   uploadFile(makeFile(), { visibility: 'public', albumId: null, policyId: null, expiresIn: 0, maxViews: 0 }, vi.fn())
@@ -157,7 +157,7 @@ it('uploadFromURL expiresIn>0 写入 body.expires_in，永久省略', async () =
     json: () => Promise.resolve({ status: true, message: 'ok', data: RESULT }),
   } as unknown as Response)
   vi.stubGlobal('fetch', f)
-  await uploadFromURL('https://x.com/a.png', { visibility: 'public', albumId: null, policyId: null, expiresIn: 86400 })
+  await uploadFromURL('https://x.com/a.png', { visibility: 'public', albumId: null, policyId: null, expiresIn: 86400, maxViews: 0 })
   expect(JSON.parse(f.mock.calls[0][1].body)).toEqual({
     url: 'https://x.com/a.png',
     visibility: 'public',
