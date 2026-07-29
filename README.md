@@ -18,6 +18,41 @@
 embedded React frontend. Upload a screenshot, get a link. Runs the public
 instance at [img.li](https://img.li).
 
+## Demos
+
+<p align="center">
+  <img src="docs/screenshots/01-upload.png" alt="Upload page — drag, paste, URL fetch" width="820">
+</p>
+<p align="center"><sub>Upload: drag-and-drop, screenshot paste, URL fetch, expiry / view limits</sub></p>
+
+<p align="center">
+  <img src="docs/screenshots/03-share.png" alt="Public share page with copy actions" width="820">
+</p>
+<p align="center"><sub>Share page: preview + copy URL / Markdown / share link</sub></p>
+
+<p align="center">
+  <img src="docs/screenshots/05-admin.png" alt="Admin dashboard with review queue" width="820">
+</p>
+<p align="center"><sub>Admin: users, storage policies, review queue, audit logs</sub></p>
+
+More captures (library, API tokens, detail): [`docs/screenshots/`](docs/screenshots/).
+
+## Compare (honest snapshot)
+
+| | **imgli** | **Lsky Pro** | **Chevereto** |
+|---|-----------|--------------|---------------|
+| Runtime | Single Go binary (+ optional OCR sidecar) | PHP + web server + DB | PHP + web server + DB |
+| Default license | **AGPL-3.0-only** (commercial dual-license available) | Apache-2.0 (community) | Proprietary (paid editions) |
+| Storage | Local, **S3-compatible**, WebDAV; CDN `302` offload; private presign | Local / cloud drivers (ecosystem varies) | Broad drivers in paid product |
+| Content safety | Pluggable NSFW endpoint + OCR keywords, review queue, groups | Plugins / external tools | Features depend on edition |
+| Ship shape | `curl \| sh`, Docker, Compose, `imgli doctor` | Classic PHP deploy | Classic PHP deploy |
+| Integrations | API tokens, CLI upload, PicGo / ShareX / uPic | Mature plugin/client ecosystem | Mature client ecosystem |
+
+Choose imgli when you want **self-host ops like a small Go service** with modern
+storage/privacy controls. Choose Lsky/Chevereto when you need their specific
+PHP ecosystem or commercial support already in place. Feature sets change —
+verify upstream docs before migrating.
+
 ## Features
 
 - **Single binary** — frontend embedded via `go:embed`; SQLite by default,

@@ -18,6 +18,39 @@
 **imgli** 是 Go 编写的单二进制图床,内嵌 React 前端。截图上传,直接得链接。
 公共实例:[img.li](https://img.li)。
 
+## 演示
+
+<p align="center">
+  <img src="docs/screenshots/01-upload.png" alt="上传页：拖拽、粘贴、URL 抓取" width="820">
+</p>
+<p align="center"><sub>上传：拖拽 / 截图粘贴 / URL 抓取，可选过期与访问次数</sub></p>
+
+<p align="center">
+  <img src="docs/screenshots/03-share.png" alt="公开分享页与复制按钮" width="820">
+</p>
+<p align="center"><sub>分享页：预览 + 复制 URL / Markdown / 分享链接</sub></p>
+
+<p align="center">
+  <img src="docs/screenshots/05-admin.png" alt="管理后台与审核入口" width="820">
+</p>
+<p align="center"><sub>管理后台：用户、存储策略、审核队列、审计日志</sub></p>
+
+更多截图（图库、API Token、详情）：[`docs/screenshots/`](docs/screenshots/)。
+
+## 对比（诚实快照）
+
+| | **imgli** | **兰空 Lsky Pro** | **Chevereto** |
+|---|-----------|-------------------|---------------|
+| 运行时 | Go 单二进制（可选 OCR 旁路） | PHP + Web 服务器 + 数据库 | PHP + Web 服务器 + 数据库 |
+| 默认协议 | **AGPL-3.0-only**（另有商业双许可） | Apache-2.0（社区版） | 闭源付费为主 |
+| 存储 | 本地、**S3 兼容**、WebDAV；CDN `302`；私有预签名 | 本地 / 云（生态各异） | 付费版驱动较全 |
+| 内容安全 | 可插拔 NSFW + OCR 词表、审核队列、用户组 | 插件 / 外部工具 | 随版本/商业版变化 |
+| 交付 | `curl \| sh`、Docker、Compose、`imgli doctor` | 经典 PHP 部署 | 经典 PHP 部署 |
+| 对接 | API Token、CLI、PicGo / ShareX / uPic | 插件与客户端生态成熟 | 客户端生态成熟 |
+
+更在意 **像小 Go 服务一样运维**、以及现代存储/隐私能力时选 imgli；需要其 PHP
+生态或已有商业支持时选 Lsky / Chevereto。功能会变，迁移前请对照上游文档。
+
 ## 特性
 
 - **单二进制**:前端 `go:embed` 内嵌;默认 SQLite、支持 PostgreSQL,无 CGO 依赖。

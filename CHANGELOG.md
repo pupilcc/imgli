@@ -41,6 +41,8 @@ separate version in `go.mod` or `web/package.json`.
   trust_proxy, listen, and local storage policy probes (`internal/doctor`).
 - **Ops docs:** production Compose example, Caddy/Traefik snippets, backup &
   restore guide (`deploy/compose.prod.example.yml`, `docs/backup.md`).
+- **README demos:** product screenshots (upload / share / admin) and honest
+  comparison table vs Lsky Pro / Chevereto (`docs/screenshots/`).
 - **Monthly bandwidth hard cap (v1):** user-group `bandwidth_quota_month` (Free/default
   seed **5 GiB/month**, Asia/Shanghai calendar month); meter on successful `/i`/`/t`
   gate release by object size; block upload + 429 when exceeded; usage on
