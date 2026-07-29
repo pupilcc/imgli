@@ -138,6 +138,18 @@ cat shot.png | imgli upload -name shot.png -
 Flags: `-base-url`, `-token`, `-format url|markdown|json`, `-visibility`,
 `-expires-in`, `-name` (stdin filename).
 
+### Doctor (self-host checks)
+
+```bash
+imgli doctor
+imgli doctor -config /path/to/imgli.yaml
+# exit 1 if any FAIL; WARN alone exits 0
+```
+
+Checks data directory writability, database connectivity, `base_url` shape,
+`trust_proxy` guidance, listen address, and enabled **local** storage policies
+(write/read/delete probe). See also [docs/security-hardening.md](docs/security-hardening.md).
+
 ## Development
 
 ```bash

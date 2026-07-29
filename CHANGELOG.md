@@ -37,6 +37,8 @@ separate version in `go.mod` or `web/package.json`.
 - **Max views / burn-after-read:** `max_views` + `views_served` on images;
   non-owner `/i` atomic claim; exhausted → 410; limited images skip public CDN
   302; upload/detail UI presets (1/3/10). Multi-instance needs shared DB.
+- **`imgli doctor`:** self-host diagnostics for data dir, DB, base_url,
+  trust_proxy, listen, and local storage policy probes (`internal/doctor`).
 - **Monthly bandwidth hard cap (v1):** user-group `bandwidth_quota_month` (Free/default
   seed **5 GiB/month**, Asia/Shanghai calendar month); meter on successful `/i`/`/t`
   gate release by object size; block upload + 429 when exceeded; usage on

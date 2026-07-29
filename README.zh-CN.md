@@ -134,6 +134,18 @@ cat shot.png | imgli upload -name shot.png -
 参数：`-base-url`、`-token`、`-format url|markdown|json`、`-visibility`、
 `-expires-in`、`-name`（stdin 时的文件名）。
 
+### doctor（自检）
+
+```bash
+imgli doctor
+imgli doctor -config /path/to/imgli.yaml
+# 有 FAIL 时 exit 1；仅有 WARN 时 exit 0
+```
+
+检查 data 目录可写、数据库连通、`base_url` 形态、`trust_proxy` 提示、监听地址，
+以及对已启用的 **local** 存储策略做写/读/删探针。亦见
+[docs/security-hardening.md](docs/security-hardening.md)。
+
 ## 开发
 
 ```bash
