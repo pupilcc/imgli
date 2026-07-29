@@ -8,6 +8,7 @@
 <p align="center"><b>Self-hosted image hosting — one leap to a link.</b></p>
 <p align="center">
   <a href="LICENSE"><img alt="MIT" src="https://img.shields.io/badge/license-MIT-blue.svg"></a>
+  <a href="https://github.com/yixian-huang/imgli/releases/latest"><img alt="Release" src="https://img.shields.io/github/v/release/yixian-huang/imgli"></a>
   <a href=".github/workflows/ci.yml"><img alt="CI" src="https://github.com/yixian-huang/imgli/actions/workflows/ci.yml/badge.svg"></a>
 </p>
 
@@ -37,6 +38,18 @@ instance at [img.li](https://img.li).
 
 ## Quick start
 
+### Docker (prebuilt)
+
+```bash
+docker run --rm -p 8686:8686 -v imgli-data:/data \
+  -e IMGLI_BASE_URL=http://localhost:8686 \
+  ghcr.io/yixian-huang/imgli:latest
+# → http://localhost:8686  (first registered user becomes admin)
+```
+
+Pin a release with `ghcr.io/yixian-huang/imgli:v0.1.0` (see
+[Releases](https://github.com/yixian-huang/imgli/releases)).
+
 ### Docker Compose
 
 ```bash
@@ -49,8 +62,12 @@ docker compose up -d
 
 ```bash
 make build          # needs Go ≥ 1.26 and Node ≥ 24
+./imgli version     # git tag via ldflags, e.g. v0.1.0
 ./imgli serve       # → http://localhost:8686
 ```
+
+Binaries for Linux/macOS/Windows are attached to each
+[GitHub Release](https://github.com/yixian-huang/imgli/releases).
 
 ## Configuration
 
@@ -90,7 +107,8 @@ make test-web    # vitest
 cd web && npm run e2e   # Playwright, builds the binary first
 ```
 
-See [CONTRIBUTING.md](CONTRIBUTING.md). Security reports: [SECURITY.md](SECURITY.md).
+See [CONTRIBUTING.md](CONTRIBUTING.md) (includes versioning / release steps).
+Changelog: [CHANGELOG.md](CHANGELOG.md). Security reports: [SECURITY.md](SECURITY.md).
 
 ## License
 

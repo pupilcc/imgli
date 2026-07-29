@@ -1,0 +1,80 @@
+# yaml-language-server: $schema=https://goreleaser.com/static/schema.json
+version: 2
+
+project_name: imgli
+
+before:
+  hooks:
+    # Frontend is go:embed'd; CI installs Node + npm ci before this runs.
+    - make web
+
+builds:
+  - id: imgli
+    main: ./cmd/imgli
+    binary: imgli
+    env:
+      - CGO_ENABLED=0
+    flags:
+      - -trimpath
+    ldflags:
+      - -s -w -X main.version={{.Tag}}
+    goos:
+      - linux
+      - darwin
+      - windows
+    goarch:
+      - amd64
+      - arm64
+
+archives:
+  - formats: [tar.gz]
+    name_template: >-
+      {{ .ProjectName }}_
+      {{- .Version }}_
+      {{- title .Os }}_
+      {{- if eq .Arch "amd64" }}x86_64
+      {{- else }}{{ .Arch }}{{ end }}
+    format_overrides:
+      - goos: windows
+        formats: [zip]
+
+checksum:
+  name_template: checksums.txt
+
+changelog:
+  sort: asc
+  filters:
+    exclude:
+      - "^docs:"
+      - "^test:"
+      - "^ci:"
+      - "^chore:"
+      - "^style:"
+      - Merge pull request
+      - Merge branch
+      - Merge remote-tracking
+
+release:
+  prerelease: auto
+  header: |
+    **imgli** {{ .Tag }}
+
+    Full notes: [CHANGELOG.md](https://github.com/yixian-huang/imgli/blob/{{ .Tag }}/CHANGELOG.md)
+
+    ### Install
+
+    Download the archive for your OS/arch below, extract, and run:
+
+    ```bash
+    ./imgli version
+    ./imgli serve
+    ```
+
+    Docker:
+
+    ```bash
+    docker pull ghcr.io/yixian-huang/imgli:{{ .Tag }}
+    ```
+
+snapshot:
+  version_template: "{{ incpatch .Version }}-next"

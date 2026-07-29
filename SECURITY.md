@@ -12,7 +12,9 @@ steps and the affected version/commit.
 
 ## Supported Versions
 
-Only the latest release (and `main`) receives security fixes.
+Only the latest release tag (and `main`) receives security fixes. There is no
+LTS branch while the project is on `0.x`. Check the running build with
+`imgli version`.
 
 ## Scope Notes for Self-Hosters
 

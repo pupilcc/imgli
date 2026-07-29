@@ -12,6 +12,8 @@ COPY go.mod go.sum ./
 RUN go mod download
 COPY . .
 COPY --from=web /src/web/dist ./web/dist
+# 发布时传入 git tag，例如: docker build --build-arg VERSION=v0.1.0
+# 本地/compose 未传时回退为 docker，便于区分非 release 构建。
 ARG VERSION=docker
 RUN CGO_ENABLED=0 go build -ldflags "-X main.version=${VERSION}" -o /imgli ./cmd/imgli
 

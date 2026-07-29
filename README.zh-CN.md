@@ -7,6 +7,12 @@
 
 <p align="center"><b>自托管图床——一跃成链。</b></p>
 
+<p align="center">
+  <a href="LICENSE"><img alt="MIT" src="https://img.shields.io/badge/license-MIT-blue.svg"></a>
+  <a href="https://github.com/yixian-huang/imgli/releases/latest"><img alt="Release" src="https://img.shields.io/github/v/release/yixian-huang/imgli"></a>
+  <a href=".github/workflows/ci.yml"><img alt="CI" src="https://github.com/yixian-huang/imgli/actions/workflows/ci.yml/badge.svg"></a>
+</p>
+
 <p align="center"><a href="README.md">English</a> · 简体中文</p>
 
 **imgli** 是 Go 编写的单二进制图床,内嵌 React 前端。截图上传,直接得链接。
@@ -28,6 +34,18 @@
 
 ## 快速开始
 
+### Docker（预构建镜像）
+
+```bash
+docker run --rm -p 8686:8686 -v imgli-data:/data \
+  -e IMGLI_BASE_URL=http://localhost:8686 \
+  ghcr.io/yixian-huang/imgli:latest
+# → http://localhost:8686（第一个注册用户即管理员）
+```
+
+固定版本用 `ghcr.io/yixian-huang/imgli:v0.1.0`（见
+[Releases](https://github.com/yixian-huang/imgli/releases)）。
+
 ### Docker Compose
 
 ```bash
@@ -40,8 +58,11 @@ docker compose up -d
 
 ```bash
 make build          # 需要 Go ≥ 1.26、Node ≥ 24
+./imgli version     # ldflags 注入的 git tag，如 v0.1.0
 ./imgli serve       # → http://localhost:8686
 ```
+
+各平台二进制见 [GitHub Release](https://github.com/yixian-huang/imgli/releases)。
 
 ## 配置
 
@@ -81,7 +102,8 @@ make test-web    # vitest
 cd web && npm run e2e   # Playwright,会先构建二进制
 ```
 
-参与贡献见 [CONTRIBUTING.md](CONTRIBUTING.md);安全问题走 [SECURITY.md](SECURITY.md),勿发公开 issue。
+参与贡献见 [CONTRIBUTING.md](CONTRIBUTING.md)（含版本号与发版流程）；
+变更记录 [CHANGELOG.md](CHANGELOG.md)；安全问题走 [SECURITY.md](SECURITY.md)，勿发公开 issue。
 
 ## 许可
 

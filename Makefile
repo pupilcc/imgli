@@ -1,4 +1,4 @@
-.PHONY: build build-go build-vips web test test-web test-vips font-subset run
+.PHONY: build build-go build-vips web test test-web test-vips font-subset run release-snapshot
 
 VERSION ?= $(shell git describe --tags --always --dirty 2>/dev/null || echo dev)
 
@@ -31,3 +31,7 @@ font-subset:
 
 run: build
 	./imgli serve
+
+# 本地试跑 GoReleaser（需已安装 goreleaser；不发布、不打 tag）。
+release-snapshot:
+	goreleaser release --snapshot --clean --skip=publish

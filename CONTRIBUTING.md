@@ -28,3 +28,47 @@ headers installed.
   `scripts/imgli-s3-vendors.env.example`) and open an issue with the results —
   these directly improve the compatibility matrix.
 - Security issues: see [SECURITY.md](SECURITY.md) — never via public issues.
+- User-facing changes: add a bullet under **`[Unreleased]`** in
+  [CHANGELOG.md](CHANGELOG.md). Mark breaking changes clearly (and prefer
+  `BREAKING` in the PR title).
+
+## Versioning and releasing
+
+Product version is **only** the git tag (`vMAJOR.MINOR.PATCH`). Build injects it
+via `-ldflags` (`make build` / Docker `VERSION` / GoReleaser). Do not duplicate
+it in `go.mod` or `web/package.json`.
+
+| Change | Bump |
+|--------|------|
+| Breaking API/config/storage semantics | MAJOR (or MINOR while still `0.x`) |
+| New features | MINOR |
+| Bug fixes, security patches | PATCH |
+
+Internal DB `SchemaVersion` is independent of the product tag; call out
+migrations in the changelog when operators must act.
+
+### Maintainer release checklist
+
+1. `main` is clean and CI is green.
+2. Move `[Unreleased]` notes in `CHANGELOG.md` into a dated `## [X.Y.Z]` section;
+   refresh the compare links at the bottom; leave an empty `[Unreleased]`.
+3. Commit on `main`, then tag and push:
+
+   ```bash
+   git tag -a vX.Y.Z -m "vX.Y.Z"
+   git push origin main --tags
+   ```
+
+4. GitHub Actions [release](.github/workflows/release.yml) will:
+   - build multi-platform binaries with GoReleaser and publish a GitHub Release;
+   - build/push multi-arch images to `ghcr.io/yixian-huang/imgli` with tags
+     `vX.Y.Z`, `X.Y.Z`, `X.Y`, and `latest` (not for pre-releases containing `-`).
+
+5. Smoke-check: download a release asset or pull the image and run
+   `imgli version` — it should print `vX.Y.Z`.
+
+Local dry-run (requires [GoReleaser](https://goreleaser.com/) installed):
+
+```bash
+make release-snapshot
+```

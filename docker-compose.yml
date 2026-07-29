@@ -1,5 +1,7 @@
 services:
   imgli:
+    # 本地开发默认从源码构建。生产可改为预构建镜像并固定 tag:
+    # image: ghcr.io/yixian-huang/imgli:v0.1.0
     build: .
     ports:
       - "8686:8686"
