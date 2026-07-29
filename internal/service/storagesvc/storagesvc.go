@@ -119,12 +119,28 @@ func (r *Resolver) RenderPath(tmpl, ext string, now time.Time) (string, error) {
 	return rep.Replace(tmpl), nil
 }
 
+// CDNEligibleObjectKey 判断对象键是否允许走「未鉴权 CDN/公网 302」(S4 纵深)。
+// fail-closed：显式 private/ 前缀（及 private 下缩略图）一律禁止；
+// 其余（public/ 或 S1 前遗留无前缀路径）允许由调用方配合 visibility 再拦一层。
+func CDNEligibleObjectKey(key string) bool {
+	k := strings.TrimLeft(key, "/")
+	if k == "" {
+		return false
+	}
+	// SurfacePrefix(private) == "private/"
+	if strings.HasPrefix(k, SurfacePrefix(model.SurfacePrivate)) {
+		return false
+	}
+	return true
+}
+
 // ObjectURL 返回公开图 302 回源目标:CDNDomain(对象存储 CDN 前缀)+ 编码后的
-// prefix+key。CDNDomain 空返空串(不可 302,调用方走流式)。对象键含特殊字符
-// (空格/#/?/非ASCII)时按 path segment 编码,保留 / 层级,防 Location 路径语义
-// 被改致重定向到错地址(codex 终审)。
+// prefix+key。CDNDomain 空返空串(不可 302,调用方走流式)。
+// S4：private surface 键永不拼 CDN URL（即使调用方误传），防桶匿名可读时 302 泄密。
+// 对象键含特殊字符(空格/#/?/非ASCII)时按 path segment 编码,保留 / 层级,防 Location
+// 路径语义被改致重定向到错地址(codex 终审)。
 func (r *Resolver) ObjectURL(p *model.StoragePolicy, key string) string {
-	if p.CDNDomain == "" {
+	if p.CDNDomain == "" || !CDNEligibleObjectKey(key) {
 		return ""
 	}
 	return strings.TrimRight(p.CDNDomain, "/") + "/" + encodeObjectPath(p.Config["prefix"]+key)

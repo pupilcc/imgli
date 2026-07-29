@@ -156,8 +156,11 @@ func (h *ServeHandlers) Original(w http.ResponseWriter, r *http.Request) {
 	havePolicy := h.D.DB.First(&file, img.FileID).Error == nil &&
 		h.D.DB.First(&policy, file.StoragePolicyID).Error == nil
 
-	if havePolicy && img.Visibility == "public" {
-		// 公开图 + 策略配 CDNDomain(对象存储 CDN)→ 302 卸带宽(裁决 3)。
+	// 公开图 + 策略配 CDNDomain → 302 卸带宽(裁决 3)。
+	// S4 纵深：visibility、file.surface、对象键前缀三道门；任一非公开则不拼 CDN URL
+	//（ObjectURL 对 private/ 键也会返回空，见 storagesvc.CDNEligibleObjectKey）。
+	if havePolicy && img.Visibility == "public" &&
+		(file.Surface == "" || file.Surface == model.SurfacePublic) {
 		if u := h.D.Res.ObjectURL(&policy, file.Path); u != "" {
 			if h.D.Stats != nil {
 				h.D.Stats.Record(img.ID, refererHost(r)) // 302 也计一次公开访问

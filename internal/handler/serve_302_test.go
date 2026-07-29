@@ -101,6 +101,56 @@ func TestServe302PrivateLocalNoRedirect(t *testing.T) {
 	}
 }
 
+// TestServe302PrivatePathNeverCDN S4：即使 visibility 被误写成 public，private/ 对象键
+// 也不得 302 到 CDNDomain（ObjectURL fail-closed）。
+func TestServe302PrivatePathNeverCDN(t *testing.T) {
+	db := model.TestDB(t)
+	cfg := &config.Config{DataDir: t.TempDir(), BaseURL: "http://img.li:8686"}
+	owner := &model.User{Username: "s4owner", Email: "s4@img.li", GroupID: 1}
+	if err := db.Create(owner).Error; err != nil {
+		t.Fatal(err)
+	}
+	pol := &model.StoragePolicy{
+		Name: "s4-cdn", Driver: "local",
+		CDNDomain: "https://cdn.evil.example",
+		Config:    map[string]string{"root": "uploads"},
+		Enabled:   true,
+	}
+	if err := db.Create(pol).Error; err != nil {
+		t.Fatal(err)
+	}
+	// 磁盘上不需要真实文件：若误 302 会先返回 Location；不 302 则流式失败可接受。
+	f := &model.File{
+		Hash: "s4privhash000001", StoragePolicyID: pol.ID,
+		Path: "private/2026/07/secret.png", Surface: model.SurfacePrivate,
+		Size: 4, MIME: "image/png", Width: 1, Height: 1, RefCount: 1,
+	}
+	if err := db.Create(f).Error; err != nil {
+		t.Fatal(err)
+	}
+	// 模拟数据不一致：visibility=public 但 surface/path 为 private
+	img := &model.Image{
+		Key: "s4privkey0001", UserID: &owner.ID, FileID: f.ID,
+		Name: "secret", Ext: "png", Visibility: "public", Status: "normal",
+	}
+	if err := db.Create(img).Error; err != nil {
+		t.Fatal(err)
+	}
+	sh := &ServeHandlers{D: ServeDeps{
+		DB: db, Res: storagesvc.New(cfg, db), OwnHost: "img.li",
+	}}
+	mux := chi.NewRouter()
+	mux.Get("/i/{name}", sh.Original)
+	name := img.Key + ".png"
+	rec := get302(mux, "/i/"+name)
+	if rec.Code == http.StatusFound {
+		loc := rec.Header().Get("Location")
+		if strings.Contains(loc, "cdn.evil") || strings.Contains(loc, "private/") {
+			t.Fatalf("S4: 不得 302 到 CDN/private 键, Location=%s", loc)
+		}
+	}
+}
+
 func TestServe302PublicNoCDN(t *testing.T) {
 	mux, _, _, name := newCDNServeEnv(t, "", "public")
 	rec := get302(mux, "/i/"+name)

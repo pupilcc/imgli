@@ -33,11 +33,35 @@ Application-level gate (owner session / API token scope) is **necessary but not
 sufficient** if the bucket is world-readable. Hardening the bucket is “S4” in
 the product roadmap sense: object-layer enforcement.
 
+### Application S4 slice (in-tree)
+
+Defense in depth already in code (not a substitute for bucket ACLs):
+
+- Object keys use `public/` vs `private/` prefixes after surface migration (S1).
+- **CDN 302** (`ObjectURL`) **never** builds URLs for keys under `private/`
+  (`CDNEligibleObjectKey` / serve triple-check: visibility + surface + key).
+- Private images may **presign** (short TTL) or **stream via the app**, never
+  unauthenticated CDN for private keys.
+
+### Operator probe
+
+After pointing a storage policy at S3/CDN, pick any private object URL (or a
+deliberate test object under `private/`) and:
+
+```bash
+./scripts/probe-private-object-anon.sh 'https://your-bucket-or-cdn/private/.../object.ext'
+```
+
+Expect **non-2xx** for anonymous GET. HTTP 200 here means S4 failure at the
+bucket/CDN layer.
+
 ### Checklist
 
 - [ ] Bucket private; no public ACL on `private/`
 - [ ] No open `ListBucket`
 - [ ] CDN domain only for public offload (or signed CDN, if you use one)
+- [ ] CDN origin must not serve `private/*` anonymously
+- [ ] Run `scripts/probe-private-object-anon.sh` on a private key after deploy
 - [ ] Presign TTL left short (app default is brief; do not cache signed URLs)
 - [ ] Backups of DB + objects both access-controlled
 

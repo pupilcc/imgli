@@ -95,4 +95,32 @@ func TestObjectURL(t *testing.T) {
 	if u := r.ObjectURL(pSpecial, "d/a b?c#d.png"); u != "https://cdn.img.li/d/a%20b%3Fc%23d.png" {
 		t.Errorf("ObjectURL 特殊字符编码: %q", u)
 	}
+	// S4: private surface 键永不拼 CDN
+	if u := r.ObjectURL(pEmpty, "private/2026/07/x.png"); u != "" {
+		t.Errorf("private/ 键应拒绝 CDN URL, got %q", u)
+	}
+	if u := r.ObjectURL(pEmpty, "private/.thumbs/g1/hh.jpg"); u != "" {
+		t.Errorf("private 缩略图键应拒绝 CDN URL, got %q", u)
+	}
+	if u := r.ObjectURL(pEmpty, "public/2026/07/x.png"); u != "https://cdn.img.li/public/2026/07/x.png" {
+		t.Errorf("public/ 键应允许 CDN, got %q", u)
+	}
+}
+
+func TestCDNEligibleObjectKey(t *testing.T) {
+	if CDNEligibleObjectKey("private/a.png") {
+		t.Error("private/ 应不合格")
+	}
+	if CDNEligibleObjectKey("/private/a.png") {
+		t.Error("前导斜杠 private 应不合格")
+	}
+	if !CDNEligibleObjectKey("public/a.png") {
+		t.Error("public/ 应合格")
+	}
+	if !CDNEligibleObjectKey("2026/07/legacy.png") {
+		t.Error("S1 前遗留无 surface 前缀路径仍允许 CDN（配合 visibility）")
+	}
+	if CDNEligibleObjectKey("") {
+		t.Error("空键不合格")
+	}
 }

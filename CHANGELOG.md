@@ -21,6 +21,9 @@ separate version in `go.mod` or `web/package.json`.
 - GitHub issue templates (bug / feature / S3 vendor report) and PR template.
 - Docs: `docs/s3-compatibility.md` matrix stub and
   `docs/security-hardening.md` (private object storage / proxy checklist).
+- **S4 slice:** refuse unauthenticated CDN URLs for `private/` object keys
+  (`CDNEligibleObjectKey` + serve visibility/surface checks); operator probe
+  `scripts/probe-private-object-anon.sh`.
 
 ### Changed
 
