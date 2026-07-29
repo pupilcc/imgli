@@ -223,6 +223,7 @@ export function UploadPage() {
         </div>
       )}
 
+      {/* 窄屏补位：顶栏 cluster 在 ≤900px 隐藏，上传页再露出用量，避免桌面双显 */}
       {!isGuest && quota.data && (
         <div className={styles.quotaRow} data-testid="upload-quota-meters">
           <QuotaBar used={quota.data.used} total={quota.data.total} kind="storage" to="/settings" />

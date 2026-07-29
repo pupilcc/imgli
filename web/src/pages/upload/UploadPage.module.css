@@ -1,8 +1,9 @@
 .page { position: relative; max-width: 760px; margin: 0 auto; padding-top: 48px; padding-bottom: 32px; }
 .subtitle { margin: 0; font-size: 13px; color: var(--muted); }
 
+/* 桌面顶栏已有 NavQuotaCluster；此处仅在顶栏条隐藏（≤900px）时显示，避免重复。 */
 .quotaRow {
-  display: flex;
+  display: none;
   flex-wrap: wrap;
   gap: 16px 24px;
   margin-bottom: 14px;
@@ -10,6 +11,11 @@
   border: 1px solid var(--border);
   border-radius: 4px;
   background: var(--surface);
+}
+@media (max-width: 900px) {
+  .quotaRow {
+    display: flex;
+  }
 }
 
 .loginGate {
