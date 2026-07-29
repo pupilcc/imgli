@@ -161,8 +161,8 @@ func (s *Server) mountAPI() {
 		Secure:       strings.HasPrefix(s.opts.Cfg.BaseURL, "https://"),
 	}
 
-	// 公开配置端点（计划 C-①a Task 2）：品牌/注册模式/游客上传开关+限额，无需鉴权。
-	cfgH := &handler.ConfigHandler{DB: s.opts.DB}
+	// 公开配置端点（计划 C-①a Task 2）：品牌/注册模式/游客上传开关+限额/base_url，无需鉴权。
+	cfgH := &handler.ConfigHandler{DB: s.opts.DB, BaseURL: s.opts.Cfg.BaseURL}
 
 	limiter := handler.NewLimiterMult(s.opts.Cfg.RateLimitMult)
 

@@ -395,6 +395,8 @@ export interface PublicConfig {
   guest_upload_enabled: boolean
   guest: GuestLimits | null
   plaza_enabled: boolean
+  /** Public site base (IMGLI_BASE_URL); used for client config snippets. */
+  base_url?: string
   announcement?: SiteAnnouncement | null
   footer?: SiteFooter
   html_inject?: HTMLInject

@@ -23,6 +23,9 @@ separate version in `go.mod` or `web/package.json`.
   `url|markdown|json` (`internal/cliupload`).
 - **Integrations docs:** ShareX custom uploader + sample `.sxcu`, uPic/PicList
   custom host mapping (`docs/integrations/`).
+- **Settings API Token snippets:** curl / PicGo / ShareX / `imgli upload` CLI
+  cards using public `base_url`; plain token only while create-once banner is
+  open (`GET /api/v1/config` exposes `base_url`).
 - **Monthly bandwidth hard cap (v1):** user-group `bandwidth_quota_month` (Free/default
   seed **5 GiB/month**, Asia/Shanghai calendar month); meter on successful `/i`/`/t`
   gate release by object size; block upload + 429 when exceeded; usage on

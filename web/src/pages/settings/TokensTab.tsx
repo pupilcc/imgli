@@ -1,42 +1,50 @@
-import { useState } from 'react'
-import { useCreateToken, useRevokeToken, useTokens } from '../../api/hooks'
+import { useMemo, useState } from 'react'
+import { useConfig, useCreateToken, useRevokeToken, useTokens } from '../../api/hooks'
 import { useT } from '../../i18n'
 import { copyText } from '../../lib/copy'
 import { formatDate } from '../../lib/format'
 import { Button } from '../../ui/Button'
-import { InlineConfirm } from '../../ui/InlineConfirm'
+import { InlineConfirm } from '../../ui/inlineConfirm'
 import { Modal } from '../../ui/Modal'
 import styles from './SettingsPage.module.css'
 import own from './TokensTab.module.css'
+import { buildIntegrationSnippets, type SnippetKind } from './tokenSnippets'
 
 export function TokensTab() {
   const { t } = useT()
   const tokens = useTokens()
   const create = useCreateToken()
   const revoke = useRevokeToken()
+  const cfg = useConfig()
   const [showNew, setShowNew] = useState(false)
   const [name, setName] = useState('')
   const [scope, setScope] = useState<'upload' | 'full'>('upload')
   const [fresh, setFresh] = useState<string | null>(null)
   const [nameErr, setNameErr] = useState(false)
 
-  const origin = window.location.origin
-  const tokenPh = t('settings.tokenPlaceholder')
-  const picgo = `{
-  "picBed": {
-    "current": "lankong",
-    "lankong": {
-      "lskyProVersion": "V2",
-      "server": "${origin}",
-      "token": "Bearer <${tokenPh}>"
-    }
+  const baseURL =
+    (cfg.data?.base_url && cfg.data.base_url.trim()) ||
+    (typeof window !== 'undefined' ? window.location.origin : '')
+
+  // Plain token only while the create-once banner is open; otherwise placeholder label.
+  const tokenForSnippet = fresh ?? t('settings.tokenPlaceholder')
+  const snippets = useMemo(
+    () => buildIntegrationSnippets(baseURL, tokenForSnippet),
+    [baseURL, tokenForSnippet],
+  )
+
+  const titleByKind: Record<SnippetKind, string> = {
+    curl: 'curl',
+    picgo: 'PicGo',
+    sharex: 'ShareX',
+    cli: t('settings.cliName'),
   }
-}`
-  const typora = `sh -c 'curl -s -X POST \\
-  -H "Authorization: Bearer <${tokenPh}>" \\
-  -F "file=@$1" \\
-  ${origin}/api/v1/upload \\
-  | python3 -c "import sys,json;d=json.load(sys.stdin)[\\"data\\"];print(\\"Upload Success:\\");print(d[\\"links\\"][\\"url\\"])"' _`
+  const copyLabelByKind: Record<SnippetKind, string> = {
+    curl: t('settings.copyLabelCurl'),
+    picgo: t('settings.copyLabelPicgo'),
+    sharex: t('settings.copyLabelSharex'),
+    cli: t('settings.copyLabelCli'),
+  }
 
   function createToken() {
     if (!name.trim()) return setNameErr(true)
@@ -73,6 +81,7 @@ export function TokensTab() {
               ×
             </button>
           </div>
+          <p className={own.freshHint}>{t('settings.freshSnippetHint')}</p>
         </div>
       )}
 
@@ -102,25 +111,25 @@ export function TokensTab() {
 
       <div className={own.confSection}>
         <div className={styles.kicker}>{t('settings.clientConfigKicker')}</div>
+        <p className={own.confNote}>
+          {t('settings.clientConfigNote', { base: baseURL || '…' })}
+        </p>
         <div className={own.confGrid}>
-          <div className={own.confCard}>
-            <div className={own.confHead}>
-              <span className={own.confName}>PicGo</span>
-              <button type="button" className={own.confCopy} onClick={() => copyText(picgo, t('settings.copyLabelPicgo'))}>
-                {t('settings.copyConfig')}
-              </button>
+          {snippets.map((s) => (
+            <div key={s.kind} className={own.confCard}>
+              <div className={own.confHead}>
+                <span className={own.confName}>{titleByKind[s.kind]}</span>
+                <button
+                  type="button"
+                  className={own.confCopy}
+                  onClick={() => copyText(s.text, copyLabelByKind[s.kind])}
+                >
+                  {t('settings.copyConfig')}
+                </button>
+              </div>
+              <pre className={own.confPre}>{s.text}</pre>
             </div>
-            <pre className={own.confPre}>{picgo}</pre>
-          </div>
-          <div className={own.confCard}>
-            <div className={own.confHead}>
-              <span className={own.confName}>{t('settings.typoraName')}</span>
-              <button type="button" className={own.confCopy} onClick={() => copyText(typora, t('settings.copyLabelTypora'))}>
-                {t('settings.copyCommand')}
-              </button>
-            </div>
-            <pre className={own.confPre}>{typora}</pre>
-          </div>
+          ))}
         </div>
       </div>
 

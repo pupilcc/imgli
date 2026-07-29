@@ -25,6 +25,7 @@ func TestConfigPublicNoAuth(t *testing.T) {
 		SiteName           string `json:"site_name"`
 		RegistrationMode   string `json:"registration_mode"`
 		GuestUploadEnabled bool   `json:"guest_upload_enabled"`
+		BaseURL            string `json:"base_url"`
 		Guest              *struct {
 			MaxFileSize int64    `json:"max_file_size"`
 			AllowedExts []string `json:"allowed_exts"`
@@ -36,6 +37,9 @@ func TestConfigPublicNoAuth(t *testing.T) {
 	}
 	if body.SiteName == "" {
 		t.Errorf("site_name 为空")
+	}
+	if body.BaseURL == "" {
+		t.Errorf("base_url 为空（应来自 IMGLI_BASE_URL / 默认）")
 	}
 	if body.RegistrationMode != "open" {
 		t.Errorf("registration_mode = %q, want open（播种默认）", body.RegistrationMode)

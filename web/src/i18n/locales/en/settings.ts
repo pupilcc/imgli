@@ -114,9 +114,12 @@ export default {
   confirmRevoke: 'Confirm revoke?',
   emptyTokens: 'No tokens yet. Create one from the top right.',
   clientConfigKicker: 'CLIENT CONFIG — Client config examples',
+  clientConfigNote:
+    'Base URL comes from site base_url (now {base}). After you dismiss the plain-text banner, snippets use a token placeholder again.',
+  freshSnippetHint:
+    'curl / PicGo / ShareX / CLI snippets below temporarily include this plain token; closing this banner removes it from snippets.',
   copyConfig: 'Copy config',
-  typoraName: 'Typora (custom command, requires python3)',
-  copyCommand: 'Copy command',
+  cliName: 'CLI (imgli upload)',
   newTokenTitle: 'Create new Token',
   tokenNamePlaceholder: 'e.g. blog, PicGo…',
   errNameRequired: 'Please enter a name',
@@ -127,8 +130,10 @@ export default {
   scopeFullSub: 'Manage images and albums, same as a login session',
   createToken: 'Create Token',
   copyLabelToken: 'Token',
+  copyLabelCurl: 'curl command',
   copyLabelPicgo: 'PicGo config',
-  copyLabelTypora: 'Typora command',
+  copyLabelSharex: 'ShareX config',
+  copyLabelCli: 'CLI env vars',
   tokenPlaceholder: 'your Token',
 
   // Usage

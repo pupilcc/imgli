@@ -16,6 +16,7 @@ type configBody struct {
 	RegistrationMode   string `json:"registration_mode"`
 	GuestUploadEnabled bool   `json:"guest_upload_enabled"`
 	PlazaEnabled       bool   `json:"plaza_enabled"`
+	BaseURL            string `json:"base_url"`
 	Guest              *struct {
 		MaxFileSize int64    `json:"max_file_size"`
 		AllowedExts []string `json:"allowed_exts"`
@@ -27,7 +28,7 @@ type configBody struct {
 // guest_upload_enabled=false，guest 限额取自播种的游客组（5MB/3/常见后缀）。
 func TestConfigDefaults(t *testing.T) {
 	db := model.TestDB(t)
-	h := &ConfigHandler{DB: db}
+	h := &ConfigHandler{DB: db, BaseURL: "https://img.li/"}
 
 	rec := httptest.NewRecorder()
 	req := httptest.NewRequest("GET", "/api/v1/config", nil)
@@ -55,6 +56,9 @@ func TestConfigDefaults(t *testing.T) {
 
 	if body.SiteName != "img.li" {
 		t.Errorf("site_name = %q, want img.li", body.SiteName)
+	}
+	if body.BaseURL != "https://img.li" {
+		t.Errorf("base_url = %q, want https://img.li (trim slash)", body.BaseURL)
 	}
 	if body.RegistrationMode != "open" {
 		t.Errorf("registration_mode = %q, want open", body.RegistrationMode)

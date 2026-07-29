@@ -61,6 +61,19 @@ function mockBackend(
     vi.fn((url: RequestInfo | URL, init?: RequestInit) => {
       const u = String(url)
       if (u.endsWith('/auth/session')) return Promise.resolve(jsonRes(env(sessionUser)))
+      if (u.endsWith('/config'))
+        return Promise.resolve(
+          jsonRes(
+            env({
+              site_name: 'img.li',
+              registration_mode: 'open',
+              guest_upload_enabled: false,
+              plaza_enabled: false,
+              guest: null,
+              base_url: 'https://img.li',
+            }),
+          ),
+        )
       if (u.endsWith('/auth/resend-verification') && init?.method === 'POST') return Promise.resolve(jsonRes(env(null)))
       if (u.endsWith('/user/quota'))
         return Promise.resolve(jsonRes(env({ used: 2.14 * GB, total: 10 * GB, max_file_size: 20 * 1024 ** 2, allowed_exts: ['png'] })))
@@ -137,8 +150,13 @@ it('Token：新建弹窗→一次性明文条→列表刷新，吊销两击', as
   expect(await screen.findByText('PLAIN-ONCE-TOKEN')).toBeInTheDocument()
   expect(await screen.findByText('blog')).toBeInTheDocument()
   expect(screen.getByText('UPLOAD')).toBeInTheDocument()
-  expect(screen.getByText(/PicGo/)).toBeInTheDocument()
-  expect(screen.getByText(/Typora/)).toBeInTheDocument()
+  expect(screen.getByText('PicGo')).toBeInTheDocument()
+  expect(screen.getByText('ShareX')).toBeInTheDocument()
+  expect(screen.getByText('curl')).toBeInTheDocument()
+  expect(screen.getByText(/CLI \(imgli upload\)/)).toBeInTheDocument()
+  // base_url from config + plain token injected while banner open
+  expect(screen.getByText(/基址来自站点 base_url（当前 https:\/\/img\.li）/)).toBeInTheDocument()
+  expect(screen.getAllByText(/Bearer PLAIN-ONCE-TOKEN/).length).toBeGreaterThan(0)
 })
 
 it('用量 Tab 大数字与进度条', async () => {

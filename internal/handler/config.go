@@ -3,6 +3,7 @@ package handler
 import (
 	"errors"
 	"net/http"
+	"strings"
 	"time"
 
 	"gorm.io/gorm"
@@ -14,10 +15,14 @@ import (
 
 // ConfigHandler GET /api/v1/config（公开，无需鉴权）——前端/游客上传页据此渲染品牌、
 // 注册开关与游客上传限额。绝不含密钥/私密配置（如机审 api_key）。
-type ConfigHandler struct{ DB *gorm.DB }
+// BaseURL 为运维层公开基址（IMGLI_BASE_URL），供客户端配置片段；可空。
+type ConfigHandler struct {
+	DB      *gorm.DB
+	BaseURL string
+}
 
 // Config GET /api/v1/config → {site_name, registration_mode, guest_upload_enabled,
-// guest:{max_file_size, allowed_exts, per_day}}。settings 三键缺省时按 site_name=""/
+// guest:{max_file_size, allowed_exts, per_day}, base_url}。settings 三键缺省时按 site_name=""/
 // registration_mode="open"/guest_upload_enabled=false 处理（ErrNotFound 静默吞掉，与
 // adminsvc.GetSettings 同一约定）。guest 取游客组（is_guest=true）的限额；查不到游客组
 // （不应发生——已播种）时 guest 降级为 nil（JSON 里是 null），不因此报错整个请求。
@@ -82,6 +87,8 @@ func (h *ConfigHandler) Config(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	baseURL := strings.TrimRight(strings.TrimSpace(h.BaseURL), "/")
+
 	OK(w, map[string]any{
 		"site_name":            siteName,
 		"registration_mode":    regMode,
@@ -91,5 +98,6 @@ func (h *ConfigHandler) Config(w http.ResponseWriter, r *http.Request) {
 		"announcement":         annOut,
 		"footer":               foot,
 		"html_inject":          htmlInj,
+		"base_url":             baseURL,
 	})
 }
