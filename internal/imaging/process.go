@@ -13,6 +13,16 @@ import (
 	"golang.org/x/image/math/fixed"
 )
 
+// StripMetadata 解码后按原格式重编码，去掉 JPEG EXIF/GPS 等附属元数据（及 PNG 文本块等）。
+// 仅 jpeg/png；其它格式返回 ErrUnsupported。无元数据的干净图也可能因重编码改变字节。
+func StripMetadata(data []byte) ([]byte, error) {
+	img, format, err := decodeJP(data)
+	if err != nil {
+		return nil, err
+	}
+	return encodeAs(format, img)
+}
+
 // Scale 长边超过 maxEdge 时等比缩(CatmullRom);未超出时原样返回输入(不解码重编)。
 func Scale(data []byte, maxEdge int) ([]byte, error) {
 	cfg, format, err := image.DecodeConfig(bytes.NewReader(data))

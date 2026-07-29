@@ -9,6 +9,7 @@ import (
 	"image"
 	"image/color"
 	"image/gif"
+	"image/jpeg"
 	"image/png"
 	"io"
 	"os"
@@ -86,6 +87,12 @@ func readStored(t *testing.T, svc *Service, res *Result) []byte {
 
 func TestBurnNoopKeepsBytes(t *testing.T) {
 	svc, u, _ := setup(t)
+	// 显式关 strip：默认 strip_exif=true 会重编码；本用例断言「全关处理」字节不动
+	proc := DefaultProcessing()
+	proc.StripExif = BoolPtr(false)
+	if err := settings.New(svc.db).Set(model.SettingProcessing, proc); err != nil {
+		t.Fatal(err)
+	}
 	dir := t.TempDir()
 	src := pngFile(t, dir, 80, 60)
 	wantHash := sha256File(t, src)
@@ -102,6 +109,43 @@ func TestBurnNoopKeepsBytes(t *testing.T) {
 	}
 	if res.File.Hash != wantHash {
 		t.Errorf("file.Hash=%s want %s", res.File.Hash, wantHash)
+	}
+}
+
+func TestBurnStripExifChangesJPEGWithAPP1(t *testing.T) {
+	svc, u, _ := setup(t)
+	// default strip on
+	dir := t.TempDir()
+	// solid JPEG via png path won't work — write JPEG with injected EXIF
+	img := image.NewRGBA(image.Rect(0, 0, 40, 30))
+	var jbuf bytes.Buffer
+	if err := jpeg.Encode(&jbuf, img, &jpeg.Options{Quality: 90}); err != nil {
+		t.Fatal(err)
+	}
+	base := jbuf.Bytes()
+	payload := []byte("Exif\x00\x00GPS")
+	app1 := []byte{0xFF, 0xE1, byte((len(payload) + 2) >> 8), byte(len(payload) + 2)}
+	app1 = append(app1, payload...)
+	withExif := append([]byte{0xFF, 0xD8}, app1...)
+	withExif = append(withExif, base[2:]...)
+	tmp := filepath.Join(dir, "geo.jpg")
+	if err := os.WriteFile(tmp, withExif, 0o600); err != nil {
+		t.Fatal(err)
+	}
+	wantSrc := sha256Bytes(withExif)
+	res, err := svc.Save(context.Background(), tmp, "geo.jpg", u, Opts{Visibility: "public"}, "1.1.1.1")
+	if err != nil {
+		t.Fatal(err)
+	}
+	stored := readStored(t, svc, res)
+	if sha256Bytes(stored) == wantSrc {
+		t.Error("strip 后 hash 应变化")
+	}
+	if bytes.Contains(stored, []byte("Exif\x00\x00")) {
+		t.Error("落盘仍含 Exif")
+	}
+	if res.File.Hash != sha256Bytes(stored) {
+		t.Error("秒传 hash 须为处理后内容")
 	}
 }
 

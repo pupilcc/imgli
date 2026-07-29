@@ -169,6 +169,9 @@ export default {
   allowEmptyReferer: '允许空 Referer',
   emptyRefererHint: '浏览器直开/Markdown 阅读器无 Referer；关闭将拦截这类访问',
   processing: '图片处理',
+  stripExif: '剥离 EXIF / GPS',
+  stripExifHint:
+    '默认开启。上传 JPEG/PNG 时重编码去掉定位与相机元数据；关闭后在无水印/缩放时保留源文件字节。',
   enableTextWatermark: '启用文字水印',
   textWatermark: '文字水印',
   textWatermarkPlaceholder: '例如：图鲤 · img.li',

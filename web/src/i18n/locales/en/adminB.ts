@@ -166,6 +166,9 @@ export default {
   allowEmptyReferer: 'Allow empty Referer',
   emptyRefererHint: 'Direct open / Markdown readers send no Referer; off blocks those',
   processing: 'Image processing',
+  stripExif: 'Strip EXIF / GPS',
+  stripExifHint:
+    'On by default. Re-encodes JPEG/PNG on upload to remove location and camera metadata. When off (and no watermark/scale), original bytes are kept.',
   enableTextWatermark: 'Enable text watermark',
   textWatermark: 'Text watermark',
   textWatermarkPlaceholder: 'e.g. Imgli · img.li',

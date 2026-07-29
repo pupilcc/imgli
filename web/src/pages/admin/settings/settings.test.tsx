@@ -37,6 +37,7 @@ const SETTINGS = {
   processing: {
     text_watermark: { enabled: false, text: '', position: 'br', opacity: 0.35, size_ratio: 0.05 },
     max_edge: 0,
+    strip_exif: true,
   },
 }
 

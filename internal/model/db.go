@@ -47,7 +47,7 @@ const settingHotlinkDefaultJSON = `{"enabled":false,"allowed_domains":[],"allow_
 
 // settingProcessingDefaultJSON 是 upload.DefaultProcessing() 的 JSON 字面量,手写原因同上
 // (避免 model→upload 依赖;一致性由 processing_seed_test.go 外部断言)。
-const settingProcessingDefaultJSON = `{"text_watermark":{"enabled":false,"text":"","position":"br","opacity":0.35,"size_ratio":0.04},"max_edge":0}`
+const settingProcessingDefaultJSON = `{"text_watermark":{"enabled":false,"text":"","position":"br","opacity":0.35,"size_ratio":0.04},"max_edge":0,"strip_exif":true}`
 
 // 插槽默认 JSON：与 adminsvc.DefaultAnnouncement/Footer/HTMLInject 一致。
 const settingAnnouncementDefaultJSON = `{"enabled":false,"text":"","link_url":"","link_label":"","dismissible":true,"starts_at":"","ends_at":""}`

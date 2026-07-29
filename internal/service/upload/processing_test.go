@@ -12,6 +12,20 @@ func TestValidateProcessingDefaultOK(t *testing.T) {
 	}
 }
 
+func TestStripExifEnabledDefaultsTrue(t *testing.T) {
+	if !DefaultProcessing().StripExifEnabled() {
+		t.Error("default strip on")
+	}
+	var p Processing // zero: StripExif nil → 存量配置视为开
+	if !p.StripExifEnabled() {
+		t.Error("missing field 应视为 strip on")
+	}
+	p.StripExif = BoolPtr(false)
+	if p.StripExifEnabled() {
+		t.Error("explicit false")
+	}
+}
+
 func TestValidateProcessingMatrix(t *testing.T) {
 	ok := DefaultProcessing()
 

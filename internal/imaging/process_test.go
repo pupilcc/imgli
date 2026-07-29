@@ -10,6 +10,41 @@ import (
 	"testing"
 )
 
+func TestStripMetadataRemovesJPEGExifAPP1(t *testing.T) {
+	base := encodeJPEG(t, 32, 24)
+	// Inject APP1 Exif after SOI (FFD8)
+	// APP1: FF E1 | length(2) | Exif\0\0 | pad
+	payload := []byte("Exif\x00\x00GPSFAKE")
+	app1 := []byte{0xFF, 0xE1, byte((len(payload) + 2) >> 8), byte(len(payload) + 2)}
+	app1 = append(app1, payload...)
+	withExif := append([]byte{0xFF, 0xD8}, app1...)
+	withExif = append(withExif, base[2:]...)
+	if !bytes.Contains(withExif, []byte("Exif\x00\x00")) {
+		t.Fatal("fixture missing Exif marker")
+	}
+	out, err := StripMetadata(withExif)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if bytes.Contains(out, []byte("Exif\x00\x00")) {
+		t.Error("strip 后仍含 Exif APP1")
+	}
+	if _, format, err := image.Decode(bytes.NewReader(out)); err != nil || format != "jpeg" {
+		t.Fatalf("输出应可解码为 jpeg: %v %s", err, format)
+	}
+}
+
+func TestStripMetadataPNGOK(t *testing.T) {
+	src := solidPNG(t, 16, 12, color.White)
+	out, err := StripMetadata(src)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, format, err := image.Decode(bytes.NewReader(out)); err != nil || format != "png" {
+		t.Fatalf("png: %v %s", err, format)
+	}
+}
+
 func encodeJPEG(t *testing.T, w, h int) []byte {
 	t.Helper()
 	img := image.NewRGBA(image.Rect(0, 0, w, h))

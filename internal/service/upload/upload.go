@@ -327,7 +327,8 @@ func (s *Service) burn(tmpPath, ext string, u *model.User) (bool, error) {
 		}
 	}
 	textOn := proc.TextWatermark.Enabled && strings.TrimSpace(proc.TextWatermark.Text) != ""
-	if proc.MaxEdge == 0 && !textOn && markData == nil {
+	stripOn := proc.StripExifEnabled()
+	if proc.MaxEdge == 0 && !textOn && markData == nil && !stripOn {
 		return false, nil // 无处理项:字节完全不动
 	}
 
@@ -336,6 +337,18 @@ func (s *Service) burn(tmpPath, ext string, u *model.User) (bool, error) {
 		return false, err
 	}
 	out := data
+	// EXIF 剥离放在缩放/水印前：先去元数据再处理；仅剥离子时也走重编码路径。
+	if stripOn {
+		v, err := imaging.StripMetadata(out)
+		if errors.Is(err, imaging.ErrUnsupported) {
+			slog.Warn("处理管线整链跳过(内容不可解码)", "step", "strip_exif")
+			return false, nil
+		}
+		if err != nil {
+			return false, err
+		}
+		out = v
+	}
 	if proc.MaxEdge > 0 {
 		v, err := imaging.Scale(out, proc.MaxEdge)
 		if errors.Is(err, imaging.ErrUnsupported) {

@@ -344,6 +344,8 @@ export interface TextWatermarkSettings {
 export interface ProcessingSettings {
   text_watermark: TextWatermarkSettings
   max_edge: number
+  /** default true when omitted (privacy) */
+  strip_exif?: boolean | null
 }
 
 export interface SiteAnnouncement {

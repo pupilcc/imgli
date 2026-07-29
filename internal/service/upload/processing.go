@@ -27,9 +27,23 @@ type TextWatermark struct {
 }
 
 // Processing 图片处理规则(settings "processing" 键 JSON 契约,前后端逐字一致)。
+// StripExif 用指针：JSON 缺字段(存量配置) → nil → 视为开启(隐私默认开)。
 type Processing struct {
 	TextWatermark TextWatermark `json:"text_watermark"`
 	MaxEdge       int           `json:"max_edge"` // 0=不限;否则 [256,16384],上传超限等比缩
+	// StripExif nil=默认开；false=保留源文件元数据；true=上传时剥离 EXIF/GPS 等。
+	StripExif *bool `json:"strip_exif"`
+}
+
+// BoolPtr 供测试与播种构造 *bool。
+func BoolPtr(v bool) *bool { return &v }
+
+// StripExifEnabled 缺省(nil)为 true。
+func (p Processing) StripExifEnabled() bool {
+	if p.StripExif == nil {
+		return true
+	}
+	return *p.StripExif
 }
 
 // DefaultProcessing 返回图片处理的出厂默认值。
@@ -47,7 +61,8 @@ func DefaultProcessing() Processing {
 			Opacity:   0.35,
 			SizeRatio: 0.04,
 		},
-		MaxEdge: 0,
+		MaxEdge:   0,
+		StripExif: BoolPtr(true),
 	}
 }
 

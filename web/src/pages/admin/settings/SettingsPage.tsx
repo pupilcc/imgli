@@ -79,6 +79,7 @@ interface FormState {
   twOpacity: number
   twSizeRatio: number
   maxEdge: number
+  stripExif: boolean
   ann: SiteAnnouncement
   footerGroups: FooterGroup[]
   htmlHead: string
@@ -130,6 +131,8 @@ function formOf(s: AdminSettings): FormState {
     twOpacity: tw?.opacity != null && tw.opacity >= 0.05 ? tw.opacity : 0.35,
     twSizeRatio: tw?.size_ratio != null && tw.size_ratio >= 0.01 ? tw.size_ratio : 0.05,
     maxEdge: s.processing?.max_edge ?? 0,
+    // omit/null → default on (privacy)
+    stripExif: s.processing?.strip_exif !== false,
     ann: s.announcement
       ? {
           enabled: !!s.announcement.enabled,
@@ -294,6 +297,7 @@ export function SettingsPage() {
             size_ratio: form.twSizeRatio,
           },
           max_edge: form.maxEdge,
+          strip_exif: form.stripExif,
         },
         announcement: {
           enabled: form.ann.enabled,
@@ -851,6 +855,16 @@ export function SettingsPage() {
             <section className={styles.section}>
               <div className={styles.h2Row}>
                 <h2 className={styles.h2}>{t('adminB.processing')}</h2>
+              </div>
+              <div className={styles.field}>
+                <div className={styles.sliderHead}>
+                  <span className={styles.label}>{t('adminB.stripExif')}</span>
+                  <Toggle aria-label={t('adminB.stripExif')} checked={form.stripExif} onChange={(v) => set('stripExif', v)} />
+                </div>
+                <span className={styles.hint}>{t('adminB.stripExifHint')}</span>
+              </div>
+              <div className={styles.h2Row}>
+                <h3 className={styles.h2}>{t('adminB.textWatermark')}</h3>
                 <Toggle aria-label={t('adminB.enableTextWatermark')} checked={form.twEnabled} onChange={(v) => set('twEnabled', v)} />
               </div>
               <Input

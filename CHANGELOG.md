@@ -31,6 +31,9 @@ separate version in `go.mod` or `web/package.json`.
   pending / rejected / expired → 404.
 - **Upload success polish:** large primary URL + one-click copy, multi-format
   chips, and “open share page” for public uploads.
+- **Strip EXIF/GPS on upload (default on):** site `processing.strip_exif`
+  (nil/missing = on); re-encode JPEG/PNG before scale/watermark; admin toggle;
+  content-hash after strip.
 - **Monthly bandwidth hard cap (v1):** user-group `bandwidth_quota_month` (Free/default
   seed **5 GiB/month**, Asia/Shanghai calendar month); meter on successful `/i`/`/t`
   gate release by object size; block upload + 429 when exceeded; usage on
