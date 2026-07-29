@@ -123,7 +123,9 @@ cd web && npm run e2e   # Playwright,会先构建二进制
 ```
 
 参与贡献见 [CONTRIBUTING.md](CONTRIBUTING.md)（含版本号与发版流程）；
-变更记录 [CHANGELOG.md](CHANGELOG.md)；安全问题走 [SECURITY.md](SECURITY.md)，勿发公开 issue。
+变更记录 [CHANGELOG.md](CHANGELOG.md)；安全 [SECURITY.md](SECURITY.md) ·
+[加固清单](docs/security-hardening.md)；S3 兼容矩阵
+[docs/s3-compatibility.md](docs/s3-compatibility.md)。
 
 ## 许可
 

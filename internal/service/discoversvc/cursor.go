@@ -7,7 +7,7 @@ import (
 )
 
 // feedCursor 是广场/用户公开列表的 keyset 游标。
-// new: Val = created_at.UnixNano()；hot: Val = 累计 views。
+// new: Val = created_at.Unix()（秒；与 SQLite 时间比较粒度一致）；hot: Val = 累计 views。
 // 编码为 base64url，字段用 \x1f 分隔后整体编码。
 type feedCursor struct {
 	Sort string

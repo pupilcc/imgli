@@ -49,8 +49,9 @@ headers installed.
   contributions, but please match the style of the file you are editing.
 - S3 vendor reports: run `scripts/s3-vendor-matrix.sh` and
   `scripts/s3-vendor-e2e.sh` against your vendor (see
-  `scripts/imgli-s3-vendors.env.example`) and open an issue with the results —
-  these directly improve the compatibility matrix.
+  `scripts/imgli-s3-vendors.env.example`) and open an issue with the **S3 vendor
+  test report** template — results feed
+  [docs/s3-compatibility.md](docs/s3-compatibility.md).
 - Security issues: see [SECURITY.md](SECURITY.md) — never via public issues.
 - User-facing changes: add a bullet under **`[Unreleased]`** in
   [CHANGELOG.md](CHANGELOG.md). Mark breaking changes clearly (and prefer

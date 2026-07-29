@@ -1,0 +1,28 @@
+name: Feature request
+description: Suggest an improvement aligned with the open-source product
+title: "feat: "
+labels: ["enhancement"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Prefer focused proposals. Commercial/site-owner monetization features are
+        out of scope for the AGPL core unless they help all self-hosters.
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem
+      description: What is hard or missing for self-hosted use?
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposal
+      description: Concrete behavior or API change
+    validations:
+      required: true
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives considered

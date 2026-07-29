@@ -1,0 +1,55 @@
+name: Bug report
+description: Report a defect in imgli
+title: "bug: "
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for reporting. Please include reproduction steps and versions.
+        Security issues → use [Security advisories](https://github.com/yixian-huang/imgli/security), not public issues.
+  - type: input
+    id: version
+    attributes:
+      label: imgli version
+      description: Output of `imgli version` or Docker image tag
+      placeholder: v0.1.1
+    validations:
+      required: true
+  - type: dropdown
+    id: install
+    attributes:
+      label: How did you install?
+      options:
+        - Binary (install.sh / GitHub Release)
+        - Docker / Compose
+        - Built from source
+        - Other
+    validations:
+      required: true
+  - type: textarea
+    id: repro
+    attributes:
+      label: Steps to reproduce
+      placeholder: |
+        1. …
+        2. …
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected behavior
+    validations:
+      required: true
+  - type: textarea
+    id: actual
+    attributes:
+      label: Actual behavior
+    validations:
+      required: true
+  - type: textarea
+    id: logs
+    attributes:
+      label: Logs / screenshots
+      description: Redact secrets, tokens, and private image URLs

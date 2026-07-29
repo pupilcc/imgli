@@ -18,8 +18,8 @@ jobs:
           --health-cmd "pg_isready -U imgli" --health-interval 5s
           --health-timeout 5s --health-retries 10
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-go@v5
+      - uses: actions/checkout@v5
+      - uses: actions/setup-go@v6
         with: { go-version-file: go.mod, cache: true }
       - name: vet + test (sqlite)
         run: |
@@ -33,8 +33,8 @@ jobs:
   web:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
         with: { node-version: 24, cache: npm, cache-dependency-path: web/package-lock.json }
       - name: test + build
         working-directory: web
@@ -46,10 +46,10 @@ jobs:
   binary:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-go@v5
+      - uses: actions/checkout@v5
+      - uses: actions/setup-go@v6
         with: { go-version-file: go.mod, cache: true }
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v5
         with: { node-version: 24, cache: npm, cache-dependency-path: web/package-lock.json }
       - name: make build + smoke
         run: |
@@ -62,10 +62,10 @@ jobs:
   e2e:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-go@v5
+      - uses: actions/checkout@v5
+      - uses: actions/setup-go@v6
         with: { go-version-file: go.mod, cache: true }
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v5
         with: { node-version: 24, cache: npm, cache-dependency-path: web/package-lock.json }
       - name: build binary
         run: make build

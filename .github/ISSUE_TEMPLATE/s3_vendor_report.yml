@@ -1,0 +1,45 @@
+name: S3 vendor test report
+description: Report S3-compatible storage results (helps the compatibility matrix)
+title: "s3: vendor report for "
+labels: ["s3", "compatibility"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Run the toolkit in `scripts/` (`s3-vendor-matrix.sh` / `s3-vendor-e2e.sh`)
+        against your vendor. See `scripts/imgli-s3-vendors.env.example`.
+  - type: input
+    id: vendor
+    attributes:
+      label: Vendor / product
+      placeholder: Cloudflare R2, MinIO, AWS S3, Aliyun OSS, …
+    validations:
+      required: true
+  - type: input
+    id: endpoint
+    attributes:
+      label: Endpoint style
+      description: Region/endpoint pattern only — do not paste secrets
+      placeholder: https://xxx.r2.cloudflarestorage.com
+  - type: dropdown
+    id: result
+    attributes:
+      label: Overall result
+      options:
+        - Pass (upload, get, delete, optional presign)
+        - Partial
+        - Fail
+    validations:
+      required: true
+  - type: textarea
+    id: details
+    attributes:
+      label: What worked / failed
+      description: List operations (Put/Get/Delete/Presign/CDN 302) and errors (redact keys)
+    validations:
+      required: true
+  - type: textarea
+    id: env
+    attributes:
+      label: imgli version and notes
+      placeholder: v0.1.1; path-style vs virtual-host; force path style; etc.

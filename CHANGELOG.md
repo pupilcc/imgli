@@ -10,12 +10,25 @@ separate version in `go.mod` or `web/package.json`.
 
 ## [Unreleased]
 
+### Fixed
+
+- Plaza feed keyset cursor for sort `new` used nanosecond timestamps that did
+  not match SQLite/GORM second-level comparisons, so the next page could repeat
+  the previous boundary row.
+
+### Added
+
+- GitHub issue templates (bug / feature / S3 vendor report) and PR template.
+- Docs: `docs/s3-compatibility.md` matrix stub and
+  `docs/security-hardening.md` (private object storage / proxy checklist).
+
 ### Changed
 
 - **License:** project default changed from MIT to **AGPL-3.0-only** to reduce
   closed SaaS / white-label freeloading of network-served modifications, while
   offering optional **commercial licenses** (see `COMMERCIAL.md`). Tags
   `v0.1.0` and `v0.1.1` remain MIT snapshots.
+- CI/release workflows: `actions/checkout@v5`, `setup-go@v6`, `setup-node@v5`.
 
 ## [0.1.1] - 2026-07-29
 

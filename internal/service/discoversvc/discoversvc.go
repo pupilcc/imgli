@@ -109,7 +109,9 @@ func (s *Service) feed(base *gorm.DB, sort, cursor string, limit int) ([]Row, st
 			q = q.Where("(COALESCE(st.v,0) < ?) OR (COALESCE(st.v,0) = ? AND images.id < ?)",
 				cur.Val, cur.Val, cur.ID)
 		} else {
-			t := time.Unix(0, cur.Val)
+			// Val 用 Unix 秒（非纳秒）：SQLite/GORM 落盘与比较多为秒级；
+			// 纳秒游标会导致 created_at = ? 永不相等，同秒/同刻行无法用 id 排除。
+			t := time.Unix(cur.Val, 0).UTC()
 			q = q.Where("(images.created_at < ?) OR (images.created_at = ? AND images.id < ?)",
 				t, t, cur.ID)
 		}
@@ -138,7 +140,7 @@ func (s *Service) feed(base *gorm.DB, sort, cursor string, limit int) ([]Row, st
 		if sort == "hot" {
 			nextCursor = encodeCursor(feedCursor{Sort: sort, Val: last.Views, ID: last.ID})
 		} else {
-			nextCursor = encodeCursor(feedCursor{Sort: sort, Val: last.CreatedAt.UnixNano(), ID: last.ID})
+			nextCursor = encodeCursor(feedCursor{Sort: sort, Val: last.CreatedAt.UTC().Unix(), ID: last.ID})
 		}
 	}
 

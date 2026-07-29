@@ -126,7 +126,9 @@ cd web && npm run e2e   # Playwright, builds the binary first
 ```
 
 See [CONTRIBUTING.md](CONTRIBUTING.md) (includes versioning / release steps).
-Changelog: [CHANGELOG.md](CHANGELOG.md). Security reports: [SECURITY.md](SECURITY.md).
+Changelog: [CHANGELOG.md](CHANGELOG.md). Security: [SECURITY.md](SECURITY.md) ·
+[hardening](docs/security-hardening.md). S3 matrix:
+[docs/s3-compatibility.md](docs/s3-compatibility.md).
 
 ## License
 

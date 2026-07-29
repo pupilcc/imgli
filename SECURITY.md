@@ -30,3 +30,5 @@ AGPL-3.0-only releases for fixes.
 - Run the app behind a reverse proxy with TLS; set `trust_proxy: true` only
   when the proxy is trusted (it controls client-IP attribution for rate
   limiting).
+
+Longer checklist: [docs/security-hardening.md](docs/security-hardening.md).
