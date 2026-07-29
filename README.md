@@ -38,6 +38,27 @@ instance at [img.li](https://img.li).
 
 ## Quick start
 
+### Binary (one-liner)
+
+Linux / macOS — downloads the latest [GitHub Release](https://github.com/yixian-huang/imgli/releases)
+asset for your OS/arch into `~/.local/bin` (override with `PREFIX=...`):
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/yixian-huang/imgli/main/scripts/install.sh | sh
+imgli serve
+# → http://localhost:8686  (first registered user becomes admin)
+```
+
+Pin a version or install location:
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/yixian-huang/imgli/main/scripts/install.sh | sh -s -- v0.1.0
+PREFIX=/usr/local/bin curl -fsSL https://raw.githubusercontent.com/yixian-huang/imgli/main/scripts/install.sh | sh
+```
+
+Windows: download the `Windows_*.zip` from
+[Releases](https://github.com/yixian-huang/imgli/releases), or use the script under Git Bash.
+
 ### Docker (prebuilt)
 
 ```bash
@@ -65,9 +86,6 @@ make build          # needs Go ≥ 1.26 and Node ≥ 24
 ./imgli version     # git tag via ldflags, e.g. v0.1.0
 ./imgli serve       # → http://localhost:8686
 ```
-
-Binaries for Linux/macOS/Windows are attached to each
-[GitHub Release](https://github.com/yixian-huang/imgli/releases).
 
 ## Configuration
 

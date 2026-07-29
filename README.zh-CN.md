@@ -34,6 +34,28 @@
 
 ## 快速开始
 
+### 二进制一键安装
+
+Linux / macOS — 自动下载当前系统对应的
+[GitHub Release](https://github.com/yixian-huang/imgli/releases) 产物到 `~/.local/bin`
+（可用 `PREFIX=...` 改目录）：
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/yixian-huang/imgli/main/scripts/install.sh | sh
+imgli serve
+# → http://localhost:8686（第一个注册用户即管理员）
+```
+
+固定版本或安装路径：
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/yixian-huang/imgli/main/scripts/install.sh | sh -s -- v0.1.0
+PREFIX=/usr/local/bin curl -fsSL https://raw.githubusercontent.com/yixian-huang/imgli/main/scripts/install.sh | sh
+```
+
+Windows：从 [Releases](https://github.com/yixian-huang/imgli/releases) 下载 `Windows_*.zip`，
+或在 Git Bash 下运行上述脚本。
+
 ### Docker（预构建镜像）
 
 ```bash
@@ -61,8 +83,6 @@ make build          # 需要 Go ≥ 1.26、Node ≥ 24
 ./imgli version     # ldflags 注入的 git tag，如 v0.1.0
 ./imgli serve       # → http://localhost:8686
 ```
-
-各平台二进制见 [GitHub Release](https://github.com/yixian-huang/imgli/releases)。
 
 ## 配置
 

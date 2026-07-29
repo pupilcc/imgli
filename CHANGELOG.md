@@ -10,6 +10,15 @@ separate version in `go.mod` or `web/package.json`.
 
 ## [Unreleased]
 
+## [0.1.1] - 2026-07-29
+
+### Added
+
+- One-liner binary install script (`scripts/install.sh`) and Quick Start docs
+  for Linux/macOS release assets.
+- Automated GitHub Releases via GoReleaser (multi-platform binaries + checksums)
+  and multi-arch Docker images on `ghcr.io/yixian-huang/imgli`.
+
 ## [0.1.0] - 2026-07-28
 
 ### Added
@@ -24,5 +33,6 @@ separate version in `go.mod` or `web/package.json`.
 - Bilingual UI (中文/English), PWA, dark mode, text watermark, admin audit logs.
 - Docker Compose quick start and GitHub Actions CI (Go matrix, web, e2e smoke).
 
-[Unreleased]: https://github.com/yixian-huang/imgli/compare/v0.1.0...HEAD
+[Unreleased]: https://github.com/yixian-huang/imgli/compare/v0.1.1...HEAD
+[0.1.1]: https://github.com/yixian-huang/imgli/compare/v0.1.0...v0.1.1
 [0.1.0]: https://github.com/yixian-huang/imgli/releases/tag/v0.1.0

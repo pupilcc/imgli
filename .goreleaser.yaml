@@ -63,12 +63,16 @@ release:
 
     ### Install
 
-    Download the archive for your OS/arch below, extract, and run:
+    One-liner (Linux / macOS):
 
     ```bash
-    ./imgli version
-    ./imgli serve
+    curl -fsSL https://raw.githubusercontent.com/yixian-huang/imgli/main/scripts/install.sh | sh
+    # pin:  ... | sh -s -- {{ .Tag }}
+    imgli serve
     ```
+
+    Or download the archive for your OS/arch below, extract, and run
+    `./imgli serve`.
 
     Docker:
 
