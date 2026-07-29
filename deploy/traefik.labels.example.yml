@@ -1,0 +1,14 @@
+# Snippet: Traefik labels for the imgli service (compose merge).
+# Requires a Traefik entrypoint `websecure` + certresolver `le`.
+#
+# Attach under services.imgli in your compose file.
+
+services:
+  imgli:
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.imgli.rule=Host(`img.example.com`)"
+      - "traefik.http.routers.imgli.entrypoints=websecure"
+      - "traefik.http.routers.imgli.tls.certresolver=le"
+      - "traefik.http.services.imgli.loadbalancer.server.port=8686"
+      # Forwarded headers: enable IMGLI_TRUST_PROXY=true on the app

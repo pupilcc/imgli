@@ -1,6 +1,10 @@
 #!/usr/bin/env bash
-# VIP img.li — online SQLite backup for /opt/baili/data/baili.db
-# Style: set -euo pipefail; paths default to /opt/baili, override via env below.
+# Online SQLite backup via sqlite3 .backup (safe while imgli is running).
+#
+# Defaults keep VIP legacy paths (/opt/baili, baili.db). Generic install:
+#   DATA_DIR=/data DB=/data/imgli.db BACKUP_DIR=/data/backups ./backup-sqlite.sh
+#
+# See docs/backup.md for restore and Postgres.
 set -euo pipefail
 
 DATA_DIR="${DATA_DIR:-/opt/baili/data}"
@@ -8,10 +12,16 @@ DB="${DB:-$DATA_DIR/baili.db}"
 BACKUP_DIR="${BACKUP_DIR:-$DATA_DIR/backups}"
 RETENTION_DAYS="${RETENTION_DAYS:-14}"
 STAMP="$(date +%Y%m%d)"
-DEST="$BACKUP_DIR/baili.backup-${STAMP}.db"
+# File name prefix: imgli.backup-* or baili.backup-* both cleaned by retention below
+NAME_PREFIX="${NAME_PREFIX:-imgli}"
+# Legacy VIP hosts often use baili.* names
+if [[ "$(basename "$DB")" == baili.db ]]; then
+  NAME_PREFIX="${NAME_PREFIX:-baili}"
+fi
+DEST="$BACKUP_DIR/${NAME_PREFIX}.backup-${STAMP}.db"
 
 if [[ -w /var/log ]]; then
-  LOG="${LOG:-/var/log/baili-backup.log}"
+  LOG="${LOG:-/var/log/${NAME_PREFIX}-backup.log}"
 else
   LOG="${LOG:-$DATA_DIR/backup.log}"
 fi
@@ -52,8 +62,9 @@ PY
   fi
 fi
 
-# retention
-find "$BACKUP_DIR" -name 'baili.backup-*.db' -type f -mtime +"$RETENTION_DAYS" -print -delete 2>/dev/null | while read -r f; do
+# retention (legacy baili.* and imgli.*)
+find "$BACKUP_DIR" \( -name 'baili.backup-*.db' -o -name 'imgli.backup-*.db' \) \
+  -type f -mtime +"$RETENTION_DAYS" -print -delete 2>/dev/null | while read -r f; do
   log "retained-delete $f"
 done || true
 

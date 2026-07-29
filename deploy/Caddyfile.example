@@ -1,0 +1,19 @@
+# Example Caddy reverse proxy for imgli (TLS automatic).
+# App assumed on 127.0.0.1:8686 with IMGLI_TRUST_PROXY=true and
+# IMGLI_BASE_URL=https://img.example.com
+#
+#   caddy run --config deploy/Caddyfile.example
+
+img.example.com {
+	encode gzip
+	reverse_proxy 127.0.0.1:8686 {
+		header_up X-Forwarded-Proto {scheme}
+		header_up X-Forwarded-Host {host}
+		# Caddy sets X-Forwarded-For by default
+	}
+
+	# Optional: larger uploads (align with your group max file size)
+	request_body {
+		max_size 32MB
+	}
+}

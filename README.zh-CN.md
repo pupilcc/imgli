@@ -77,6 +77,12 @@ docker compose up -d
 # → http://localhost:8686 (第一个注册用户即管理员)
 ```
 
+生产向示例（卷、健康检查、回环绑定、反代说明）：
+[`deploy/compose.prod.example.yml`](deploy/compose.prod.example.yml)。
+TLS 反代片段：[`deploy/Caddyfile.example`](deploy/Caddyfile.example)、
+[`deploy/traefik.labels.example.yml`](deploy/traefik.labels.example.yml)。
+备份与恢复：[`docs/backup.md`](docs/backup.md)。
+
 ### 源码构建
 
 ```bash

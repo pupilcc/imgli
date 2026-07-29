@@ -1,0 +1,65 @@
+# Production-oriented Docker Compose example for imgli.
+# Copy and edit — do not commit real secrets.
+#
+#   cp deploy/compose.prod.example.yml docker-compose.prod.yml
+#   # set IMGLI_BASE_URL to your public HTTPS origin
+#   docker compose -f docker-compose.prod.yml up -d
+#
+# Prefer a reverse proxy (Caddy/Traefik/Nginx) in front for TLS.
+# Bind app to loopback only when the proxy is on the same host (see ports).
+
+services:
+  imgli:
+    image: ghcr.io/yixian-huang/imgli:latest
+    # Pin releases in production, e.g.:
+    # image: ghcr.io/yixian-huang/imgli:v0.1.1
+    restart: unless-stopped
+    environment:
+      IMGLI_LISTEN: ":8686"
+      # Public origin used in copied links and emails (must match browser URL)
+      IMGLI_BASE_URL: "https://img.example.com"
+      IMGLI_DATA_DIR: /data
+      # Required when TLS terminator / reverse proxy is in front
+      IMGLI_TRUST_PROXY: "true"
+      # Optional Postgres instead of SQLite (uncomment + enable db service):
+      # IMGLI_DATABASE_DRIVER: postgres
+      # IMGLI_DATABASE_DSN: "host=db user=imgli password=change-me dbname=imgli port=5432 sslmode=disable"
+    volumes:
+      - imgli-data:/data
+    # Proxy on same host: publish only loopback
+    ports:
+      - "127.0.0.1:8686:8686"
+    # Or expose only on a private network:
+    # expose:
+    #   - "8686"
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://127.0.0.1:8686/healthz"]
+      interval: 30s
+      timeout: 3s
+      retries: 3
+      start_period: 10s
+    # logging:
+    #   driver: json-file
+    #   options:
+    #     max-size: "10m"
+    #     max-file: "3"
+
+  # Optional Postgres (only if using IMGLI_DATABASE_DRIVER=postgres)
+  # db:
+  #   image: postgres:16-alpine
+  #   restart: unless-stopped
+  #   environment:
+  #     POSTGRES_USER: imgli
+  #     POSTGRES_PASSWORD: change-me
+  #     POSTGRES_DB: imgli
+  #   volumes:
+  #     - imgli-pg:/var/lib/postgresql/data
+  #   healthcheck:
+  #     test: ["CMD-SHELL", "pg_isready -U imgli -d imgli"]
+  #     interval: 10s
+  #     timeout: 5s
+  #     retries: 5
+
+volumes:
+  imgli-data:
+  # imgli-pg:

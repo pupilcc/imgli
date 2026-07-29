@@ -81,6 +81,12 @@ docker compose up -d
 # → http://localhost:8686  (first registered user becomes admin)
 ```
 
+Production-oriented example (volumes, healthcheck, loopback bind, proxy notes):
+[`deploy/compose.prod.example.yml`](deploy/compose.prod.example.yml). TLS reverse
+proxy snippets: [`deploy/Caddyfile.example`](deploy/Caddyfile.example),
+[`deploy/traefik.labels.example.yml`](deploy/traefik.labels.example.yml).
+Backup / restore: [`docs/backup.md`](docs/backup.md).
+
 ### From source
 
 ```bash
