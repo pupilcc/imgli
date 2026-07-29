@@ -12,11 +12,13 @@ DB="${DB:-$DATA_DIR/baili.db}"
 BACKUP_DIR="${BACKUP_DIR:-$DATA_DIR/backups}"
 RETENTION_DAYS="${RETENTION_DAYS:-14}"
 STAMP="$(date +%Y%m%d)"
-# File name prefix: imgli.backup-* or baili.backup-* both cleaned by retention below
-NAME_PREFIX="${NAME_PREFIX:-imgli}"
-# Legacy VIP hosts often use baili.* names
-if [[ "$(basename "$DB")" == baili.db ]]; then
-  NAME_PREFIX="${NAME_PREFIX:-baili}"
+# File name prefix: imgli.backup-* or baili.backup-* (both cleaned by retention)
+if [[ -z "${NAME_PREFIX:-}" ]]; then
+  if [[ "$(basename "$DB")" == "baili.db" ]]; then
+    NAME_PREFIX=baili
+  else
+    NAME_PREFIX=imgli
+  fi
 fi
 DEST="$BACKUP_DIR/${NAME_PREFIX}.backup-${STAMP}.db"
 
