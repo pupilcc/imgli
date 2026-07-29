@@ -29,6 +29,8 @@ separate version in `go.mod` or `web/package.json`.
 - **Public share page:** `GET /api/v1/s/{key}` + SPA `/s/{key}` for
   public+normal images (preview, dimensions, copy URL/Markdown); private /
   pending / rejected / expired → 404.
+- **Upload success polish:** large primary URL + one-click copy, multi-format
+  chips, and “open share page” for public uploads.
 - **Monthly bandwidth hard cap (v1):** user-group `bandwidth_quota_month` (Free/default
   seed **5 GiB/month**, Asia/Shanghai calendar month); meter on successful `/i`/`/t`
   gate release by object size; block upload + 429 when exceeded; usage on

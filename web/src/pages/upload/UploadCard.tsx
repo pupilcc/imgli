@@ -23,6 +23,17 @@ const STATUS_KEY: Record<QueueItem['status'], string> = {
   failed: 'upload.statusFailed',
 }
 
+function sharePageURL(item: QueueItem): string | null {
+  const links = item.result?.links
+  if (!links) return null
+  // Private uploads have no public share page
+  if (item.opts.visibility === 'private') return null
+  if (links.share_url) return links.share_url
+  const key = item.result?.key
+  if (!key || typeof window === 'undefined') return null
+  return `${window.location.origin}/s/${key}`
+}
+
 export function UploadCard({ item }: { item: QueueItem }) {
   const { t } = useT()
   const retry = useUploadQueue((s) => s.retry)
@@ -31,6 +42,7 @@ export function UploadCard({ item }: { item: QueueItem }) {
   const badgeLabel = t(STATUS_KEY[item.status])
   const badgeCls = BADGE_CLS[item.status]
   const links = item.result?.links
+  const shareURL = done ? sharePageURL(item) : null
   const subText =
     item.status === 'failed'
       ? item.reason
@@ -40,9 +52,8 @@ export function UploadCard({ item }: { item: QueueItem }) {
           ? t('upload.processingHint')
           : null
 
-  const copyRow = links
+  const formats = links
     ? [
-        { label: 'URL', text: links.url, name: t('upload.linkNameUrl') },
         { label: 'MD', text: links.markdown, name: t('upload.linkNameMd') },
         { label: 'HTML', text: links.html, name: t('upload.linkNameHtml') },
         { label: 'BB', text: links.bbcode, name: t('upload.linkNameBb') },
@@ -56,7 +67,7 @@ export function UploadCard({ item }: { item: QueueItem }) {
     : []
 
   return (
-    <div className={[styles.card, item.status === 'failed' && styles.cardFailed].filter(Boolean).join(' ')}>
+    <div className={[styles.card, item.status === 'failed' && styles.cardFailed, done && styles.cardDone].filter(Boolean).join(' ')}>
       <div className={styles.row}>
         {item.thumb ? (
           <div className={styles.thumb} style={{ backgroundImage: `url(${item.thumb})` }} />
@@ -98,16 +109,39 @@ export function UploadCard({ item }: { item: QueueItem }) {
           ×
         </button>
       </div>
+
       {done && links && (
-        <div className={styles.linksRow}>
-          <div className={styles.copyGroup}>
-            {copyRow.map((c) => (
-              <button key={c.label} type="button" className={styles.copyBtn} onClick={() => copyText(c.text, c.name)}>
-                {c.label}
-              </button>
-            ))}
+        <div className={styles.successPanel}>
+          <div className={styles.primaryRow}>
+            <input
+              className={styles.primaryUrl}
+              readOnly
+              value={links.url}
+              aria-label={t('upload.linkNameUrl')}
+              onFocus={(e) => e.currentTarget.select()}
+            />
+            <button
+              type="button"
+              className={styles.primaryCopy}
+              onClick={() => copyText(links.url, t('upload.linkNameUrl'))}
+            >
+              {t('upload.copyUrl')}
+            </button>
           </div>
-          <span className={styles.urlText}>{links.url}</span>
+          <div className={styles.formatsRow}>
+            <div className={styles.copyGroup} role="group" aria-label={t('upload.formatsAria')}>
+              {formats.map((c) => (
+                <button key={c.label} type="button" className={styles.copyBtn} onClick={() => copyText(c.text, c.name)}>
+                  {c.label}
+                </button>
+              ))}
+            </div>
+            {shareURL && (
+              <a className={styles.shareLink} href={shareURL} target="_blank" rel="noopener noreferrer">
+                {t('upload.openShare')}
+              </a>
+            )}
+          </div>
         </div>
       )}
     </div>

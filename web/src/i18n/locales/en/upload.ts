@@ -64,6 +64,9 @@ export default {
   remove: 'Remove',
 
   copyAll: 'Copy all',
+  copyUrl: 'Copy URL',
+  openShare: 'Open share page →',
+  formatsAria: 'Other formats',
   thumbnail: 'Thumb',
   linkNameUrl: 'URL link',
   linkNameMd: 'MD link',

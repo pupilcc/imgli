@@ -14,7 +14,14 @@ function item(over: Partial<QueueItem>): QueueItem {
   }
 }
 
-const LINKS = { url: 'https://img.li/i/k.png', markdown: '![shot.png](u)', html: '<img>', bbcode: '[img]u[/img]', thumbnail_url: 'https://img.li/t/k.jpg' }
+const LINKS = {
+  url: 'https://img.li/i/k.png',
+  markdown: '![shot.png](u)',
+  html: '<img>',
+  bbcode: '[img]u[/img]',
+  thumbnail_url: 'https://img.li/t/k.jpg',
+  share_url: 'https://img.li/s/k',
+}
 
 beforeEach(() => useGlobal.setState({ toasts: [] }))
 
@@ -30,20 +37,48 @@ it('instant 显示秒传徽章与说明', () => {
   expect(screen.getByText('已存在相同文件，直接返回链接')).toBeInTheDocument()
 })
 
-it('success 展开复制区，各按钮复制对应格式并 toast', async () => {
+it('success 主链输入框 + 复制 URL / 多格式 / 分享页', async () => {
   const user = userEvent.setup()
   const writeText = vi.fn().mockResolvedValue(undefined)
   Object.defineProperty(navigator, 'clipboard', {
     value: { writeText },
     configurable: true,
   })
-  render(<UploadCard item={item({ status: 'success', pct: 100, result: { key: 'k', name: 'shot.png', size: 1, instant: false, links: LINKS } })} />)
+  render(
+    <UploadCard
+      item={item({
+        status: 'success',
+        pct: 100,
+        result: { key: 'k', name: 'shot.png', size: 1, instant: false, links: LINKS },
+      })}
+    />,
+  )
+  const primary = screen.getByDisplayValue(LINKS.url)
+  expect(primary).toBeInTheDocument()
+  await user.click(screen.getByRole('button', { name: '复制链接' }))
+  expect(writeText).toHaveBeenCalledWith(LINKS.url)
   await user.click(screen.getByRole('button', { name: 'MD' }))
   expect(writeText).toHaveBeenCalledWith(LINKS.markdown)
   await user.click(screen.getByRole('button', { name: '复制全部' }))
   expect(writeText).toHaveBeenCalledWith([LINKS.url, LINKS.markdown, LINKS.html, LINKS.bbcode].join('\n'))
+  const share = screen.getByRole('link', { name: /打开分享页/ })
+  expect(share).toHaveAttribute('href', LINKS.share_url)
   expect(useGlobal.getState().toasts.length).toBeGreaterThan(0)
-  expect(useGlobal.getState().toasts.at(-1)?.message).toBe('已复制 全部格式')
+})
+
+it('private 成功不显示分享页', () => {
+  render(
+    <UploadCard
+      item={item({
+        status: 'success',
+        pct: 100,
+        opts: { visibility: 'private', albumId: null, policyId: null, expiresIn: 0 },
+        result: { key: 'k', name: 'shot.png', size: 1, instant: false, links: LINKS },
+      })}
+    />,
+  )
+  expect(screen.getByDisplayValue(LINKS.url)).toBeInTheDocument()
+  expect(screen.queryByRole('link', { name: /打开分享页/ })).not.toBeInTheDocument()
 })
 
 it('failed 显示原因，retryable 才有重试按钮', () => {

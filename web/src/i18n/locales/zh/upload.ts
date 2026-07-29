@@ -62,6 +62,9 @@ export default {
   remove: '移除',
 
   copyAll: '复制全部',
+  copyUrl: '复制链接',
+  openShare: '打开分享页 →',
+  formatsAria: '其他格式',
   thumbnail: '缩略图',
   linkNameUrl: 'URL 链接',
   linkNameMd: 'MD 链接',
