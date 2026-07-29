@@ -100,6 +100,9 @@ export interface ImageItem {
   created_at: string
   /** RFC3339;null=永久 */
   expires_at: string | null
+  /** 0=不限 */
+  max_views?: number
+  views_served?: number
   links: Links
   /** 分享页 URL（公开分享 API 额外字段） */
   share_url?: string

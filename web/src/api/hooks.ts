@@ -192,6 +192,7 @@ export function useUpdateImage() {
         album_id?: number | null
         expires_in?: number
         slug?: string | null
+        max_views?: number
       }
     }) => patch<ImageDetail>(`/images/${key}`, body),
     onSuccess: (_d, v) => {

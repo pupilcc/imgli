@@ -240,6 +240,9 @@ func (s *Service) GetPublicShare(ref string) (*Row, error) {
 	if img.ExpiresAt != nil && !img.ExpiresAt.After(time.Now()) {
 		return nil, ErrNotFound
 	}
+	if img.MaxViews > 0 && img.ViewsServed >= img.MaxViews {
+		return nil, ErrNotFound
+	}
 	var file model.File
 	if err := s.db.First(&file, img.FileID).Error; err != nil {
 		return nil, err
@@ -297,10 +300,17 @@ func (s *Service) hydrate(scans []listScan) ([]Row, error) {
 	return out, nil
 }
 
+// MaxViewsMax 单图允许的最大访问次数上限（防止滥用）。
+const MaxViewsMax = 10000
+
+// ErrInvalidMaxViews max_views 不合法。
+var ErrInvalidMaxViews = errors.New("imagesvc: max_views 须为 0 或 1–10000")
+
 // Update 部分更新单图。name/visibility 为 nil 表示不改；albumID：nil=不改，0=移出，>0=移入(校验归属)。
 // expiresAt/setExpires：setExpires=false 不改；true 时写入 expiresAt（nil 即清除为 NULL）。
 // slug：nil=不改；""=清除；否则校验 [a-z0-9-]{3,32} 并唯一。
-func (s *Service) Update(userID uint64, key string, name, visibility *string, albumID *int64, expiresAt *time.Time, setExpires bool, slug *string) (*Row, error) {
+// maxViews：nil=不改；0=不限；1–MaxViewsMax=上限（不重置 views_served）。
+func (s *Service) Update(userID uint64, key string, name, visibility *string, albumID *int64, expiresAt *time.Time, setExpires bool, slug *string, maxViews *int) (*Row, error) {
 	var img model.Image
 	err := s.db.Where("key = ? AND user_id = ?", key, userID).First(&img).Error
 	if errors.Is(err, gorm.ErrRecordNotFound) {
@@ -341,6 +351,12 @@ func (s *Service) Update(userID uint64, key string, name, visibility *string, al
 	if setExpires {
 		// map 中显式写 nil → GORM Updates 写 NULL（与 album_id 清出同模式）
 		updates["expires_at"] = expiresAt
+	}
+	if maxViews != nil {
+		if *maxViews < 0 || *maxViews > MaxViewsMax {
+			return nil, ErrInvalidMaxViews
+		}
+		updates["max_views"] = *maxViews
 	}
 	if slug != nil {
 		v := strings.ToLower(strings.TrimSpace(*slug))
@@ -474,9 +490,9 @@ func (s *Service) Batch(userID uint64, action string, keys []string, visibility 
 			err = s.SoftDelete(userID, k)
 		case "visibility":
 			v := visibility
-			_, err = s.Update(userID, k, nil, &v, nil, nil, false, nil)
+			_, err = s.Update(userID, k, nil, &v, nil, nil, false, nil, nil)
 		case "move":
-			_, err = s.Update(userID, k, nil, nil, albumID, nil, false, nil)
+			_, err = s.Update(userID, k, nil, nil, albumID, nil, false, nil, nil)
 		}
 		br := BatchResult{Key: k, OK: err == nil}
 		if err != nil {

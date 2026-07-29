@@ -36,6 +36,21 @@ const EXPIRY_LABEL_KEY: Record<ExpiryKey, string> = {
   '30d': 'upload.expiry30d',
 }
 
+/** max_views presets; 0 = unlimited */
+const MAX_VIEWS_PRESETS = [
+  { key: 'unlimited', n: 0 },
+  { key: '1', n: 1 },
+  { key: '3', n: 3 },
+  { key: '10', n: 10 },
+] as const
+type MaxViewsKey = (typeof MAX_VIEWS_PRESETS)[number]['key']
+const MAX_VIEWS_LABEL_KEY: Record<MaxViewsKey, string> = {
+  unlimited: 'upload.maxViewsUnlimited',
+  '1': 'upload.maxViews1',
+  '3': 'upload.maxViews3',
+  '10': 'upload.maxViews10',
+}
+
 export function UploadPage() {
   const { t } = useT()
   const { data: me } = useSession()
@@ -70,6 +85,7 @@ export function UploadPage() {
   }, [albumFromUrl])
   const [policyId, setPolicyId] = useState<number | null>(() => prefs?.default_policy_id ?? null)
   const [expiresIn, setExpiresIn] = useState(0)
+  const [maxViews, setMaxViews] = useState(0)
   const fileInput = useRef<HTMLInputElement>(null)
   // 队列是全局 store:挂载时把已完成项播种为「已复制」,防路由往返后重复自动复制历史项(codex 终审)
   const copiedRef = useRef<Set<number>>(new Set())
@@ -99,10 +115,12 @@ export function UploadPage() {
       : null
   const showPolicy = (policies.data?.length ?? 0) > 1
   const opts: QueueOpts = isGuest
-    ? { visibility: 'public', albumId: null, policyId: null, expiresIn }
-    : { visibility, albumId, policyId: showPolicy ? policyId : null, expiresIn }
+    ? { visibility: 'public', albumId: null, policyId: null, expiresIn, maxViews }
+    : { visibility, albumId, policyId: showPolicy ? policyId : null, expiresIn, maxViews }
   const expiryKey: ExpiryKey =
     EXPIRY_PRESETS.find((p) => p.sec === expiresIn)?.key ?? 'never'
+  const maxViewsKey: MaxViewsKey =
+    MAX_VIEWS_PRESETS.find((p) => p.n === maxViews)?.key ?? 'unlimited'
 
   useEffect(() => {
     if (albumId !== null && albums.data && !albums.data.items.some((a) => a.id === albumId)) {
@@ -185,7 +203,7 @@ export function UploadPage() {
   }
 
   const albumName = albumId ? (albums.data?.items.find((a) => a.id === albumId)?.name ?? '') : t('upload.noAlbum')
-  const summary = `${albumName} · ${visibility === 'public' ? t('upload.public') : t('upload.private')} · ${t(EXPIRY_LABEL_KEY[expiryKey])}`
+  const summary = `${albumName} · ${visibility === 'public' ? t('upload.public') : t('upload.private')} · ${t(EXPIRY_LABEL_KEY[expiryKey])} · ${t(MAX_VIEWS_LABEL_KEY[maxViewsKey])}`
 
   return (
     <div
@@ -390,6 +408,21 @@ export function UploadPage() {
                   onChange={(k) => {
                     const p = EXPIRY_PRESETS.find((x) => x.key === k)
                     setExpiresIn(p?.sec ?? 0)
+                  }}
+                />
+              </div>
+              <div className={`${styles.optField} ${styles.optFieldWide}`}>
+                <span className={styles.optLabel}>{t('upload.maxViews')}</span>
+                <Segmented<MaxViewsKey>
+                  mono
+                  options={MAX_VIEWS_PRESETS.map((p) => ({
+                    value: p.key,
+                    label: t(MAX_VIEWS_LABEL_KEY[p.key]),
+                  }))}
+                  value={maxViewsKey}
+                  onChange={(k) => {
+                    const p = MAX_VIEWS_PRESETS.find((x) => x.key === k)
+                    setMaxViews(p?.n ?? 0)
                   }}
                 />
               </div>

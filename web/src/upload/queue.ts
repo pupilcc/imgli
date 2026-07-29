@@ -13,6 +13,8 @@ export interface QueueOpts {
   policyId: number | null
   /** 有效期秒数;0=永久 */
   expiresIn: number
+  /** 0=不限；1=阅后即焚 */
+  maxViews: number
 }
 
 export interface Limits {

@@ -50,11 +50,13 @@ var (
 // Opts 上传选项。零值=完全走用户偏好与组默认。
 // AlbumID 三态:nil=未指定(回退偏好);指向 0=明确不归档;指向 N=指定相册。
 // ExpiresAt 非 nil 时写入 image.expires_at（由 handler 据 expires_in 用后端 time.Now() 算权威时间）。
+// MaxViews 0=不限；>0 时 /i 对非属主限次（阅后即焚用 1）。
 type Opts struct {
 	Visibility string
 	AlbumID    *uint64
 	PolicyID   uint64 // 0=未指定(回退偏好→组默认)
 	ExpiresAt  *time.Time
+	MaxViews   int
 }
 
 type Result struct {
@@ -204,7 +206,7 @@ func (s *Service) Save(ctx context.Context, tmpPath, filename string, u *model.U
 	var existing model.File
 	hit := s.db.First(&existing, "hash = ? AND surface = ?", hash, surface).Error == nil
 	if hit {
-		img, err := s.commitInstant(u, &existing, filename, meta.Ext, vis, ip, size, albumID, opts.ExpiresAt, group.StorageQuota)
+		img, err := s.commitInstant(u, &existing, filename, meta.Ext, vis, ip, size, albumID, opts.ExpiresAt, opts.MaxViews, group.StorageQuota)
 		if err != nil {
 			return nil, err
 		}
@@ -248,6 +250,7 @@ func (s *Service) Save(ctx context.Context, tmpPath, filename string, u *model.U
 	img := &model.Image{
 		Name: filename, Ext: meta.Ext, Visibility: visibilityFor(u, vis),
 		Status: inhStatus, NSFWScore: inhScore, UploadIP: ip, AlbumID: albumID, ExpiresAt: opts.ExpiresAt,
+		MaxViews: opts.MaxViews,
 	}
 	if u != nil {
 		img.UserID = &u.ID
@@ -430,14 +433,14 @@ func (s *Service) enqueueModerate(imageID uint64) {
 	}
 }
 
-func (s *Service) commitInstant(u *model.User, file *model.File, filename, ext, visibility, ip string, size int64, albumID *uint64, expiresAt *time.Time, storageQuota int64) (*model.Image, error) {
+func (s *Service) commitInstant(u *model.User, file *model.File, filename, ext, visibility, ip string, size int64, albumID *uint64, expiresAt *time.Time, maxViews int, storageQuota int64) (*model.Image, error) {
 	// 内容安全 P1：秒传继承同 file 上已有 image 的审核态与最高 nsfw_score，
 	// 防止 rejected/pending 脏 hash 以新 key 复活为 normal。
 	status, score := inheritModerationFrom(s.db, file.ID)
 	img := &model.Image{
 		Name: filename, Ext: ext, Visibility: visibilityFor(u, visibility),
 		Status: status, NSFWScore: score, UploadIP: ip, FileID: file.ID, AlbumID: albumID,
-		ExpiresAt: expiresAt,
+		ExpiresAt: expiresAt, MaxViews: maxViews,
 	}
 	if u != nil {
 		img.UserID = &u.ID

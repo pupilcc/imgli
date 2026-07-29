@@ -44,8 +44,8 @@ const RESULT: UploadResult = {
   },
 }
 
-const OPTS_PRIVATE: QueueOpts = { visibility: 'private', albumId: null, policyId: null, expiresIn: 0 }
-const OPTS_PUBLIC: QueueOpts = { visibility: 'public', albumId: null, policyId: null, expiresIn: 0 }
+const OPTS_PRIVATE: QueueOpts = { visibility: 'private', albumId: null, policyId: null, expiresIn: 0, maxViews: 0 }
+const OPTS_PUBLIC: QueueOpts = { visibility: 'public', albumId: null, policyId: null, expiresIn: 0, maxViews: 0 }
 
 beforeEach(() => {
   FakeXHR.last = null
@@ -79,7 +79,7 @@ it('uploadFile 走 POST /api/v1/upload，带 file+visibility+album_id，进度�
 })
 
 it('uploadFile 显式 album/policy 写入 FormData', async () => {
-  uploadFile(makeFile(), { visibility: 'public', albumId: 7, policyId: 3, expiresIn: 0 }, vi.fn())
+  uploadFile(makeFile(), { visibility: 'public', albumId: 7, policyId: 3, expiresIn: 0, maxViews: 0 }, vi.fn())
   const fd = FakeXHR.last!.sent as FormData
   expect(fd.get('album_id')).toBe('7')
   expect(fd.get('policy_id')).toBe('3')
@@ -89,7 +89,7 @@ it('uploadFile expiresIn>0 写入 expires_in，永久不带', async () => {
   uploadFile(makeFile(), { visibility: 'public', albumId: null, policyId: null, expiresIn: 604800 }, vi.fn())
   expect((FakeXHR.last!.sent as FormData).get('expires_in')).toBe('604800')
 
-  uploadFile(makeFile(), { visibility: 'public', albumId: null, policyId: null, expiresIn: 0 }, vi.fn())
+  uploadFile(makeFile(), { visibility: 'public', albumId: null, policyId: null, expiresIn: 0, maxViews: 0 }, vi.fn())
   expect((FakeXHR.last!.sent as FormData).get('expires_in')).toBeNull()
 })
 
@@ -141,7 +141,7 @@ it('uploadFromURL 含 policyId 时写入 body', async () => {
     json: () => Promise.resolve({ status: true, message: 'ok', data: RESULT }),
   } as unknown as Response)
   vi.stubGlobal('fetch', f)
-  await uploadFromURL('https://x.com/a.png', { visibility: 'private', albumId: 2, policyId: 9, expiresIn: 0 })
+  await uploadFromURL('https://x.com/a.png', { visibility: 'private', albumId: 2, policyId: 9, expiresIn: 0, maxViews: 0 })
   expect(JSON.parse(f.mock.calls[0][1].body)).toEqual({
     url: 'https://x.com/a.png',
     visibility: 'private',
@@ -164,7 +164,7 @@ it('uploadFromURL expiresIn>0 写入 body.expires_in，永久省略', async () =
     album_id: 0,
     expires_in: 86400,
   })
-  await uploadFromURL('https://x.com/a.png', { visibility: 'public', albumId: null, policyId: null, expiresIn: 0 })
+  await uploadFromURL('https://x.com/a.png', { visibility: 'public', albumId: null, policyId: null, expiresIn: 0, maxViews: 0 })
   expect(JSON.parse(f.mock.calls[1][1].body)).toEqual({
     url: 'https://x.com/a.png',
     visibility: 'public',

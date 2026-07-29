@@ -46,18 +46,20 @@ func (h *ImageHandlers) imageItemDTO(row *imagesvc.Row) map[string]any {
 		slug = *row.Img.Slug
 	}
 	return map[string]any{
-		"key":        row.Img.Key,
-		"slug":       slug,
-		"name":       row.Img.Name,
-		"ext":        row.Img.Ext,
-		"size":       row.File.Size,
-		"width":      row.File.Width,
-		"height":     row.File.Height,
-		"visibility": row.Img.Visibility,
-		"album_id":   row.Img.AlbumID,
-		"created_at": row.Img.CreatedAt.Format(time.RFC3339),
-		"expires_at": expiresAt,
-		"links":      links,
+		"key":          row.Img.Key,
+		"slug":         slug,
+		"name":         row.Img.Name,
+		"ext":          row.Img.Ext,
+		"size":         row.File.Size,
+		"width":        row.File.Width,
+		"height":       row.File.Height,
+		"visibility":   row.Img.Visibility,
+		"album_id":     row.Img.AlbumID,
+		"created_at":   row.Img.CreatedAt.Format(time.RFC3339),
+		"expires_at":   expiresAt,
+		"max_views":    row.Img.MaxViews,
+		"views_served": row.Img.ViewsServed,
+		"links":        links,
 	}
 }
 
@@ -151,6 +153,7 @@ func (h *ImageHandlers) Update(w http.ResponseWriter, r *http.Request) {
 		AlbumID    *int64  `json:"album_id"`
 		ExpiresIn  *int    `json:"expires_in"`
 		Slug       *string `json:"slug"`
+		MaxViews   *int    `json:"max_views"`
 	}
 	if err := DecodeJSON(r, &req); err != nil {
 		Fail(w, http.StatusBadRequest, CodeInvalidRequest, "请求体无效")
@@ -171,7 +174,7 @@ func (h *ImageHandlers) Update(w http.ResponseWriter, r *http.Request) {
 		// <=0 → expAt=nil（清除）
 	}
 	row, err := h.D.Img.Update(PrincipalFrom(r).User.ID, chi.URLParam(r, "key"),
-		req.Name, req.Visibility, req.AlbumID, expAt, setExp, req.Slug)
+		req.Name, req.Visibility, req.AlbumID, expAt, setExp, req.Slug, req.MaxViews)
 	switch {
 	case err == nil:
 		OK(w, h.imageDetailDTO(row))
@@ -180,7 +183,8 @@ func (h *ImageHandlers) Update(w http.ResponseWriter, r *http.Request) {
 	case errors.Is(err, imagesvc.ErrAlbumNotFound):
 		Fail(w, http.StatusNotFound, CodeNotFound, "相册不存在")
 	case errors.Is(err, imagesvc.ErrInvalidVisibility), errors.Is(err, imagesvc.ErrInvalidName),
-		errors.Is(err, imagesvc.ErrInvalidSlug), errors.Is(err, imagesvc.ErrSlugTaken):
+		errors.Is(err, imagesvc.ErrInvalidSlug), errors.Is(err, imagesvc.ErrSlugTaken),
+		errors.Is(err, imagesvc.ErrInvalidMaxViews):
 		Fail(w, http.StatusBadRequest, CodeInvalidRequest, err.Error())
 	default:
 		Fail(w, http.StatusInternalServerError, CodeInternal, "服务器内部错误")

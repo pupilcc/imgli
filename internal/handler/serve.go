@@ -137,6 +137,11 @@ func (h *ServeHandlers) lookupServable(w http.ResponseWriter, r *http.Request) (
 		h.placeholder(w, r, http.StatusGone, "IMAGE EXPIRED")
 		return nil, false
 	}
+	// 阅后即焚 / 次数上限：已耗尽则非属主 410（属主仍可看，便于核对）。
+	if img.MaxViews > 0 && img.ViewsServed >= img.MaxViews && !h.isOwner(r, &img) {
+		h.placeholder(w, r, http.StatusGone, "IMAGE EXHAUSTED")
+		return nil, false
+	}
 	// D-① 防盗链:配置快照判定,拒绝给 403 横幅占位(/i /t 同门禁)。
 	if h.D.Stats != nil && !stats.HotlinkAllowed(h.D.Stats.Hotlink(), refererHost(r), h.D.OwnHost) {
 		h.placeholder(w, r, http.StatusForbidden, "HOTLINK DENIED")
@@ -163,11 +168,33 @@ func (h *ServeHandlers) meterOwner(img *model.Image, n int64) {
 	_ = bandwidth.Add(h.D.DB, *img.UserID, n)
 }
 
+// claimView 原子消耗一次 max_views 配额（仅 max_views>0）。多实例靠 DB 原子 UPDATE。
+// 成功返回 true；已用尽或错误返回 false（调用方应 410）。
+func (h *ServeHandlers) claimView(img *model.Image) bool {
+	if img.MaxViews <= 0 {
+		return true
+	}
+	res := h.D.DB.Model(&model.Image{}).
+		Where("id = ? AND max_views > 0 AND views_served < max_views", img.ID).
+		UpdateColumn("views_served", gorm.Expr("views_served + 1"))
+	return res.Error == nil && res.RowsAffected == 1
+}
+
 // Original GET /i/{name} —— 原图直链，访问控制的唯一汇聚点。
 func (h *ServeHandlers) Original(w http.ResponseWriter, r *http.Request) {
 	img, ok := h.lookupServable(w, r)
 	if !ok {
 		return
+	}
+	// 次数上限：非属主在送字节前 claim；属主不消耗配额。
+	// 有 max_views 的公开图禁止 CDN 302，否则边缘缓存绕过计数。
+	limited := img.MaxViews > 0
+	owner := h.isOwner(r, img)
+	if limited && !owner {
+		if !h.claimView(img) {
+			h.placeholder(w, r, http.StatusGone, "IMAGE EXHAUSTED")
+			return
+		}
 	}
 	// 门禁已在 lookupServable 过完,以下只决定「怎么送字节」,不再做访问控制。
 	var file model.File
@@ -178,7 +205,8 @@ func (h *ServeHandlers) Original(w http.ResponseWriter, r *http.Request) {
 	// 公开图 + 策略配 CDNDomain → 302 卸带宽(裁决 3)。
 	// S4 纵深：visibility、file.surface、对象键前缀三道门；任一非公开则不拼 CDN URL
 	//（ObjectURL 对 private/ 键也会返回空，见 storagesvc.CDNEligibleObjectKey）。
-	if havePolicy && img.Visibility == "public" &&
+	// 次数受限图永不走公开 CDN。
+	if !limited && havePolicy && img.Visibility == "public" &&
 		(file.Surface == "" || file.Surface == model.SurfacePublic) {
 		if u := h.D.Res.ObjectURL(&policy, file.Path); u != "" {
 			if h.D.Stats != nil {
@@ -194,6 +222,7 @@ func (h *ServeHandlers) Original(w http.ResponseWriter, r *http.Request) {
 	if havePolicy && img.Visibility != "public" {
 		// 私密图 + 驱动支持预签名 + 策略配了 presign_domain → 302 到 60s 时效签名
 		// URL(裁决 8)。签名失败(配置/时钟问题)一律回落流式,不让用户看不到自己的图。
+		// 次数受限：claim 后仍可短签；Cache-Control 强制 no-store。
 		if d, err := h.D.Res.Driver(&policy); err == nil {
 			if p, ok := d.(storage.Presigner); ok {
 				if u, err := p.PresignGet(r.Context(), file.Path, storage.PresignTTL); err == nil && u != "" {
@@ -211,7 +240,11 @@ func (h *ServeHandlers) Original(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	if n, ok := h.streamFile(w, r, img.FileID, false, img.Visibility == "public"); ok {
+	// 次数受限图：禁止中间层长缓存
+	if limited {
+		w.Header().Set("Cache-Control", "private, no-store")
+	}
+	if n, ok := h.streamFile(w, r, img.FileID, false, img.Visibility == "public" && !limited); ok {
 		if h.D.Stats != nil {
 			h.D.Stats.Record(img.ID, refererHost(r))
 		}

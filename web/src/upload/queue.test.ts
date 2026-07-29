@@ -36,7 +36,7 @@ function mockUploads() {
 }
 
 const LIMITS = { maxFileSize: 5 * 1024 * 1024, allowedExts: ['png', 'jpg', 'jpeg', 'gif', 'webp'] }
-const OPTS = { visibility: 'public' as const, albumId: null, policyId: null, expiresIn: 0 }
+const OPTS = { visibility: 'public' as const, albumId: null, policyId: null, expiresIn: 0, maxViews: 0 }
 
 function makeFile(name: string, size = 100) {
   return new File([new Uint8Array(size)], name, { type: 'image/png' })

@@ -208,7 +208,7 @@ it('游客入队项 opts 恒 public 且不归相册', async () => {
     visibility: 'public',
     albumId: null,
     policyId: null,
-    expiresIn: 0,
+    expiresIn: 0, maxViews: 0,
   })
 })
 
@@ -268,7 +268,7 @@ it('队列全部完成后按 auto_copy_format 聚合自动复制', async () => {
     thumb: null,
     reason: null,
     retryable: false,
-    opts: { visibility: 'public', albumId: null, policyId: null, expiresIn: 0 },
+    opts: { visibility: 'public', albumId: null, policyId: null, expiresIn: 0, maxViews: 0 },
   }
   useUploadQueue.setState({
     items: [

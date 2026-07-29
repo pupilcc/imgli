@@ -30,6 +30,20 @@ const EXPIRY_LABEL_KEY: Record<ExpiryKey, string> = {
   '30d': 'upload.expiry30d',
 }
 
+const MAX_VIEWS_PRESETS = [
+  { key: 'unlimited', n: 0 },
+  { key: '1', n: 1 },
+  { key: '3', n: 3 },
+  { key: '10', n: 10 },
+] as const
+type MaxViewsKey = (typeof MAX_VIEWS_PRESETS)[number]['key']
+const MAX_VIEWS_LABEL_KEY: Record<MaxViewsKey, string> = {
+  unlimited: 'upload.maxViewsUnlimited',
+  '1': 'upload.maxViews1',
+  '3': 'upload.maxViews3',
+  '10': 'upload.maxViews10',
+}
+
 interface Props {
   items: ImageItem[]
   focusKey: string
@@ -107,6 +121,14 @@ export function DetailModal({ items, focusKey, onClose, onNavigate }: Props) {
 
   const setExpiry = (sec: number) => {
     update.mutate({ key: base.key, body: { expires_in: sec } })
+  }
+
+  const maxViews = d?.max_views ?? base.max_views ?? 0
+  const viewsServed = d?.views_served ?? base.views_served ?? 0
+  const maxViewsKey: MaxViewsKey =
+    MAX_VIEWS_PRESETS.find((p) => p.n === maxViews)?.key ?? 'unlimited'
+  const setMaxViews = (n: number) => {
+    update.mutate({ key: base.key, body: { max_views: n } })
   }
 
   const copyRows = [
@@ -236,6 +258,30 @@ export function DetailModal({ items, focusKey, onClose, onNavigate }: Props) {
               </button>
             )}
             <div className={styles.expiryWarn}>{t('images.expiryWarn')}</div>
+          </div>
+
+          <div className={styles.metaGrid}>
+            <span className={styles.metaKey}>{t('images.maxViews')}</span>
+            <span className={styles.metaVal}>
+              {maxViews > 0
+                ? t('images.maxViewsUsed', { used: viewsServed, max: maxViews })
+                : t('upload.maxViewsUnlimited')}
+            </span>
+          </div>
+          <div className={styles.expiryEdit}>
+            <Segmented<MaxViewsKey>
+              mono
+              options={MAX_VIEWS_PRESETS.map((p) => ({
+                value: p.key,
+                label: t(MAX_VIEWS_LABEL_KEY[p.key]),
+              }))}
+              value={maxViewsKey}
+              onChange={(k) => {
+                const p = MAX_VIEWS_PRESETS.find((x) => x.key === k)
+                setMaxViews(p?.n ?? 0)
+              }}
+            />
+            <div className={styles.expiryWarn}>{t('images.maxViewsHint')}</div>
           </div>
 
           <div className={styles.copySection}>

@@ -109,9 +109,13 @@ type Image struct {
 	NSFWScore     *float64
 	UploadIP      string     `gorm:"size:64"`
 	ExpiresAt     *time.Time `gorm:"index"`
-	CreatedAt     time.Time
-	UpdatedAt     time.Time
-	DeletedAt     gorm.DeletedAt `gorm:"index"`
+	// MaxViews 0=不限；>0 时成功 /i 对非属主计数，达上限后非属主不可再访。
+	// ViewsServed 已消耗次数（仅 max_views>0 时递增）。
+	MaxViews    int `gorm:"not null;default:0"`
+	ViewsServed int `gorm:"not null;default:0"`
+	CreatedAt   time.Time
+	UpdatedAt   time.Time
+	DeletedAt   gorm.DeletedAt `gorm:"index"`
 
 	User  *User  `gorm:"foreignKey:UserID;constraint:OnDelete:RESTRICT" json:"-"`
 	File  *File  `gorm:"foreignKey:FileID;constraint:OnDelete:RESTRICT" json:"-"`

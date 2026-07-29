@@ -60,6 +60,7 @@ export function uploadFile(
     fd.append('album_id', String(opts.albumId ?? 0)) // 0=明确不归档(三态契约,Web 恒显式)
     if (opts.policyId != null) fd.append('policy_id', String(opts.policyId))
     if (opts.expiresIn > 0) fd.append('expires_in', String(opts.expiresIn))
+    if (opts.maxViews > 0) fd.append('max_views', String(opts.maxViews))
     xhr.send(fd)
   })
   return { promise, abort: () => xhr.abort() }
@@ -73,5 +74,6 @@ export function uploadFromURL(url: string, opts: QueueOpts): Promise<UploadResul
     album_id: opts.albumId ?? 0,
     ...(opts.policyId != null ? { policy_id: opts.policyId } : {}),
     ...(opts.expiresIn > 0 ? { expires_in: opts.expiresIn } : {}),
+    ...(opts.maxViews > 0 ? { max_views: opts.maxViews } : {}),
   })
 }

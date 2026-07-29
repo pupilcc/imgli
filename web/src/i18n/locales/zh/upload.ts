@@ -38,6 +38,11 @@ export default {
   expiry1d: '1 天',
   expiry7d: '7 天',
   expiry30d: '30 天',
+  maxViews: '访问次数',
+  maxViewsUnlimited: '不限',
+  maxViews1: '阅后即焚',
+  maxViews3: '3 次',
+  maxViews10: '10 次',
 
   copyAllLinks: '复制全部链接',
   clearDone: '清除已完成',

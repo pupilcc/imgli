@@ -40,6 +40,11 @@ export default {
   expiry1d: '1 day',
   expiry7d: '7 days',
   expiry30d: '30 days',
+  maxViews: 'View limit',
+  maxViewsUnlimited: 'Unlimited',
+  maxViews1: 'Burn after read',
+  maxViews3: '3 views',
+  maxViews10: '10 views',
 
   copyAllLinks: 'Copy all links',
   clearDone: 'Clear completed',

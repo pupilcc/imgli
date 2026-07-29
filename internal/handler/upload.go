@@ -15,6 +15,7 @@ import (
 
 	"github.com/yixian-huang/imgli/internal/linkbuilder"
 	"github.com/yixian-huang/imgli/internal/model"
+	"github.com/yixian-huang/imgli/internal/service/imagesvc"
 	"github.com/yixian-huang/imgli/internal/service/storagesvc"
 	"github.com/yixian-huang/imgli/internal/service/upload"
 )
@@ -152,6 +153,14 @@ func (h *UploadHandlers) Upload(w http.ResponseWriter, r *http.Request) {
 			opts.ExpiresAt = &t
 		}
 	}
+	if mv := r.FormValue("max_views"); mv != "" {
+		n, err := strconv.Atoi(mv)
+		if err != nil || n < 0 || n > imagesvc.MaxViewsMax {
+			Fail(w, http.StatusBadRequest, CodeInvalidRequest, "max_views 不合法")
+			return
+		}
+		opts.MaxViews = n
+	}
 	tmp, err := spoolToTemp(file, h.D.MaxBytes)
 	if err != nil {
 		Fail(w, http.StatusInternalServerError, CodeInternal, "接收文件失败")
@@ -223,6 +232,7 @@ func (h *UploadHandlers) UploadURL(w http.ResponseWriter, r *http.Request) {
 		AlbumID    *uint64 `json:"album_id"`
 		PolicyID   uint64  `json:"policy_id"`
 		ExpiresIn  int     `json:"expires_in"`
+		MaxViews   int     `json:"max_views"`
 	}
 	if err := DecodeJSON(r, &req); err != nil || req.URL == "" {
 		Fail(w, http.StatusBadRequest, CodeInvalidRequest, "需要 url")
@@ -230,6 +240,10 @@ func (h *UploadHandlers) UploadURL(w http.ResponseWriter, r *http.Request) {
 	}
 	if req.ExpiresIn < 0 || req.ExpiresIn > MaxExpiresInSec {
 		Fail(w, http.StatusBadRequest, CodeInvalidRequest, "expires_in 不合法")
+		return
+	}
+	if req.MaxViews < 0 || req.MaxViews > imagesvc.MaxViewsMax {
+		Fail(w, http.StatusBadRequest, CodeInvalidRequest, "max_views 不合法")
 		return
 	}
 	var expiresAt *time.Time
@@ -263,7 +277,7 @@ func (h *UploadHandlers) UploadURL(w http.ResponseWriter, r *http.Request) {
 	}
 	name := filenameFromURL(req.URL)
 	res, err := h.D.Svc.Save(ctx, tmp, name, u, upload.Opts{
-		Visibility: req.Visibility, AlbumID: req.AlbumID, PolicyID: req.PolicyID, ExpiresAt: expiresAt,
+		Visibility: req.Visibility, AlbumID: req.AlbumID, PolicyID: req.PolicyID, ExpiresAt: expiresAt, MaxViews: req.MaxViews,
 	}, ClientIP(r))
 	if err != nil {
 		failUpload(w, err)

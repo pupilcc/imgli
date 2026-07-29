@@ -93,6 +93,10 @@ export default {
   permanent: 'Permanent',
   expiresOn: 'Expires {date}',
   removeExpiry: 'Remove expiry',
+  maxViews: 'View limit',
+  maxViewsUsed: '{used} / {max} used',
+  maxViewsHint:
+    'Counts successful /i serves for non-owners only. Limited images never use public CDN 302. Multi-instance relies on atomic DB counters.',
   expiryWarn: 'Permanently deleted on expiry, not recoverable',
   copy: 'Copy',
   linkLabel: '{kind} link',

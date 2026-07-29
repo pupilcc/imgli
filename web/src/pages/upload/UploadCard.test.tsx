@@ -9,7 +9,7 @@ function item(over: Partial<QueueItem>): QueueItem {
   return {
     id: 1, kind: 'file', name: 'shot.png', size: 1.8 * 1024 * 1024, ext: 'png',
     pct: 0, status: 'queued', thumb: null, reason: null, retryable: false,
-    result: null, opts: { visibility: 'public', albumId: null, policyId: null, expiresIn: 0 },
+    result: null, opts: { visibility: 'public', albumId: null, policyId: null, expiresIn: 0, maxViews: 0 },
     ...over,
   }
 }
@@ -72,7 +72,7 @@ it('private 成功不显示分享页', () => {
       item={item({
         status: 'success',
         pct: 100,
-        opts: { visibility: 'private', albumId: null, policyId: null, expiresIn: 0 },
+        opts: { visibility: 'private', albumId: null, policyId: null, expiresIn: 0, maxViews: 0 },
         result: { key: 'k', name: 'shot.png', size: 1, instant: false, links: LINKS },
       })}
     />,

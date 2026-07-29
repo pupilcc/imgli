@@ -15,7 +15,7 @@ func TestUpdateRenameAndVisibility(t *testing.T) {
 	s, uid := setupSvc(t)
 	var img model.Image
 	s.db.Where("user_id = ?", uid).First(&img)
-	row, err := s.Update(uid, img.Key, ptrStr("renamed"), ptrStr("private"), nil, nil, false, nil)
+	row, err := s.Update(uid, img.Key, ptrStr("renamed"), ptrStr("private"), nil, nil, false, nil, nil)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -28,7 +28,7 @@ func TestUpdateRejectsBadVisibility(t *testing.T) {
 	s, uid := setupSvc(t)
 	var img model.Image
 	s.db.Where("user_id = ?", uid).First(&img)
-	if _, err := s.Update(uid, img.Key, nil, ptrStr("secret"), nil, nil, false, nil); !errors.Is(err, ErrInvalidVisibility) {
+	if _, err := s.Update(uid, img.Key, nil, ptrStr("secret"), nil, nil, false, nil, nil); !errors.Is(err, ErrInvalidVisibility) {
 		t.Errorf("非法可见性应报错, got %v", err)
 	}
 }
@@ -40,7 +40,7 @@ func TestUpdateMoveToOwnedAlbumAndClear(t *testing.T) {
 	var img model.Image
 	s.db.Where("user_id = ?", uid).First(&img)
 	// 移入
-	row, err := s.Update(uid, img.Key, nil, nil, ptrI64(int64(alb.ID)), nil, false, nil)
+	row, err := s.Update(uid, img.Key, nil, nil, ptrI64(int64(alb.ID)), nil, false, nil, nil)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -48,7 +48,7 @@ func TestUpdateMoveToOwnedAlbumAndClear(t *testing.T) {
 		t.Fatalf("移入相册未生效: %+v", row.Img.AlbumID)
 	}
 	// 移出（album_id=0）
-	row, err = s.Update(uid, img.Key, nil, nil, ptrI64(0), nil, false, nil)
+	row, err = s.Update(uid, img.Key, nil, nil, ptrI64(0), nil, false, nil, nil)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -65,7 +65,7 @@ func TestUpdateRejectsForeignAlbum(t *testing.T) {
 	s.db.Create(foreign)
 	var img model.Image
 	s.db.Where("user_id = ?", uid).First(&img)
-	if _, err := s.Update(uid, img.Key, nil, nil, ptrI64(int64(foreign.ID)), nil, false, nil); !errors.Is(err, ErrAlbumNotFound) {
+	if _, err := s.Update(uid, img.Key, nil, nil, ptrI64(int64(foreign.ID)), nil, false, nil, nil); !errors.Is(err, ErrAlbumNotFound) {
 		t.Errorf("移入他人相册应 ErrAlbumNotFound, got %v", err)
 	}
 }
@@ -81,7 +81,7 @@ func TestUpdateExpiresTriState(t *testing.T) {
 	}
 
 	// setExpires=false：不改 expires_at
-	row, err := s.Update(uid, img.Key, ptrStr("keep-exp"), nil, nil, nil, false, nil)
+	row, err := s.Update(uid, img.Key, ptrStr("keep-exp"), nil, nil, nil, false, nil, nil)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -94,7 +94,7 @@ func TestUpdateExpiresTriState(t *testing.T) {
 
 	// setExpires + expiresAt=T：设
 	want := time.Now().Add(24 * time.Hour).UTC().Truncate(time.Second)
-	row, err = s.Update(uid, img.Key, nil, nil, nil, &want, true, nil)
+	row, err = s.Update(uid, img.Key, nil, nil, nil, &want, true, nil, nil)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -103,7 +103,7 @@ func TestUpdateExpiresTriState(t *testing.T) {
 	}
 
 	// setExpires + expiresAt=nil：清除为 NULL
-	row, err = s.Update(uid, img.Key, nil, nil, nil, nil, true, nil)
+	row, err = s.Update(uid, img.Key, nil, nil, nil, nil, true, nil, nil)
 	if err != nil {
 		t.Fatal(err)
 	}

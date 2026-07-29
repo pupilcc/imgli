@@ -301,7 +301,7 @@ func TestCommitInstantFailsWhenFilePurged(t *testing.T) {
 	}
 	// 模拟 purge 已删 file 行
 	svc.db.Delete(f)
-	_, err := svc.commitInstant(u, f, "a.png", "png", "public", "", 10, nil, nil, 0)
+	_, err := svc.commitInstant(u, f, "a.png", "png", "public", "", 10, nil, nil, 0, 0)
 	if err == nil {
 		t.Fatal("file 已删应失败")
 	}

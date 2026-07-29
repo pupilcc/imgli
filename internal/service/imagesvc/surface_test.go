@@ -157,7 +157,7 @@ func TestUpdateVisibilityRehomesSoleRef(t *testing.T) {
 		t.Fatal(err)
 	}
 	priv := model.SurfacePrivate
-	row, err := svc.Update(u.ID, img.Key, nil, &priv, nil, nil, false, nil)
+	row, err := svc.Update(u.ID, img.Key, nil, &priv, nil, nil, false, nil, nil)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -202,7 +202,7 @@ func TestUpdateVisibilitySharedOldFileKept(t *testing.T) {
 	svc.db.Create(img)
 
 	priv := model.SurfacePrivate
-	if _, err := svc.Update(u.ID, img.Key, nil, &priv, nil, nil, false, nil); err != nil {
+	if _, err := svc.Update(u.ID, img.Key, nil, &priv, nil, nil, false, nil, nil); err != nil {
 		t.Fatal(err)
 	}
 	// 旧公开 File 仍在,ref 2→1
@@ -233,7 +233,7 @@ func TestUpdateVisibilityConcurrentRehomeNoDoubleRef(t *testing.T) {
 	svc.db.Model(&model.Image{}).Where("id = ?", img.ID).Update("file_id", pre.ID)
 	// 旧公开 File 此时应已无引用(但测试里 ref 仍 1,构造态);记录 pre.ref 以断言不被再 ++
 	priv := model.SurfacePrivate
-	if _, err := svc.Update(u.ID, img.Key, nil, &priv, nil, nil, false, nil); err != nil {
+	if _, err := svc.Update(u.ID, img.Key, nil, &priv, nil, nil, false, nil, nil); err != nil {
 		t.Fatal(err)
 	}
 	// pre File 的 ref 不应被本次再 ++(仍为 1)——CAS 命中冲突回滚了 ref 变更
