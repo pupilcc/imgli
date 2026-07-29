@@ -19,24 +19,47 @@ const levelColor: Record<QuotaLevel, string> = {
   full: 'var(--err)',
 }
 
-/** 导航栏 132px 迷你容量条：STORAGE 标签 + 3px 进度 + 「已用 / 总量」。 */
-export function QuotaBar({ used, total }: { used: number; total: number }) {
+export type QuotaBarKind = 'storage' | 'bandwidth'
+
+/** 导航栏迷你容量条：标签 + 3px 进度 + 「已用 / 总量」。total≤0 表示不限，只显示已用。 */
+export function QuotaBar({
+  used,
+  total,
+  kind = 'storage',
+  to = '/settings',
+}: {
+  used: number
+  total: number
+  kind?: QuotaBarKind
+  to?: string
+}) {
   const { t } = useT()
   const level = quotaLevel(used, total)
   const pct = total > 0 ? Math.min(100, Math.round((used / total) * 100)) : 0
   // 「2.14 / 10 GB」——两值同单位时只保留一次单位
   const usedText = formatBytes(used)
-  const totalText = formatBytes(total)
+  const totalText = total > 0 ? formatBytes(total) : t('ui.quotaUnlimited')
   const [uNum, uUnit] = usedText.split(' ')
-  const label = uUnit === totalText.split(' ')[1] ? `${uNum} / ${totalText}` : `${usedText} / ${totalText}`
+  const tUnit = total > 0 ? totalText.split(' ')[1] : ''
+  const label =
+    total > 0
+      ? uUnit === tUnit
+        ? `${uNum} / ${totalText}`
+        : `${usedText} / ${totalText}`
+      : usedText
+  const tag = kind === 'bandwidth' ? 'BANDWIDTH' : 'STORAGE'
+  const title = kind === 'bandwidth' ? t('ui.bandwidthTitle') : t('ui.quotaTitle')
   return (
-    <Link to="/settings" title={t('ui.quotaTitle')} className={styles.wrap}>
+    <Link to={to} title={title} className={styles.wrap}>
       <div className={styles.labels}>
-        <span>STORAGE</span>
+        <span>{tag}</span>
         <span style={{ color: levelColor[level] }}>{label}</span>
       </div>
       <div className={styles.track}>
-        <div className={styles.fill} style={{ width: `${pct}%`, background: levelColor[level] }} />
+        <div
+          className={styles.fill}
+          style={{ width: total > 0 ? `${pct}%` : '0%', background: levelColor[level] }}
+        />
       </div>
     </Link>
   )

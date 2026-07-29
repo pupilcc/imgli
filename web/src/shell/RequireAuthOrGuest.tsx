@@ -1,11 +1,11 @@
-import { Navigate } from 'react-router'
 import { useConfig, useSession } from '../api/hooks'
 import { Skeleton } from '../ui/Skeleton'
 import { AppLayout } from './AppLayout'
 import { GuestLayout } from './GuestLayout'
 
-/** `/`（上传页）门禁：登录→完整布局；未登录且游客上传开→游客布局；否则跳登录。
- * 体验层；安全边界在后端（upload.Save 对游客开关做权威判定）。 */
+/** `/`（上传页）壳：登录→完整布局；未登录→游客壳（始终可看上传页）。
+ * 游客上传关时仍停留首页，由 UploadPage 提示登录/注册，避免直接甩到登录页。
+ * 安全边界在后端（upload.Save 对游客开关做权威判定）。 */
 export function RequireAuthOrGuest() {
   const { data: user, isLoading } = useSession()
   const config = useConfig()
@@ -18,6 +18,5 @@ export function RequireAuthOrGuest() {
     )
   }
   if (user) return <AppLayout />
-  if (config.data?.guest_upload_enabled) return <GuestLayout />
-  return <Navigate to="/login" replace />
+  return <GuestLayout />
 }

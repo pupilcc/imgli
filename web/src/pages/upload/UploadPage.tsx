@@ -1,13 +1,14 @@
 import { useEffect, useRef, useState } from 'react'
-import { useSearchParams } from 'react-router'
+import { Link, useSearchParams } from 'react-router'
 import { useQueryClient } from '@tanstack/react-query'
 import { useAlbums, useConfig, useQuota, useSession, useUserPolicies } from '../../api/hooks'
 import { useT } from '../../i18n'
 import { formatBytes } from '../../lib/format'
+import { loginHref } from '../../lib/safeNext'
 import { useGlobal } from '../../store'
 import { extLabel, useUploadQueue, type QueueOpts } from '../../upload/queue'
 import { copyText } from '../../lib/copy'
-import { quotaLevel } from '../../ui/QuotaBar'
+import { QuotaBar, quotaLevel } from '../../ui/QuotaBar'
 import { Segmented } from '../../ui/Segmented'
 import { Skeleton } from '../../ui/Skeleton'
 import { PageHeader } from '../../shell/PageHeader'
@@ -81,9 +82,16 @@ export function UploadPage() {
   }
 
   const full = !isGuest && quota.data ? quotaLevel(quota.data.used, quota.data.total) === 'full' : false
+  const bwQuota = quota.data?.bandwidth_quota_month ?? 0
+  const bwUsed = quota.data?.bandwidth_used_month ?? 0
+  const bwFull = !isGuest && bwQuota > 0 && quotaLevel(bwUsed, bwQuota) === 'full'
+  const guestUploadOn = !!config.data?.guest_upload_enabled
   const guestLimits = config.data?.guest
+  /** 未登录且站点关闭游客上传：展示落地页，不可实际上传 */
+  const needLogin = isGuest && config.data != null && !guestUploadOn
+  const loginTo = loginHref('/')
   const limits = isGuest
-    ? guestLimits
+    ? guestUploadOn && guestLimits
       ? { maxFileSize: guestLimits.max_file_size, allowedExts: guestLimits.allowed_exts ?? [] }
       : null
     : quota.data
@@ -141,7 +149,9 @@ export function UploadPage() {
         .map((i) => i.getAsFile())
         .filter((f): f is File => !!f)
       if (!imgs.length) return
+      if (needLogin) return pushToast(t('upload.toastLoginRequired'))
       if (full) return pushToast(t('upload.toastQuotaFull'))
+      if (bwFull) return pushToast(t('upload.toastBandwidthFull'))
       if (limits) addFiles(imgs, opts, limits)
     }
     window.addEventListener('paste', onPaste)
@@ -149,16 +159,20 @@ export function UploadPage() {
   })
 
   function acceptFiles(list: FileList | File[]) {
+    if (needLogin) return pushToast(t('upload.toastLoginRequired'))
     if (full) return pushToast(t('upload.toastQuotaFull'))
+    if (bwFull) return pushToast(t('upload.toastBandwidthFull'))
     if (!limits) return
     const files = [...list].filter((f) => f.type.startsWith('image/') || f.name.includes('.'))
     if (files.length) addFiles(files, opts, limits)
   }
 
   function doFetch() {
+    if (needLogin) return pushToast(t('upload.toastLoginRequired'))
     const u = fetchUrl.trim()
     if (!URL_RE.test(u)) return pushToast(t('upload.toastInvalidUrl'))
     if (full) return pushToast(t('upload.toastQuotaFull'))
+    if (bwFull) return pushToast(t('upload.toastBandwidthFull'))
     addUrl(u, opts)
     setFetchUrl('')
     pushToast(t('upload.toastFetchQueued'))
@@ -197,7 +211,7 @@ export function UploadPage() {
       {pageDrag && <div className={styles.pageDragOverlay}>{t('upload.dropRelease')}</div>}
       <PageHeader kicker="UPLOAD" title={t('upload.title')} extra={<p className={styles.subtitle}>{t('upload.subtitle')}</p>} />
 
-      {isGuest && guestLimits && (
+      {isGuest && guestUploadOn && guestLimits && (
         <div className={styles.guestBar}>
           <span className={styles.guestTag}>{t('upload.guestMode')}</span>
           <span>
@@ -209,15 +223,44 @@ export function UploadPage() {
         </div>
       )}
 
+      {!isGuest && quota.data && (
+        <div className={styles.quotaRow} data-testid="upload-quota-meters">
+          <QuotaBar used={quota.data.used} total={quota.data.total} kind="storage" to="/settings" />
+          {bwQuota > 0 && (
+            <QuotaBar used={bwUsed} total={bwQuota} kind="bandwidth" to="/settings" />
+          )}
+        </div>
+      )}
+
+      {needLogin && (
+        <div className={styles.loginGate} data-testid="login-gate">
+          <div className={styles.loginGateTitle}>{t('upload.loginRequiredTitle')}</div>
+          <p className={styles.loginGateDesc}>{t('upload.loginRequiredDesc')}</p>
+          <Link to={loginTo} className={styles.loginGateCta}>
+            {t('upload.loginRequiredCta')}
+          </Link>
+          <p className={styles.loginGateHint}>{t('upload.loginRequiredHint')}</p>
+        </div>
+      )}
+
       <div
         data-testid="dropzone"
-        className={[styles.dropzone, drag && styles.dropzoneDrag].filter(Boolean).join(' ')}
+        className={[
+          styles.dropzone,
+          drag && styles.dropzoneDrag,
+          needLogin && styles.dropzoneMuted,
+        ]
+          .filter(Boolean)
+          .join(' ')}
         onClick={() => {
+          if (needLogin) return pushToast(t('upload.toastLoginRequired'))
           if (full) return pushToast(t('upload.toastQuotaFull'))
+          if (bwFull) return pushToast(t('upload.toastBandwidthFull'))
           fileInput.current?.click()
         }}
         onDragOver={(e) => {
           e.preventDefault()
+          if (needLogin) return
           if (!drag) setDrag(true)
         }}
         onDragLeave={() => setDrag(false)}
@@ -228,22 +271,32 @@ export function UploadPage() {
         }}
       >
         {drag && <div className={styles.dragOverlay}>{t('upload.dropRelease')}</div>}
-        {full && (
+        {(full || bwFull) && (
           <div
             className={styles.fullOverlay}
             onClick={(e) => {
               e.stopPropagation()
-              pushToast(t('upload.toastQuotaFull'))
+              pushToast(full ? t('upload.toastQuotaFull') : t('upload.toastBandwidthFull'))
             }}
           >
-            <span className={styles.fullTitle}>{t('upload.fullTitle')}</span>
-            <span className={styles.fullDesc}>{t('upload.fullDesc')}</span>
+            <span className={styles.fullTitle}>
+              {full ? t('upload.fullTitle') : t('upload.bandwidthFullTitle')}
+            </span>
+            <span className={styles.fullDesc}>
+              {full ? t('upload.fullDesc') : t('upload.bandwidthFullDesc')}
+            </span>
           </div>
         )}
         <div className={styles.upIcon}>↑</div>
         <div className={styles.dzTitle}>{t('upload.dropTitle')}</div>
         <div className={styles.dzLimit}>
-          {limits ? `${extLabel(limits.allowedExts)} — MAX ${formatBytes(limits.maxFileSize)}` : <Skeleton width={220} height={11} />}
+          {needLogin ? (
+            t('upload.loginRequiredTitle')
+          ) : limits ? (
+            `${extLabel(limits.allowedExts)} — MAX ${formatBytes(limits.maxFileSize)}`
+          ) : (
+            <Skeleton width={220} height={11} />
+          )}
         </div>
         <div className={styles.kbdRow}>
           <span className={styles.kbd}>Ctrl</span>
@@ -256,6 +309,7 @@ export function UploadPage() {
           accept="image/*"
           multiple
           className={styles.fileInput}
+          disabled={needLogin}
           onChange={(e) => {
             if (e.target.files?.length) acceptFiles(e.target.files)
             e.target.value = ''
@@ -263,18 +317,19 @@ export function UploadPage() {
         />
       </div>
 
-      <div className={styles.urlRow}>
+      <div className={[styles.urlRow, needLogin && styles.urlRowDisabled].filter(Boolean).join(' ')}>
         <span className={styles.urlTag}>URL</span>
         <input
           className={styles.urlInput}
           value={fetchUrl}
           placeholder={t('upload.urlPlaceholder')}
+          disabled={needLogin}
           onChange={(e) => setFetchUrl(e.target.value)}
           onKeyDown={(e) => {
             if (e.key === 'Enter') doFetch()
           }}
         />
-        <button type="button" className={styles.fetchBtn} onClick={doFetch}>
+        <button type="button" className={styles.fetchBtn} disabled={needLogin} onClick={doFetch}>
           {t('upload.fetch')}
         </button>
       </div>

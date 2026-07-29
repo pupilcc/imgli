@@ -9,6 +9,8 @@ export default {
   admin: '管理后台',
   logout: '退出登录',
   loginToManage: '登录以管理图片',
+  loginOrRegister: '登录 / 注册',
+
   backToConsole: '← 返回前台',
   backToUpload: '返回上传',
   login: '登录',

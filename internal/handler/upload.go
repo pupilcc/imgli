@@ -58,6 +58,8 @@ func failUpload(w http.ResponseWriter, err error) {
 		Fail(w, http.StatusRequestEntityTooLarge, CodeFileTooLarge, "文件超过大小上限")
 	case errors.Is(err, upload.ErrQuotaExceeded):
 		Fail(w, http.StatusRequestEntityTooLarge, CodeQuotaExceeded, "存储配额不足")
+	case errors.Is(err, upload.ErrBandwidthExceeded):
+		Fail(w, http.StatusTooManyRequests, CodeBandwidthExceeded, "本月流量已用尽")
 	case errors.Is(err, upload.ErrExtNotAllowed):
 		Fail(w, http.StatusUnsupportedMediaType, CodeExtNotAllowed, "文件类型不被允许")
 	case errors.Is(err, upload.ErrDimensionOver):

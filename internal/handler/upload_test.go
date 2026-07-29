@@ -33,6 +33,7 @@ func TestFailUploadMapping(t *testing.T) {
 	}{
 		{"file too large", upload.ErrFileTooLarge, 413, CodeFileTooLarge},
 		{"quota exceeded", upload.ErrQuotaExceeded, 413, CodeQuotaExceeded},
+		{"bandwidth exceeded", upload.ErrBandwidthExceeded, 429, CodeBandwidthExceeded},
 		{"ext not allowed", upload.ErrExtNotAllowed, 415, CodeExtNotAllowed},
 		{"dimension over", upload.ErrDimensionOver, 400, CodeInvalidRequest},
 		{"invalid image", upload.ErrInvalidImage, 400, CodeInvalidRequest},

@@ -1,10 +1,11 @@
 import { useState, useEffect, type FormEvent } from 'react'
-import { Link, useNavigate } from 'react-router'
+import { Link, useNavigate, useSearchParams } from 'react-router'
 import { ApiError } from '../../api/client'
 import { useLogin, useRegister, useConfig } from '../../api/hooks'
 import { useT } from '../../i18n'
 import { errorText } from '../../i18n/errorText'
 import { STRONG_RE } from '../../lib/password'
+import { safeNext } from '../../lib/safeNext'
 import { useGlobal } from '../../store'
 import { BrandLockup } from '../../ui/Brand'
 import { Button } from '../../ui/Button'
@@ -32,6 +33,8 @@ export function AuthPage() {
   const login = useLogin()
   const register = useRegister()
   const navigate = useNavigate()
+  const [searchParams] = useSearchParams()
+  const afterAuth = safeNext(searchParams.get('next'), '/')
   const busy = login.isPending || register.isPending
   const isLogin = mode === 'login'
   const config = useConfig()
@@ -57,7 +60,7 @@ export function AuthPage() {
     setError(null)
     const onSuccess = () => {
       setDone(true)
-      setTimeout(() => navigate('/'), 400)
+      setTimeout(() => navigate(afterAuth), 400)
     }
     const onError = (err: unknown) =>
       setError(

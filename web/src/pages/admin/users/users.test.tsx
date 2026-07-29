@@ -11,8 +11,8 @@ const env = (data: unknown) => ({ status: true, message: 'ok', data })
 const GB = 1024 ** 3
 
 const groups = [
-  { id: 1, name: '默认组', is_default: true, is_guest: false, storage_quota: 10 * GB, max_file_size: 0, rate_per_minute: 0, rate_per_hour: 0, rate_per_day: 0, allowed_exts: [], allowed_policy_ids: null, created_at: '', user_count: 2 },
-  { id: 2, name: 'VIP', is_default: false, is_guest: false, storage_quota: 100 * GB, max_file_size: 0, rate_per_minute: 0, rate_per_hour: 0, rate_per_day: 0, allowed_exts: [], allowed_policy_ids: null, created_at: '', user_count: 0 },
+  { id: 1, name: '默认组', is_default: true, is_guest: false, storage_quota: 10 * GB, max_file_size: 0, bandwidth_quota_month: 5 * GB, rate_per_minute: 0, rate_per_hour: 0, rate_per_day: 0, allowed_exts: [], allowed_policy_ids: null, created_at: '', user_count: 2 },
+  { id: 2, name: 'VIP', is_default: false, is_guest: false, storage_quota: 100 * GB, max_file_size: 0, bandwidth_quota_month: 50 * GB, rate_per_minute: 0, rate_per_hour: 0, rate_per_day: 0, allowed_exts: [], allowed_policy_ids: null, created_at: '', user_count: 0 },
 ]
 const userRow = {
   id: 2, username: 'ling', email: 'ling@img.li', nickname: '凌', group_id: 1, status: 'active',

@@ -50,6 +50,12 @@ export interface Quota {
   total: number
   max_file_size: number
   allowed_exts: string[]
+  /** 本月出站已用（字节）；缺省旧后端可无 */
+  bandwidth_used_month?: number
+  /** 组月流量硬顶；0=不限 */
+  bandwidth_quota_month?: number
+  /** 账期 YYYY-MM（Asia/Shanghai） */
+  bandwidth_period?: string
 }
 
 export interface Links {
@@ -254,6 +260,8 @@ export interface AdminGroup {
   is_guest: boolean
   storage_quota: number
   max_file_size: number
+  /** 月流量硬顶（字节）；0=不限 */
+  bandwidth_quota_month: number
   rate_per_minute: number
   rate_per_hour: number
   rate_per_day: number

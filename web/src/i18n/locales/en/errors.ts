@@ -8,7 +8,9 @@ export default {
   network_error: 'Network error, please check your connection',
   rate_limited: 'Too many requests, please try again later',
   quota_exceeded: 'Storage quota exceeded',
+  bandwidth_exceeded: 'Monthly bandwidth quota exceeded',
   file_too_large: 'File exceeds the size limit',
+
   ext_not_allowed: 'File type not allowed',
   moderation_rejected: 'Image rejected by moderation',
   resource_gone: 'Resource is gone',

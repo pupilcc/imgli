@@ -193,6 +193,7 @@ export interface GroupWriteBody {
   name?: string
   storage_quota?: number
   max_file_size?: number
+  bandwidth_quota_month?: number
   rate_per_minute?: number
   rate_per_hour?: number
   rate_per_day?: number

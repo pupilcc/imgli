@@ -110,6 +110,9 @@ export default {
   builtinNameLocked: '内置组不可改名',
   quotaGB: '容量配额（GB）',
   maxFileMB: '单文件上限（MB）',
+  bandwidthQuotaGB: '月流量硬顶（GB）',
+  bandwidthQuotaHint: '0 表示不限制；默认组建议 5（Asia/Shanghai 自然月）',
+
   ratePerMin: '每分钟上传数',
   ratePerHour: '每小时上传数',
   ratePerDay: '每日上传数',

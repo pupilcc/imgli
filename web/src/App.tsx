@@ -57,7 +57,9 @@ export function App() {
   }, [config.data?.site_name, lang])
   useEffect(() => {
     setOnUnauthorized(() => {
-      if (window.location.pathname !== '/login') navigate('/login')
+      if (window.location.pathname === '/login') return
+      const next = encodeURIComponent(`${window.location.pathname}${window.location.search}`)
+      navigate(`/login?next=${next}`)
     })
     setOnForbidden(() => {
       if (window.location.pathname.startsWith('/admin')) {

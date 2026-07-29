@@ -25,7 +25,11 @@ func userDTO(u *model.User) map[string]any {
 		"preferences":    u.Preferences,
 		"avatar_url":     avatarURL(u),
 		"watermark_set":  u.WatermarkPath != "",
-		"created_at":     u.CreatedAt.Format(time.RFC3339),
+		"used_storage":   u.UsedStorage,
+		// 流量字段由 Profile 等在需要时附加；基础 DTO 含原始计数便于调试。
+		"bandwidth_used_month": u.BandwidthUsedMonth,
+		"bandwidth_period":     u.BandwidthPeriod,
+		"created_at":           u.CreatedAt.Format(time.RFC3339),
 	}
 }
 

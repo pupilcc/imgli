@@ -5,6 +5,15 @@ export default {
   guestMode: '游客模式',
   guestLimits:
     '单张 ≤ {size} · 每日 {perDay} 张 · 图片公开可见 — 登录后可管理图片、私密与相册',
+  loginRequiredTitle: '登录后即可上传',
+  loginRequiredDesc: '当前站点未开放游客上传。注册或登录后即可获取外链、管理图片与相册。',
+  loginRequiredCta: '登录 / 注册',
+  loginRequiredHint: '已有账号？登录后回到此页继续上传',
+  toastLoginRequired: '请先登录后再上传',
+  toastBandwidthFull: '本月流量已用尽，无法上传',
+  bandwidthFullTitle: '本月流量已用尽',
+  bandwidthFullDesc: '下月重置后可继续，或自托管开源版不受此限',
+
 
   dropRelease: '松开即上传',
   fullTitle: '容量已满，上传已禁用',

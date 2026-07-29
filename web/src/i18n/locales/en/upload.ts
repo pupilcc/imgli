@@ -5,6 +5,17 @@ export default {
   guestMode: 'Guest mode',
   guestLimits:
     'Max {size} each · {perDay}/day · images are public — sign in to manage, set private, and use albums',
+  loginRequiredTitle: 'Sign in to upload',
+  loginRequiredDesc:
+    'Guest upload is off on this site. Create an account or sign in for direct links, library, and albums.',
+  loginRequiredCta: 'Sign in / Register',
+  loginRequiredHint: 'Already have an account? Sign in and return here to upload',
+  toastLoginRequired: 'Please sign in to upload',
+  toastBandwidthFull: 'Monthly bandwidth used up — cannot upload',
+  bandwidthFullTitle: 'Monthly bandwidth used up',
+  bandwidthFullDesc: 'Resets next month, or self-host the open-source build without this cap',
+
+
 
   dropRelease: 'Drop to upload',
   fullTitle: 'Storage full — upload disabled',

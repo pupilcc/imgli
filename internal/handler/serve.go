@@ -13,6 +13,7 @@ import (
 	"gorm.io/gorm"
 
 	"github.com/yixian-huang/imgli/internal/model"
+	"github.com/yixian-huang/imgli/internal/service/bandwidth"
 	"github.com/yixian-huang/imgli/internal/service/stats"
 	"github.com/yixian-huang/imgli/internal/service/storagesvc"
 	"github.com/yixian-huang/imgli/internal/storage"
@@ -141,7 +142,25 @@ func (h *ServeHandlers) lookupServable(w http.ResponseWriter, r *http.Request) (
 		h.placeholder(w, r, http.StatusForbidden, "HOTLINK DENIED")
 		return nil, false
 	}
+	// 月流量硬顶：记属主；无属主（游客图）不拦截个人硬顶。
+	if img.UserID != nil {
+		if err := bandwidth.Check(h.D.DB, *img.UserID); errors.Is(err, bandwidth.ErrExceeded) {
+			h.placeholder(w, r, http.StatusTooManyRequests, "BANDWIDTH EXCEEDED")
+			return nil, false
+		} else if err != nil {
+			Fail(w, http.StatusInternalServerError, CodeInternal, "服务器内部错误")
+			return nil, false
+		}
+	}
 	return &img, true
+}
+
+// meterOwner 成功放行后按字节计入属主本月用量（裁决 1/3）。
+func (h *ServeHandlers) meterOwner(img *model.Image, n int64) {
+	if img == nil || img.UserID == nil || n <= 0 {
+		return
+	}
+	_ = bandwidth.Add(h.D.DB, *img.UserID, n)
 }
 
 // Original GET /i/{name} —— 原图直链，访问控制的唯一汇聚点。
@@ -165,6 +184,7 @@ func (h *ServeHandlers) Original(w http.ResponseWriter, r *http.Request) {
 			if h.D.Stats != nil {
 				h.D.Stats.Record(img.ID, refererHost(r)) // 302 也计一次公开访问
 			}
+			h.meterOwner(img, file.Size) // 302：按原图 size 计量（不追 CDN 命中）
 			w.Header().Set("Cache-Control", "public, max-age=300")
 			http.Redirect(w, r, u, http.StatusFound)
 			return
@@ -180,6 +200,7 @@ func (h *ServeHandlers) Original(w http.ResponseWriter, r *http.Request) {
 					if h.D.Stats != nil {
 						h.D.Stats.Record(img.ID, refererHost(r))
 					}
+					h.meterOwner(img, file.Size)
 					// 签名 60s 后失效:绝不能沿用公开图那条 public,max-age=300——
 					// 缓存里会躺死链接,更糟的是可能被中间层跨用户复用。
 					w.Header().Set("Cache-Control", "private, no-store")
@@ -190,8 +211,11 @@ func (h *ServeHandlers) Original(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	if h.streamFile(w, r, img.FileID, false, img.Visibility == "public") && h.D.Stats != nil {
-		h.D.Stats.Record(img.ID, refererHost(r))
+	if n, ok := h.streamFile(w, r, img.FileID, false, img.Visibility == "public"); ok {
+		if h.D.Stats != nil {
+			h.D.Stats.Record(img.ID, refererHost(r))
+		}
+		h.meterOwner(img, n)
 	}
 }
 
@@ -201,7 +225,9 @@ func (h *ServeHandlers) Thumbnail(w http.ResponseWriter, r *http.Request) {
 	if !ok {
 		return
 	}
-	_ = h.streamFile(w, r, img.FileID, true, img.Visibility == "public")
+	if n, ok := h.streamFile(w, r, img.FileID, true, img.Visibility == "public"); ok {
+		h.meterOwner(img, n)
+	}
 }
 
 func (h *ServeHandlers) isOwner(r *http.Request, img *model.Image) bool {
@@ -236,22 +262,23 @@ func openThumb(ctx context.Context, d storage.Driver, surface, hash string) (io.
 
 // streamFile 打开 file（thumb 为 true 则打开该文件哈希对应的缩略图键）并经
 // ServeContent 回源。public 为 false（私密图）时禁止共享缓存，避免经 CDN
-// 泄露给非所有者。成功返回 true，失败路径（已写响应）返回 false。
-func (h *ServeHandlers) streamFile(w http.ResponseWriter, r *http.Request, fileID uint64, thumb bool, public bool) bool {
+// 泄露给非所有者。成功返回 (meterBytes, true)；失败 (0, false)。
+// meterBytes：原图用 file.Size；缩略图用可读长度（Seek）；304 计 0。
+func (h *ServeHandlers) streamFile(w http.ResponseWriter, r *http.Request, fileID uint64, thumb bool, public bool) (int64, bool) {
 	var file model.File
 	if err := h.D.DB.First(&file, fileID).Error; err != nil {
 		h.placeholder(w, r, http.StatusNotFound, "NOT FOUND")
-		return false
+		return 0, false
 	}
 	var policy model.StoragePolicy
 	if err := h.D.DB.First(&policy, file.StoragePolicyID).Error; err != nil {
 		h.placeholder(w, r, http.StatusNotFound, "NOT FOUND")
-		return false
+		return 0, false
 	}
 	d, err := h.D.Res.Driver(&policy)
 	if err != nil {
 		Fail(w, http.StatusInternalServerError, CodeInternal, "存储不可用")
-		return false
+		return 0, false
 	}
 	var rc io.ReadSeekCloser
 	var ctype string
@@ -265,12 +292,22 @@ func (h *ServeHandlers) streamFile(w http.ResponseWriter, r *http.Request, fileI
 	if err != nil {
 		if errors.Is(err, storage.ErrNotFound) {
 			h.placeholder(w, r, http.StatusNotFound, "NOT FOUND")
-			return false
+			return 0, false
 		}
 		Fail(w, http.StatusInternalServerError, CodeInternal, "读取失败")
-		return false
+		return 0, false
 	}
 	defer rc.Close()
+	meter := file.Size
+	if thumb {
+		if n, err := rc.Seek(0, io.SeekEnd); err == nil && n > 0 {
+			meter = n
+			_, _ = rc.Seek(0, io.SeekStart)
+		} else {
+			meter = 0 // 无可靠 size 不计（裁决：有 size 才计）
+			_, _ = rc.Seek(0, io.SeekStart)
+		}
+	}
 	// ETag 用内容哈希(缩略图附世代),处理/键布局变更后可 If-None-Match 失效(C2)。
 	etag := `"` + file.Hash + `"`
 	if thumb {
@@ -279,7 +316,7 @@ func (h *ServeHandlers) streamFile(w http.ResponseWriter, r *http.Request, fileI
 	if inm := r.Header.Get("If-None-Match"); inm != "" && inm == etag {
 		w.Header().Set("ETag", etag)
 		w.WriteHeader(http.StatusNotModified)
-		return true
+		return 0, true // 304 无传输体，不计流量
 	}
 	w.Header().Set("Content-Type", ctype)
 	w.Header().Set("X-Content-Type-Options", "nosniff")
@@ -294,7 +331,10 @@ func (h *ServeHandlers) streamFile(w http.ResponseWriter, r *http.Request, fileI
 	// 防非法 Range 抬高访问统计(codex 评审 Task2)。
 	sc := &statusCapture{ResponseWriter: w}
 	http.ServeContent(sc, r, "", file.CreatedAt, rc)
-	return sc.ok()
+	if !sc.ok() {
+		return 0, false
+	}
+	return meter, true
 }
 
 // placeholder 返回占位。默认返回 SVG 占位图，仅当调用方显式
@@ -317,6 +357,8 @@ func (h *ServeHandlers) placeholder(w http.ResponseWriter, r *http.Request, stat
 		code, msg = CodeUnauthorized, "私密图片，请登录后查看"
 	case http.StatusForbidden:
 		code, msg = CodeForbidden, "防盗链拦截"
+	case http.StatusTooManyRequests:
+		code, msg = CodeBandwidthExceeded, "本月流量已用尽"
 	}
 	Fail(w, status, code, msg)
 }

@@ -110,6 +110,9 @@ export default {
   builtinNameLocked: 'Built-in groups cannot be renamed',
   quotaGB: 'Storage quota (GB)',
   maxFileMB: 'Max file size (MB)',
+  bandwidthQuotaGB: 'Monthly bandwidth cap (GB)',
+  bandwidthQuotaHint: '0 = unlimited; Free/default group typically 5 (calendar month, Asia/Shanghai)',
+
   ratePerMin: 'Uploads per minute',
   ratePerHour: 'Uploads per hour',
   ratePerDay: 'Uploads per day',

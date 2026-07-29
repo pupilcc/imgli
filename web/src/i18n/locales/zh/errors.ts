@@ -8,7 +8,9 @@ export default {
   network_error: '网络错误，请检查连接',
   rate_limited: '操作过于频繁，请稍后再试',
   quota_exceeded: '存储配额已用尽',
+  bandwidth_exceeded: '本月流量已用尽',
   file_too_large: '文件超过大小限制',
+
   ext_not_allowed: '不支持的文件类型',
   moderation_rejected: '图片未通过内容审核',
   resource_gone: '资源已过期或被删除',

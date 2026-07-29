@@ -14,6 +14,7 @@ import (
 	"gorm.io/gorm/clause"
 
 	"github.com/yixian-huang/imgli/internal/model"
+	"github.com/yixian-huang/imgli/internal/service/bandwidth"
 	"github.com/yixian-huang/imgli/internal/service/settings"
 	"github.com/yixian-huang/imgli/internal/service/upload"
 	"github.com/yixian-huang/imgli/internal/token"
@@ -125,7 +126,7 @@ func (s *Service) Register(username, email, password, inviteCode string) (*model
 		u = &model.User{
 			Username: username, Email: email, PasswordHash: hash,
 			Nickname: username, GroupID: group.ID,
-			Status:  "active",
+			Status: "active",
 		}
 		if err := tx.Create(u).Error; err != nil {
 			return err
@@ -649,10 +650,13 @@ func (s *Service) ResetPasswordByToken(rawToken, newPassword string) error {
 
 // QuotaInfo 配额与上传限制（/user/quota 响应所需的全部字段）。
 type QuotaInfo struct {
-	Used        int64
-	Total       int64
-	MaxFileSize int64
-	AllowedExts []string
+	Used            int64
+	Total           int64
+	MaxFileSize     int64
+	AllowedExts     []string
+	BandwidthUsed   int64  // 本月出站已用（字节，账期见 BandwidthPeriod）
+	BandwidthQuota  int64  // 组月硬顶；0=不限
+	BandwidthPeriod string // YYYY-MM Asia/Shanghai
 }
 
 // QuotaInfo 返回用户已用/总配额与所属组的上传限制。
@@ -665,8 +669,14 @@ func (s *Service) QuotaInfo(userID uint64) (*QuotaInfo, error) {
 	if err := s.db.First(&g, u.GroupID).Error; err != nil {
 		return nil, err
 	}
-	return &QuotaInfo{Used: u.UsedStorage, Total: g.StorageQuota,
-		MaxFileSize: g.MaxFileSize, AllowedExts: g.AllowedExts}, nil
+	period := bandwidth.CurrentPeriod()
+	return &QuotaInfo{
+		Used: u.UsedStorage, Total: g.StorageQuota,
+		MaxFileSize: g.MaxFileSize, AllowedExts: g.AllowedExts,
+		BandwidthUsed:   bandwidth.EffectiveUsed(&u, period),
+		BandwidthQuota:  g.BandwidthQuotaMonth,
+		BandwidthPeriod: period,
+	}, nil
 }
 
 // Quota 返回已用/总配额（字节）。保留旧签名，转调 QuotaInfo。

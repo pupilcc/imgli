@@ -55,7 +55,10 @@ function mockBackend(
           })),
         )
       if (u.endsWith('/user/quota'))
-        return Promise.resolve(jsonRes(env({ used: 2.14 * GB, total: 10 * GB, max_file_size: 20 * 1024 ** 2, allowed_exts: ['png','jpg','gif','webp'] })))
+        return Promise.resolve(jsonRes(env({
+          used: 2.14 * GB, total: 10 * GB, max_file_size: 20 * 1024 ** 2, allowed_exts: ['png','jpg','gif','webp'],
+          bandwidth_used_month: 1 * GB, bandwidth_quota_month: 5 * GB, bandwidth_period: '2026-07',
+        })))
       return Promise.resolve(jsonRes({ status: false, message: '', data: { code: 'not_found' } }, 404))
     }),
   )
@@ -83,7 +86,9 @@ it('已登录：/ 渲染导航与占位页', async () => {
   expect(screen.getByRole('link', { name: '设置' })).toBeInTheDocument()
   // plaza_enabled 默认 false：广场入口不挂 DOM
   expect(screen.queryByRole('link', { name: '广场' })).not.toBeInTheDocument()
-  expect(await screen.findByText('2.14 / 10 GB')).toBeInTheDocument()
+  // Nav + 上传页各一条 STORAGE 用量
+  expect((await screen.findAllByText('2.14 / 10 GB')).length).toBeGreaterThanOrEqual(1)
+  expect(screen.getAllByText('BANDWIDTH').length).toBeGreaterThanOrEqual(1)
   expect(screen.getByText('上传图片')).toBeInTheDocument()
 })
 
@@ -119,17 +124,21 @@ it('未登录+游客开关开：/ 渲染游客上传页（无导航/无 TabBar�
   mockBackend(false, true)
   renderAt('/')
   expect(await screen.findByText('上传图片')).toBeInTheDocument()
-  expect(screen.getByRole('link', { name: '登录以管理图片' })).toHaveAttribute('href', '/login')
+  expect(screen.getByRole('link', { name: '登录以管理图片' })).toHaveAttribute('href', '/login?next=%2F')
   expect(screen.queryByRole('link', { name: '我的图片' })).not.toBeInTheDocument()
   expect(screen.queryByTestId('tabbar')).not.toBeInTheDocument()
   await waitFor(() => {})
 })
 
-it('未登录+游客开关关：/ 跳登录页', async () => {
+it('未登录+游客开关关：/ 仍展示上传落地页并提示登录', async () => {
   mockBackend(false, false)
   renderAt('/')
-  expect(await screen.findByText('欢迎回来')).toBeInTheDocument()
-  await waitFor(() => {})
+  expect(await screen.findByText('上传图片')).toBeInTheDocument()
+  expect(screen.getByTestId('login-gate')).toBeInTheDocument()
+  const loginLinks = screen.getAllByRole('link', { name: '登录 / 注册' })
+  expect(loginLinks.length).toBeGreaterThanOrEqual(1)
+  expect(loginLinks.every((a) => a.getAttribute('href') === '/login?next=%2F')).toBe(true)
+  expect(screen.queryByText('欢迎回来')).not.toBeInTheDocument()
 })
 
 it('Nav 头像:avatar_url 非空渲染 img', async () => {

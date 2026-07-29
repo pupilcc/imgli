@@ -18,7 +18,7 @@ it('quotaLevel 阈值', () => {
 it('QuotaBar 显示用量数字', () => {
   render(
     <MemoryRouter>
-      <QuotaBar used={2.14 * GB} total={10 * GB} />
+      <QuotaBar used={2.14 * GB} total={10 * GB} kind="storage" />
     </MemoryRouter>,
   )
   expect(screen.getByText('STORAGE')).toBeInTheDocument()

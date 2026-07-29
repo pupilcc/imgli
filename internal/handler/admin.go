@@ -371,7 +371,8 @@ func adminGroupDTO(g *model.UserGroup) map[string]any {
 	return map[string]any{
 		"id": g.ID, "name": g.Name, "is_default": g.IsDefault, "is_guest": g.IsGuest,
 		"storage_quota": g.StorageQuota, "max_file_size": g.MaxFileSize,
-		"rate_per_minute": g.RatePerMinute, "rate_per_hour": g.RatePerHour, "rate_per_day": g.RatePerDay,
+		"bandwidth_quota_month": g.BandwidthQuotaMonth,
+		"rate_per_minute":       g.RatePerMinute, "rate_per_hour": g.RatePerHour, "rate_per_day": g.RatePerDay,
 		"allowed_exts": g.AllowedExts, "allowed_policy_ids": g.AllowedPolicyIDs,
 		"created_at": g.CreatedAt.Format(time.RFC3339),
 	}
@@ -399,14 +400,15 @@ func (h *AdminHandlers) Groups(w http.ResponseWriter, r *http.Request) {
 
 // groupWriteRequest 是 CreateGroup/UpdateGroup 共享的请求体形状（PATCH 全字段可选）。
 type groupWriteRequest struct {
-	Name             *string   `json:"name"`
-	StorageQuota     *int64    `json:"storage_quota"`
-	MaxFileSize      *int64    `json:"max_file_size"`
-	RatePerMinute    *int      `json:"rate_per_minute"`
-	RatePerHour      *int      `json:"rate_per_hour"`
-	RatePerDay       *int      `json:"rate_per_day"`
-	AllowedExts      *[]string `json:"allowed_exts"`
-	AllowedPolicyIDs *[]uint64 `json:"allowed_policy_ids"`
+	Name                *string   `json:"name"`
+	StorageQuota        *int64    `json:"storage_quota"`
+	MaxFileSize         *int64    `json:"max_file_size"`
+	BandwidthQuotaMonth *int64    `json:"bandwidth_quota_month"`
+	RatePerMinute       *int      `json:"rate_per_minute"`
+	RatePerHour         *int      `json:"rate_per_hour"`
+	RatePerDay          *int      `json:"rate_per_day"`
+	AllowedExts         *[]string `json:"allowed_exts"`
+	AllowedPolicyIDs    *[]uint64 `json:"allowed_policy_ids"`
 }
 
 // CreateGroup POST /api/v1/admin/groups {name,storage_quota,max_file_size,rate_per_minute,
@@ -427,6 +429,9 @@ func (h *AdminHandlers) CreateGroup(w http.ResponseWriter, r *http.Request) {
 	}
 	if req.MaxFileSize != nil {
 		g.MaxFileSize = *req.MaxFileSize
+	}
+	if req.BandwidthQuotaMonth != nil {
+		g.BandwidthQuotaMonth = *req.BandwidthQuotaMonth
 	}
 	if req.RatePerMinute != nil {
 		g.RatePerMinute = *req.RatePerMinute
@@ -451,7 +456,8 @@ func (h *AdminHandlers) CreateGroup(w http.ResponseWriter, r *http.Request) {
 		OK(w, adminGroupDTO(g))
 	case errors.Is(err, adminsvc.ErrPolicyNotFound):
 		Fail(w, http.StatusNotFound, CodeNotFound, err.Error())
-	case errors.Is(err, adminsvc.ErrExtsEmpty), errors.Is(err, adminsvc.ErrGroupNameInvalid), errors.Is(err, adminsvc.ErrQuotaInvalid):
+	case errors.Is(err, adminsvc.ErrExtsEmpty), errors.Is(err, adminsvc.ErrGroupNameInvalid),
+		errors.Is(err, adminsvc.ErrQuotaInvalid), errors.Is(err, adminsvc.ErrBandwidthQuotaInvalid):
 		Fail(w, http.StatusBadRequest, CodeInvalidRequest, err.Error())
 	default:
 		Fail(w, http.StatusInternalServerError, CodeInternal, "服务器内部错误")
@@ -472,7 +478,8 @@ func (h *AdminHandlers) UpdateGroup(w http.ResponseWriter, r *http.Request) {
 	}
 	patch := adminsvc.GroupPatch{
 		Name: req.Name, StorageQuota: req.StorageQuota, MaxFileSize: req.MaxFileSize,
-		RatePerMinute: req.RatePerMinute, RatePerHour: req.RatePerHour, RatePerDay: req.RatePerDay,
+		BandwidthQuotaMonth: req.BandwidthQuotaMonth,
+		RatePerMinute:       req.RatePerMinute, RatePerHour: req.RatePerHour, RatePerDay: req.RatePerDay,
 		AllowedExts: req.AllowedExts, AllowedPolicyIDs: req.AllowedPolicyIDs,
 	}
 	g, err := h.D.Adm.UpdateGroup(id, patch)
@@ -487,6 +494,9 @@ func (h *AdminHandlers) UpdateGroup(w http.ResponseWriter, r *http.Request) {
 		}
 		if req.MaxFileSize != nil {
 			fields = append(fields, "max_file_size")
+		}
+		if req.BandwidthQuotaMonth != nil {
+			fields = append(fields, "bandwidth_quota_month")
 		}
 		if req.RatePerMinute != nil {
 			fields = append(fields, "rate_per_minute")
@@ -509,7 +519,8 @@ func (h *AdminHandlers) UpdateGroup(w http.ResponseWriter, r *http.Request) {
 	case errors.Is(err, adminsvc.ErrGroupNotFound), errors.Is(err, adminsvc.ErrPolicyNotFound):
 		Fail(w, http.StatusNotFound, CodeNotFound, err.Error())
 	case errors.Is(err, adminsvc.ErrBuiltinGroup), errors.Is(err, adminsvc.ErrGroupInUse),
-		errors.Is(err, adminsvc.ErrExtsEmpty), errors.Is(err, adminsvc.ErrGroupNameInvalid), errors.Is(err, adminsvc.ErrQuotaInvalid):
+		errors.Is(err, adminsvc.ErrExtsEmpty), errors.Is(err, adminsvc.ErrGroupNameInvalid),
+		errors.Is(err, adminsvc.ErrQuotaInvalid), errors.Is(err, adminsvc.ErrBandwidthQuotaInvalid):
 		Fail(w, http.StatusBadRequest, CodeInvalidRequest, err.Error())
 	default:
 		Fail(w, http.StatusInternalServerError, CodeInternal, "服务器内部错误")

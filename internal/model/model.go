@@ -38,29 +38,35 @@ type User struct {
 	IsAdmin         bool
 	Status          string `gorm:"size:16;default:active"` // active | banned
 	EmailVerifiedAt *time.Time
-	UsedStorage     int64       // 反规范化配额计数器，与图片增删同事务原子更新
-	Preferences     Preferences `gorm:"serializer:json"`
-	PublicProfile   bool
-	CreatedAt       time.Time
-	UpdatedAt       time.Time
+	UsedStorage     int64 // 反规范化配额计数器，与图片增删同事务原子更新
+	// BandwidthUsedMonth / BandwidthPeriod：自然月出站用量（字节）与账期 "2006-01"（Asia/Shanghai）。
+	// 账期切换时在累加路径重置 used，不删图。
+	BandwidthUsedMonth int64       `gorm:"not null;default:0"`
+	BandwidthPeriod    string      `gorm:"size:7;not null;default:''"` // YYYY-MM；空=尚未计量
+	Preferences        Preferences `gorm:"serializer:json"`
+	PublicProfile      bool
+	CreatedAt          time.Time
+	UpdatedAt          time.Time
 
 	Group *UserGroup `gorm:"foreignKey:GroupID;constraint:OnDelete:RESTRICT" json:"-"`
 }
 
 type UserGroup struct {
-	ID               uint64 `gorm:"primaryKey"`
-	Name             string `gorm:"size:64"`
-	IsDefault        bool
-	IsGuest          bool
-	StorageQuota     int64 // bytes
-	MaxFileSize      int64 // bytes
-	RatePerMinute    int
-	RatePerHour      int
-	RatePerDay       int
-	AllowedExts      []string `gorm:"serializer:json"`
-	AllowedPolicyIDs []uint64 `gorm:"serializer:json"`
-	CreatedAt        time.Time
-	UpdatedAt        time.Time
+	ID           uint64 `gorm:"primaryKey"`
+	Name         string `gorm:"size:64"`
+	IsDefault    bool
+	IsGuest      bool
+	StorageQuota int64 // bytes
+	MaxFileSize  int64 // bytes
+	// BandwidthQuotaMonth 本月出站硬顶（字节）；0=不限制。
+	BandwidthQuotaMonth int64 `gorm:"not null;default:0"`
+	RatePerMinute       int
+	RatePerHour         int
+	RatePerDay          int
+	AllowedExts         []string `gorm:"serializer:json"`
+	AllowedPolicyIDs    []uint64 `gorm:"serializer:json"`
+	CreatedAt           time.Time
+	UpdatedAt           time.Time
 }
 
 // File 物理文件（内容寻址）。去重按 (hash,surface) 唯一：hash 命中即秒传。

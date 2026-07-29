@@ -70,7 +70,18 @@ export function Nav({ user }: { user: User }) {
         ))}
       </nav>
       <div className={styles.right}>
-        {quota.data && <QuotaBar used={quota.data.used} total={quota.data.total} />}
+        {quota.data && (
+          <>
+            <QuotaBar used={quota.data.used} total={quota.data.total} kind="storage" />
+            {(quota.data.bandwidth_quota_month ?? 0) > 0 && (
+              <QuotaBar
+                used={quota.data.bandwidth_used_month ?? 0}
+                total={quota.data.bandwidth_quota_month ?? 0}
+                kind="bandwidth"
+              />
+            )}
+          </>
+        )}
         <button
           type="button"
           className={styles.themeBtn}

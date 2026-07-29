@@ -1,5 +1,60 @@
 .page { position: relative; max-width: 760px; margin: 0 auto; padding-top: 48px; padding-bottom: 32px; }
 .subtitle { margin: 0; font-size: 13px; color: var(--muted); }
+
+.quotaRow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px 24px;
+  margin-bottom: 14px;
+  padding: 10px 12px;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  background: var(--surface);
+}
+
+.loginGate {
+  margin-bottom: 14px;
+  padding: 16px 18px;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  background: var(--surface);
+}
+.loginGateTitle {
+  font-size: 15px;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  margin-bottom: 6px;
+}
+.loginGateDesc {
+  margin: 0 0 12px;
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--muted);
+}
+.loginGateCta {
+  display: inline-flex;
+  align-items: center;
+  padding: 8px 16px;
+  border-radius: 3px;
+  background: var(--text);
+  color: var(--bg);
+  font-size: 13px;
+  font-weight: 700;
+  text-decoration: none;
+}
+.loginGateCta:hover { opacity: 0.9; }
+.loginGateHint {
+  margin: 10px 0 0;
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.dropzoneMuted { opacity: 0.72; cursor: default; }
+.dropzoneMuted:hover { border-color: var(--muted); }
+.urlRowDisabled { opacity: 0.65; }
+.urlRowDisabled .fetchBtn { cursor: not-allowed; }
+.urlRowDisabled .urlInput:disabled { cursor: not-allowed; }
+
 .pageDragOverlay {
   position: fixed; inset: 0; z-index: 40;
   background: color-mix(in srgb, var(--bg) 70%, transparent);

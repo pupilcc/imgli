@@ -12,8 +12,8 @@ const GB = 1024 ** 3
 const MB = 1024 ** 2
 
 const groups = [
-  { id: 1, name: '默认组', is_default: true, is_guest: false, storage_quota: 10 * GB, max_file_size: 20 * MB, rate_per_minute: 20, rate_per_hour: 200, rate_per_day: 1000, allowed_exts: ['png', 'jpg'], allowed_policy_ids: [1], created_at: '', user_count: 2 },
-  { id: 2, name: 'VIP', is_default: false, is_guest: false, storage_quota: 100 * GB, max_file_size: 50 * MB, rate_per_minute: 60, rate_per_hour: 600, rate_per_day: 5000, allowed_exts: ['png'], allowed_policy_ids: [1], created_at: '', user_count: 0 },
+  { id: 1, name: '默认组', is_default: true, is_guest: false, storage_quota: 10 * GB, max_file_size: 20 * MB, bandwidth_quota_month: 5 * GB, rate_per_minute: 20, rate_per_hour: 200, rate_per_day: 1000, allowed_exts: ['png', 'jpg'], allowed_policy_ids: [1], created_at: '', user_count: 2 },
+  { id: 2, name: 'VIP', is_default: false, is_guest: false, storage_quota: 100 * GB, max_file_size: 50 * MB, bandwidth_quota_month: 50 * GB, rate_per_minute: 60, rate_per_hour: 600, rate_per_day: 5000, allowed_exts: ['png'], allowed_policy_ids: [1], created_at: '', user_count: 0 },
 ]
 const policies = [{ id: 1, name: '本地默认', driver: 'local', config: '{"root":"/data"}', cdn_domain: '', path_template: '', enabled: true, created_at: '', file_count: 0, used_bytes: 0 }]
 

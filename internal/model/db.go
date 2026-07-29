@@ -131,7 +131,26 @@ func Migrate(db *gorm.DB) error {
 	if err := db.FirstOrCreate(&SchemaVersion{Version: 5}).Error; err != nil { // images.slug
 		return err
 	}
-	return db.FirstOrCreate(&SchemaVersion{Version: 6}).Error // files.surface + (hash,surface) 唯一
+	if err := db.FirstOrCreate(&SchemaVersion{Version: 6}).Error; err != nil { // files.surface + (hash,surface) 唯一
+		return err
+	}
+	// v7：用户组月流量硬顶 + 用户月用量字段（AutoMigrate 已加列）；默认组补 5 GiB（0=不限，不能把管理员意图清零）。
+	if err := db.FirstOrCreate(&SchemaVersion{Version: 7}).Error; err != nil {
+		return err
+	}
+	return migrateBandwidthDefaults(db)
+}
+
+// FreeBandwidthQuotaMonth Free/默认组第一期月流量硬顶：5 GiB。
+const FreeBandwidthQuotaMonth int64 = 5 << 30
+
+// migrateBandwidthDefaults 仅当默认组 bandwidth_quota_month 仍为 0（新列默认）时写入 Free 5 GiB。
+// 已显式设为其它值（含故意 0 不限——极少，管理员可再改）时：只补「从未写过」的场景。
+// 用 schema v7 首次出现时对 is_default 组：若列为 0 则设 5GiB（与产品裁决一致）。
+func migrateBandwidthDefaults(db *gorm.DB) error {
+	return db.Model(&UserGroup{}).
+		Where("is_default = ? AND bandwidth_quota_month = 0", true).
+		Update("bandwidth_quota_month", FreeBandwidthQuotaMonth).Error
 }
 
 // migrateSurface 完成 files.surface 的存量适配：回填空 surface 为 public，并删除旧的
@@ -153,7 +172,9 @@ func Seed(db *gorm.DB) error {
 		defGroup := UserGroup{
 			Name: "默认组", IsDefault: true,
 			StorageQuota: 10 << 30, MaxFileSize: 20 << 20, // 10 GB / 20 MB（原型 MAX 20 MB）
-			RatePerMinute: 20, RatePerHour: 200, RatePerDay: 1000,
+			// 月流量硬顶 5 GiB（产品裁决 Free）；存储与流量独立。
+			BandwidthQuotaMonth: FreeBandwidthQuotaMonth,
+			RatePerMinute:       20, RatePerHour: 200, RatePerDay: 1000,
 			AllowedExts:      []string{"png", "jpg", "jpeg", "gif", "webp"},
 			AllowedPolicyIDs: []uint64{1},
 		}

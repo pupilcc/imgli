@@ -18,6 +18,15 @@ separate version in `go.mod` or `web/package.json`.
 
 ### Added
 
+- **Monthly bandwidth hard cap (v1):** user-group `bandwidth_quota_month` (Free/default
+  seed **5 GiB/month**, Asia/Shanghai calendar month); meter on successful `/i`/`/t`
+  gate release by object size; block upload + 429 when exceeded; usage on
+  `GET /user/quota`; admin group field; Nav/upload meters. See product decisions
+  for scope (no CDN true-hit metering; hotlink still off by default).
+- **Guest landing UX:** unauthenticated `/` stays on upload page with sign-in CTA
+  when guest upload is off (no hard redirect to login only).
+- **Auth `next` return:** login/register honors safe `?next=` (open-redirect safe)
+  so users return to upload or the page they attempted.
 - GitHub issue templates (bug / feature / S3 vendor report) and PR template.
 - Docs: `docs/s3-compatibility.md` matrix stub and
   `docs/security-hardening.md` (private object storage / proxy checklist).

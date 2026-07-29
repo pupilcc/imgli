@@ -20,6 +20,8 @@ interface FormState {
   name: string
   quotaGB: string
   maxMB: string
+  /** 月流量硬顶 GB；0=不限 */
+  bwGB: string
   perMin: string
   perHour: string
   perDay: string
@@ -28,7 +30,7 @@ interface FormState {
 }
 
 const NEW_FORM: FormState = {
-  name: '', quotaGB: '10', maxMB: '20', perMin: '20', perHour: '200', perDay: '1000',
+  name: '', quotaGB: '10', maxMB: '20', bwGB: '5', perMin: '20', perHour: '200', perDay: '1000',
   exts: ['png', 'jpg', 'jpeg', 'gif', 'webp'], policyIds: [],
 }
 
@@ -37,6 +39,7 @@ function formOf(g: AdminGroup): FormState {
     name: g.name,
     quotaGB: toGB(g.storage_quota),
     maxMB: toMB(g.max_file_size),
+    bwGB: toGB(g.bandwidth_quota_month ?? 0),
     perMin: String(g.rate_per_minute),
     perHour: String(g.rate_per_hour),
     perDay: String(g.rate_per_day),
@@ -50,6 +53,7 @@ function createBody(f: FormState): GroupWriteBody {
     name: f.name.trim(),
     storage_quota: Math.round(Number(f.quotaGB) * GB),
     max_file_size: Math.round(Number(f.maxMB) * MB),
+    bandwidth_quota_month: Math.round(Number(f.bwGB) * GB),
     rate_per_minute: Number(f.perMin),
     rate_per_hour: Number(f.perHour),
     rate_per_day: Number(f.perDay),
@@ -64,6 +68,7 @@ function patchBody(o: AdminGroup, f: FormState): GroupWriteBody {
   if (f.name.trim() !== o.name) b.name = f.name.trim()
   if (f.quotaGB !== toGB(o.storage_quota)) b.storage_quota = Math.round(Number(f.quotaGB) * GB)
   if (f.maxMB !== toMB(o.max_file_size)) b.max_file_size = Math.round(Number(f.maxMB) * MB)
+  if (f.bwGB !== toGB(o.bandwidth_quota_month ?? 0)) b.bandwidth_quota_month = Math.round(Number(f.bwGB) * GB)
   if (Number(f.perMin) !== o.rate_per_minute) b.rate_per_minute = Number(f.perMin)
   if (Number(f.perHour) !== o.rate_per_hour) b.rate_per_hour = Number(f.perHour)
   if (Number(f.perDay) !== o.rate_per_day) b.rate_per_day = Number(f.perDay)
@@ -189,6 +194,14 @@ export function GroupsPage() {
                   <Input label={t('adminA.quotaGB')} type="number" min={0} value={form.quotaGB} onChange={(e) => set('quotaGB', e.target.value)} />
                   <Input label={t('adminA.maxFileMB')} type="number" min={0} value={form.maxMB} onChange={(e) => set('maxMB', e.target.value)} />
                 </div>
+                <Input
+                  label={t('adminA.bandwidthQuotaGB')}
+                  type="number"
+                  min={0}
+                  value={form.bwGB}
+                  extra={<span className={styles.hint}>{t('adminA.bandwidthQuotaHint')}</span>}
+                  onChange={(e) => set('bwGB', e.target.value)}
+                />
                 <div className={styles.grid3}>
                   <Input label={t('adminA.ratePerMin')} type="number" min={0} value={form.perMin} onChange={(e) => set('perMin', e.target.value)} />
                   <Input label={t('adminA.ratePerHour')} type="number" min={0} value={form.perHour} onChange={(e) => set('perHour', e.target.value)} />

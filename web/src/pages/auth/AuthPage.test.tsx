@@ -8,14 +8,15 @@ function jsonRes(body: unknown, status = 200): Response {
   return { ok: status < 400, status, json: () => Promise.resolve(body) } as unknown as Response
 }
 
-function renderPage() {
+function renderPage(entry = '/login') {
   const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } })
   render(
     <QueryClientProvider client={qc}>
-      <MemoryRouter initialEntries={['/login']}>
+      <MemoryRouter initialEntries={[entry]}>
         <Routes>
           <Route path="/login" element={<AuthPage />} />
           <Route path="/" element={<div>HOME</div>} />
+          <Route path="/images" element={<div>IMAGES</div>} />
         </Routes>
       </MemoryRouter>
     </QueryClientProvider>,
@@ -59,6 +60,33 @@ it('登录成功后跳转首页', async () => {
     await vi.advanceTimersByTimeAsync(500)
   })
   expect(screen.getByText('HOME')).toBeInTheDocument()
+  vi.useRealTimers()
+})
+
+it('登录成功后跳转 next 指定路径', async () => {
+  vi.useFakeTimers()
+  const f = vi.fn((url: RequestInfo | URL, init?: RequestInit) => {
+    void init
+    const u = String(url)
+    if (u.endsWith('/config'))
+      return Promise.resolve(jsonRes({ status: true, message: 'ok', data: { site_name: 'img.li', registration_mode: 'open', guest_upload_enabled: false, guest: null } }))
+    return Promise.resolve(jsonRes({ status: true, message: 'ok', data: { id: 1, username: 'ling' } }))
+  })
+  vi.stubGlobal('fetch', f)
+  renderPage('/login?next=%2Fimages')
+
+  act(() => {
+    fireEvent.change(screen.getByLabelText('账号'), { target: { value: 'ling' } })
+    fireEvent.change(screen.getByLabelText('密码'), { target: { value: 'passw0rd' } })
+  })
+  await act(async () => {
+    fireEvent.click(screen.getByTestId('auth-submit'))
+    await vi.advanceTimersByTimeAsync(0)
+  })
+  await act(async () => {
+    await vi.advanceTimersByTimeAsync(500)
+  })
+  expect(screen.getByText('IMAGES')).toBeInTheDocument()
   vi.useRealTimers()
 })
 

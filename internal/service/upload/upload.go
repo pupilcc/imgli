@@ -22,6 +22,7 @@ import (
 
 	"github.com/yixian-huang/imgli/internal/imaging"
 	"github.com/yixian-huang/imgli/internal/model"
+	"github.com/yixian-huang/imgli/internal/service/bandwidth"
 	"github.com/yixian-huang/imgli/internal/service/moderation"
 	"github.com/yixian-huang/imgli/internal/service/settings"
 	"github.com/yixian-huang/imgli/internal/service/storagesvc"
@@ -38,6 +39,7 @@ var (
 	ErrExtNotAllowed     = errors.New("upload: 文件类型不被允许")
 	ErrFileTooLarge      = errors.New("upload: 文件超过大小上限")
 	ErrQuotaExceeded     = errors.New("upload: 存储配额不足")
+	ErrBandwidthExceeded = errors.New("upload: 本月流量已用尽")
 	ErrDimensionOver     = errors.New("upload: 图片尺寸过大")
 	ErrInvalidImage      = errors.New("upload: 不是有效图片")
 	ErrGuestNotSupported = errors.New("upload: 游客上传暂未开放")
@@ -186,6 +188,14 @@ func (s *Service) Save(ctx context.Context, tmpPath, filename string, u *model.U
 		}
 		if freshUsed+size > group.StorageQuota {
 			return nil, ErrQuotaExceeded
+		}
+	}
+	// 月流量硬顶：到顶禁上传（出图侧 serve 另拦）。
+	if u != nil {
+		if err := bandwidth.Check(s.db, u.ID); errors.Is(err, bandwidth.ErrExceeded) {
+			return nil, ErrBandwidthExceeded
+		} else if err != nil {
+			return nil, err
 		}
 	}
 

@@ -20,6 +20,7 @@ const (
 	CodeInternal           = "internal_error"
 	CodeForbidden          = "forbidden"
 	CodeGone               = "resource_gone"
+	CodeBandwidthExceeded  = "bandwidth_exceeded"
 )
 
 // MaxExpiresInSec 有效期上限(1 年):既作业务上限(过期用于临时分享无需多年),又防

@@ -134,6 +134,9 @@ func (h *UserHandlers) Quota(w http.ResponseWriter, r *http.Request) {
 	OK(w, map[string]any{
 		"used": qi.Used, "total": qi.Total,
 		"max_file_size": qi.MaxFileSize, "allowed_exts": qi.AllowedExts,
+		"bandwidth_used_month":  qi.BandwidthUsed,
+		"bandwidth_quota_month": qi.BandwidthQuota,
+		"bandwidth_period":      qi.BandwidthPeriod,
 	})
 }
 

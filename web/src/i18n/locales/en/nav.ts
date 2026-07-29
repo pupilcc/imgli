@@ -9,6 +9,8 @@ export default {
   admin: 'Admin',
   logout: 'Sign out',
   loginToManage: 'Sign in to manage images',
+  loginOrRegister: 'Sign in / Register',
+
   backToConsole: '← Back to app',
   backToUpload: 'Back to upload',
   login: 'Sign in',

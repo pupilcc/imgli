@@ -16,6 +16,8 @@ var (
 	ErrGroupNameInvalid = errors.New("组名需 1-64 个字符")
 	// ErrQuotaInvalid storage_quota / max_file_size 必须 > 0。
 	ErrQuotaInvalid = errors.New("storage_quota 与 max_file_size 需 > 0")
+	// ErrBandwidthQuotaInvalid bandwidth_quota_month 必须 >= 0（0=不限制）。
+	ErrBandwidthQuotaInvalid = errors.New("bandwidth_quota_month 需 >= 0")
 	// ErrPolicyNotFound allowed_policy_ids 中存在未知的存储策略 id。
 	ErrPolicyNotFound = errors.New("存储策略不存在")
 	// ErrBuiltinGroup 内置组（IsDefault/IsGuest）不可改名或删除——防止误改语义锚点。
@@ -33,14 +35,15 @@ type GroupRow struct {
 
 // GroupPatch 是 UpdateGroup 的部分更新载荷：nil 字段保持不变。
 type GroupPatch struct {
-	Name             *string
-	StorageQuota     *int64
-	MaxFileSize      *int64
-	RatePerMinute    *int
-	RatePerHour      *int
-	RatePerDay       *int
-	AllowedExts      *[]string
-	AllowedPolicyIDs *[]uint64
+	Name                *string
+	StorageQuota        *int64
+	MaxFileSize         *int64
+	BandwidthQuotaMonth *int64 // >=0；0=不限制
+	RatePerMinute       *int
+	RatePerHour         *int
+	RatePerDay          *int
+	AllowedExts         *[]string
+	AllowedPolicyIDs    *[]uint64
 }
 
 // ListGroups 按 id 升序返回全部用户组，含每组实时用户数。组数量少，不分页。
@@ -127,6 +130,9 @@ func (s *Service) CreateGroup(g *model.UserGroup) error {
 	if g.StorageQuota <= 0 || g.MaxFileSize <= 0 {
 		return ErrQuotaInvalid
 	}
+	if g.BandwidthQuotaMonth < 0 {
+		return ErrBandwidthQuotaInvalid
+	}
 	exts, err := normalizeExts(g.AllowedExts)
 	if err != nil {
 		return err
@@ -187,6 +193,13 @@ func (s *Service) UpdateGroup(id uint64, p GroupPatch) (*model.UserGroup, error)
 		}
 		g.MaxFileSize = *p.MaxFileSize
 		cols = append(cols, "max_file_size")
+	}
+	if p.BandwidthQuotaMonth != nil {
+		if *p.BandwidthQuotaMonth < 0 {
+			return nil, ErrBandwidthQuotaInvalid
+		}
+		g.BandwidthQuotaMonth = *p.BandwidthQuotaMonth
+		cols = append(cols, "bandwidth_quota_month")
 	}
 	if p.RatePerMinute != nil {
 		g.RatePerMinute = *p.RatePerMinute
