@@ -152,7 +152,10 @@ func (s *Server) mountAPI() {
 	mailSvc := mail.New(s.opts.DB)
 	authSvc.Mailer = mailSvc
 	authSvc.BaseURL = s.opts.Cfg.BaseURL
-	admH := &handler.AdminHandlers{D: handler.AdminDeps{Adm: adm, Res: storageRes, Mail: mailSvc, Stats: s.stats, Mod: modSvc}}
+	admH := &handler.AdminHandlers{D: handler.AdminDeps{
+		Adm: adm, Res: storageRes, Mail: mailSvc, Stats: s.stats, Mod: modSvc,
+		OwnHost: baseHost(s.opts.Cfg.BaseURL),
+	}}
 
 	uh := &handler.UserHandlers{
 		Svc: authSvc, Img: imgSvc, Adm: adm,
@@ -228,6 +231,7 @@ func (s *Server) mountAPI() {
 			priv.Route("/admin", func(ar chi.Router) {
 				ar.Use(handler.RequireAdmin)
 				ar.Get("/stats", admH.Stats)
+				ar.Get("/referers/images", admH.RefererImages)
 				ar.Get("/users", admH.Users)
 				ar.Patch("/users/{id}", admH.UpdateUser)
 				ar.Post("/users/{id}/reset-password", admH.ResetPassword)

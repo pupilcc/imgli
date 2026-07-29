@@ -69,16 +69,30 @@ export function AuthPage() {
           : t('auth.requestFailed'),
       )
     if (isLogin) login.mutate({ account: account.trim(), password: pwd }, { onSuccess, onError })
-    else
+    else {
+      const utm = {
+        utm_source: searchParams.get('utm_source') || undefined,
+        utm_medium: searchParams.get('utm_medium') || undefined,
+        utm_campaign: searchParams.get('utm_campaign') || undefined,
+      }
+      let referer_host: string | undefined
+      try {
+        if (document.referrer) referer_host = new URL(document.referrer).hostname || undefined
+      } catch {
+        /* ignore */
+      }
       register.mutate(
         {
           username: username.trim(),
           email: email.trim(),
           password: pwd,
           ...(regInvite ? { invite_code: invite.trim().toUpperCase() } : {}),
+          ...utm,
+          ...(referer_host ? { referer_host } : {}),
         },
         { onSuccess, onError },
       )
+    }
   }
 
   const submitLabel = done

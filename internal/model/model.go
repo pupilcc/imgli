@@ -41,8 +41,15 @@ type User struct {
 	UsedStorage     int64 // 反规范化配额计数器，与图片增删同事务原子更新
 	// BandwidthUsedMonth / BandwidthPeriod：自然月出站用量（字节）与账期 "2006-01"（Asia/Shanghai）。
 	// 账期切换时在累加路径重置 used，不删图。
-	BandwidthUsedMonth int64       `gorm:"not null;default:0"`
-	BandwidthPeriod    string      `gorm:"size:7;not null;default:''"` // YYYY-MM；空=尚未计量
+	BandwidthUsedMonth int64  `gorm:"not null;default:0"`
+	BandwidthPeriod    string `gorm:"size:7;not null;default:''"` // YYYY-MM；空=尚未计量
+	// Signup*：注册时刻轻量归因（无持续追踪）。Channel: direct|invite|utm|referer|unknown
+	SignupChannel      string      `gorm:"size:16;not null;default:''"`
+	SignupUTMSource    string      `gorm:"size:64;not null;default:''"`
+	SignupUTMMedium    string      `gorm:"size:64;not null;default:''"`
+	SignupUTMCampaign  string      `gorm:"size:64;not null;default:''"`
+	SignupRefererHost  string      `gorm:"size:255;not null;default:''"` // host only
+	SignupInviteCodeID *uint64     `gorm:"index"`
 	Preferences        Preferences `gorm:"serializer:json"`
 	PublicProfile      bool
 	CreatedAt          time.Time
@@ -244,12 +251,21 @@ type RefererStat struct {
 	Count int64
 }
 
+// RefererImageStat host×image×day 聚合，供 admin「某 host 打了哪些图」。
+type RefererImageStat struct {
+	ID      uint64 `gorm:"primaryKey"`
+	ImageID uint64 `gorm:"uniqueIndex:idx_refimg,priority:1"`
+	Host    string `gorm:"size:255;uniqueIndex:idx_refimg,priority:2"`
+	Date    string `gorm:"size:10;uniqueIndex:idx_refimg,priority:3"`
+	Count   int64
+}
+
 // AllModels Migrate 的唯一来源。
 func AllModels() []any {
 	return []any{
 		&User{}, &UserGroup{}, &File{}, &Image{}, &Album{},
 		&APIToken{}, &Session{}, &AuthToken{}, &InviteCode{},
 		&StoragePolicy{}, &Setting{}, &Task{}, &AuditLog{}, &SchemaVersion{},
-		&AccessStat{}, &RefererStat{},
+		&AccessStat{}, &RefererStat{}, &RefererImageStat{},
 	}
 }

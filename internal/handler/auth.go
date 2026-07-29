@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"strings"
 	"time"
 
 	"github.com/yixian-huang/imgli/internal/model"
@@ -77,12 +78,28 @@ func (h *AuthHandlers) Register(w http.ResponseWriter, r *http.Request) {
 	var req struct {
 		Username, Email, Password string
 		InviteCode                string `json:"invite_code"`
+		UTMSource                 string `json:"utm_source"`
+		UTMMedium                 string `json:"utm_medium"`
+		UTMCampaign               string `json:"utm_campaign"`
+		RefererHost               string `json:"referer_host"`
 	}
 	if err := DecodeJSON(r, &req); err != nil {
 		Fail(w, http.StatusBadRequest, CodeInvalidRequest, "请求体不是合法 JSON")
 		return
 	}
-	u, err := h.Svc.Register(req.Username, req.Email, req.Password, req.InviteCode)
+	meta := auth.SignupMeta{
+		UTMSource:   req.UTMSource,
+		UTMMedium:   req.UTMMedium,
+		UTMCampaign: req.UTMCampaign,
+		RefererHost: req.RefererHost,
+	}
+	// Prefer body referer_host; fall back to HTTP Referer header host only.
+	if strings.TrimSpace(meta.RefererHost) == "" {
+		if ref := r.Header.Get("Referer"); ref != "" {
+			meta.RefererHost = ref
+		}
+	}
+	u, err := h.Svc.RegisterWithMeta(req.Username, req.Email, req.Password, req.InviteCode, meta)
 	if err != nil {
 		failAuth(w, err)
 		return

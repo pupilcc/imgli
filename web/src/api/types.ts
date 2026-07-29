@@ -170,6 +170,18 @@ export interface TrafficDay {
 export interface TopReferer {
   host: string
   count: number
+  suspect?: boolean
+}
+
+export interface ChannelCount {
+  channel: string
+  count: number
+}
+
+export interface BandwidthTopUser {
+  user_id: number
+  username: string
+  used: number
 }
 
 export interface AdminStats {
@@ -183,7 +195,21 @@ export interface AdminStats {
   tasks_running: number
   daily: DailyCount[] | null
   traffic_7d: TrafficDay[]
+  traffic_30d?: TrafficDay[]
   top_referers: TopReferer[]
+  top_referers_30d?: TopReferer[]
+  signups_30d?: DailyCount[]
+  signup_channels_30d?: ChannelCount[]
+  bandwidth_used_month?: number
+  bandwidth_top_users?: BandwidthTopUser[]
+  origin_metering_only?: boolean
+  stats_retention_days?: number
+}
+
+export interface RefererImageRow {
+  key: string
+  name: string
+  count: number
 }
 
 export interface AuditLog {

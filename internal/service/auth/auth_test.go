@@ -301,7 +301,9 @@ func TestRegisterInviteMode(t *testing.T) {
 	}
 	// 好码:注册成功且核销(记 used_by/used_at);小写输入应被规整
 	seedInvite(t, db, "IL-G88D-G88D", nil)
-	u, err := svc.Register("alice", "alice@img.li", "passw0rd", " il-g88d-g88d ")
+	u, err := svc.RegisterWithMeta("alice", "alice@img.li", "passw0rd", " il-g88d-g88d ", SignupMeta{
+		UTMSource: "should-lose-to-invite",
+	})
 	if err != nil {
 		t.Fatalf("好码注册失败: %v", err)
 	}
@@ -311,6 +313,9 @@ func TestRegisterInviteMode(t *testing.T) {
 	}
 	if ic.UsedBy == nil || *ic.UsedBy != u.ID || ic.UsedAt == nil {
 		t.Errorf("码未核销: used_by=%v used_at=%v", ic.UsedBy, ic.UsedAt)
+	}
+	if u.SignupChannel != ChannelInvite {
+		t.Errorf("signup_channel=%q want invite", u.SignupChannel)
 	}
 	// 二次使用同码:拒绝,且用户不残留
 	if _, err := svc.Register("bob", "bob@img.li", "passw0rd", "IL-G88D-G88D"); !errors.Is(err, ErrInviteInvalid) {
@@ -331,13 +336,40 @@ func TestRegisterOpenModeIgnoresInvite(t *testing.T) {
 	}
 }
 
+func TestRegisterWithMetaUTMAndReferer(t *testing.T) {
+	db := model.TestDB(t)
+	svc := New(db, settings.New(db))
+	u, err := svc.RegisterWithMeta("utmuser", "utm@img.li", "passw0rd1", "", SignupMeta{
+		UTMSource: "github", UTMMedium: "social", UTMCampaign: "v02",
+		RefererHost: "https://news.example/path",
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if u.SignupChannel != ChannelUTM {
+		t.Fatalf("channel=%s want utm", u.SignupChannel)
+	}
+	if u.SignupUTMSource != "github" || u.SignupRefererHost != "news.example" {
+		t.Fatalf("meta=%+v", u)
+	}
+	u2, err := svc.RegisterWithMeta("refuser", "ref@img.li", "passw0rd1", "", SignupMeta{
+		RefererHost: "blog.example",
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if u2.SignupChannel != ChannelReferer || u2.SignupRefererHost != "blog.example" {
+		t.Fatalf("ref user=%+v", u2)
+	}
+}
+
 // fakeMailer 并发安全邮件桩;异步发送经 waitReset/waitVerify 轮询。
 type fakeMailer struct {
-	mu                           sync.Mutex
-	resetTo, resetLink, resetLang string
+	mu                               sync.Mutex
+	resetTo, resetLink, resetLang    string
 	verifyTo, verifyLink, verifyLang string
-	resetCalls                   int
-	verifyCalls                  int
+	resetCalls                       int
+	verifyCalls                      int
 }
 
 func newFakeMailer() *fakeMailer { return &fakeMailer{} }

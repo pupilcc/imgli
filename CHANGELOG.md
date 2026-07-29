@@ -10,6 +10,19 @@ separate version in `go.mod` or `web/package.json`.
 
 ## [Unreleased]
 
+### Added
+
+- **Admin ops dashboard (light analytics):** signup trend + coarse channels
+  (`direct|invite|utm|referer`); traffic 7d/30d; referer Top with window toggle,
+  suspect flag, host → top images; bandwidth period sum + top users; origin-only
+  metering footnote.
+- **Signup attribution (register-time only):** optional `utm_*` / `referer_host`
+  on `POST /auth/register`; SPA passes URL UTM + `document.referrer` host.
+- **Referer image rollup:** `referer_image_stats` + `GET /api/v1/admin/referers/images`.
+- **Stats retention:** rolling 90-day purge of access/referer tables.
+- **Ops docs:** `deploy/ops/admin-stats-metering.md` (CDN under-count boundary).
+- **`imgli doctor`:** WARN when enabled policies set `cdn_domain` (dashboard ≠ CDN bill).
+
 ## [0.2.0] - 2026-07-29
 
 Theme: **Workflow & Trust** — CLI/integrations, share landing, privacy

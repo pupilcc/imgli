@@ -75,6 +75,61 @@ func TestRunHappyLocal(t *testing.T) {
 	_ = os.Remove(filepath.Join(dir, ".imgli-doctor-write"))
 }
 
+func TestCDNMeteringWarn(t *testing.T) {
+	dir := t.TempDir()
+	cfg := &config.Config{
+		Listen:  "127.0.0.1:0",
+		BaseURL: "https://img.li",
+		DataDir: dir,
+		Database: config.Database{
+			Driver: "sqlite",
+			DSN:    filepath.Join(dir, "cdn.db"),
+		},
+	}
+	db, err := model.Open(cfg)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := model.Migrate(db); err != nil {
+		t.Fatal(err)
+	}
+	if err := model.Seed(db); err != nil {
+		t.Fatal(err)
+	}
+	// Set CDN on default policy if present; else create one.
+	var p model.StoragePolicy
+	if err := db.Where("enabled = ?", true).First(&p).Error; err != nil {
+		p = model.StoragePolicy{Name: "cdn-pol", Driver: "local", Enabled: true, CDNDomain: "https://i.example", Config: map[string]string{"root": "uploads"}}
+		if err := db.Create(&p).Error; err != nil {
+			t.Fatal(err)
+		}
+	} else {
+		if err := db.Model(&p).Update("cdn_domain", "https://i.example").Error; err != nil {
+			t.Fatal(err)
+		}
+	}
+	sqlDB, _ := db.DB()
+	_ = sqlDB.Close()
+
+	rep := Run(cfg)
+	var found *Check
+	for i := range rep.Checks {
+		if rep.Checks[i].Name == "cdn_metering" {
+			found = &rep.Checks[i]
+			break
+		}
+	}
+	if found == nil {
+		t.Fatal("missing cdn_metering check")
+	}
+	if found.Level != Warn {
+		t.Fatalf("cdn_metering level=%s want warn msg=%q", found.Level, found.Message)
+	}
+	if !strings.Contains(found.Message, "边缘") && !strings.Contains(strings.ToLower(found.Message), "cdn") {
+		t.Fatalf("msg should mention CDN caveat: %q", found.Message)
+	}
+}
+
 func TestRunDataDirNotWritable(t *testing.T) {
 	// skip if root
 	if os.Getuid() == 0 {

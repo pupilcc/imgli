@@ -3,10 +3,21 @@ import { t } from '../i18n'
 import { errorText } from '../i18n/errorText'
 import { useGlobal } from '../store'
 import { api, ApiError, del, patch, post, put } from './client'
-import type { AdminGroup, AdminImageItem, AdminImagesPage, AdminInvitesPage, AdminLogsPage, AdminPolicy, AdminSettings, AdminStats, AdminUser, AdminUsersPage, ReviewBatchResult } from './types'
+import type { AdminGroup, AdminImageItem, AdminImagesPage, AdminInvitesPage, AdminLogsPage, AdminPolicy, AdminSettings, AdminStats, AdminUser, AdminUsersPage, RefererImageRow, ReviewBatchResult } from './types'
 
 export function useAdminStats() {
   return useQuery({ queryKey: ['admin', 'stats'], queryFn: () => api<AdminStats>('/admin/stats') })
+}
+
+export function useAdminRefererImages(host: string | null, days = 30) {
+  const p = new URLSearchParams()
+  if (host) p.set('host', host)
+  p.set('days', String(days))
+  return useQuery({
+    queryKey: ['admin', 'referers', 'images', host, days],
+    queryFn: () => api<{ host: string; items: RefererImageRow[] }>(`/admin/referers/images?${p}`),
+    enabled: !!host,
+  })
 }
 
 export interface LogsFilter {

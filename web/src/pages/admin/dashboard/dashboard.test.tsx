@@ -40,10 +40,20 @@ function mockBackend(statsExtra: Record<string, unknown> = {}) {
               tasks_running: 0,
               daily: [{ date: '2026-07-17', count: 6 }],
               traffic_7d: TRAFFIC_7D,
+              traffic_30d: TRAFFIC_7D,
               top_referers: [
-                { host: 'a.example', count: 12 },
+                { host: 'a.example', count: 12, suspect: true },
                 { host: 'b.example', count: 3 },
               ],
+              top_referers_30d: [
+                { host: 'a.example', count: 12, suspect: true },
+                { host: 'b.example', count: 3 },
+              ],
+              signups_30d: [{ date: '2026-07-17', count: 2 }],
+              signup_channels_30d: [{ channel: 'direct', count: 2 }],
+              bandwidth_used_month: 1024,
+              bandwidth_top_users: [],
+              origin_metering_only: true,
               ...statsExtra,
             }),
           ),
@@ -104,18 +114,19 @@ it('趋势图挂载(桩)+ 最近事件文案', async () => {
   expect(screen.getByText('future_action')).toBeInTheDocument() // 未知 action 显示原码
 })
 
-it('7 日流量卡 + 来源 Top10 表', async () => {
+it('运营流量 + 来源表 + 源站脚注', async () => {
   mockBackend()
   renderPage()
-  expect(await screen.findByText('7 日流量')).toBeInTheDocument()
-  expect(screen.getByText('来源 Top10')).toBeInTheDocument()
+  expect(await screen.findByText('30 日流量')).toBeInTheDocument()
+  expect(screen.getByText('来源 Top')).toBeInTheDocument()
   expect(screen.getByText('a.example')).toBeInTheDocument()
   expect(screen.getByText('b.example')).toBeInTheDocument()
-  expect(screen.getAllByTestId('trend-chart').length).toBe(2)
+  expect(screen.getAllByText(/仅统计源站可见访问/).length).toBeGreaterThanOrEqual(1)
+  expect(screen.getAllByTestId('trend-chart').length).toBeGreaterThanOrEqual(3)
 })
 
 it('top_referers 空:显示暂无外链访问', async () => {
-  mockBackend({ top_referers: [] })
+  mockBackend({ top_referers: [], top_referers_30d: [] })
   renderPage()
   expect(await screen.findByText('暂无外链访问')).toBeInTheDocument()
 })

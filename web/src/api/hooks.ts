@@ -64,11 +64,21 @@ export function useLogin() {
   })
 }
 
+export type RegisterBody = {
+  username: string
+  email: string
+  password: string
+  invite_code?: string
+  utm_source?: string
+  utm_medium?: string
+  utm_campaign?: string
+  referer_host?: string
+}
+
 export function useRegister() {
   const qc = useQueryClient()
   return useMutation({
-    mutationFn: (body: { username: string; email: string; password: string; invite_code?: string }) =>
-      post<User>('/auth/register', body),
+    mutationFn: (body: RegisterBody) => post<User>('/auth/register', body),
     onSuccess: (user) => qc.setQueryData(sessionKey, user),
     onError: () => {},
   })

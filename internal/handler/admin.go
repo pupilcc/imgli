@@ -22,23 +22,51 @@ import (
 
 // AdminDeps 管理端 handler 依赖。
 type AdminDeps struct {
-	Adm   *adminsvc.Service
-	Res   *storagesvc.Resolver
-	Mail  *mail.Service
-	Stats *stats.Service
-	Mod   *moderation.Service // 可选；拒绝通知
+	Adm     *adminsvc.Service
+	Res     *storagesvc.Resolver
+	Mail    *mail.Service
+	Stats   *stats.Service
+	Mod     *moderation.Service // 可选；拒绝通知
+	OwnHost string              // BaseURL host，用于 referer suspect 排除自站
 }
 
 type AdminHandlers struct{ D AdminDeps }
 
 // Stats GET /api/v1/admin/stats
 func (h *AdminHandlers) Stats(w http.ResponseWriter, r *http.Request) {
-	st, err := h.D.Adm.Stats()
+	st, err := h.D.Adm.StatsWithOwnHost(h.D.OwnHost)
 	if err != nil {
 		Fail(w, http.StatusInternalServerError, CodeInternal, "服务器内部错误")
 		return
 	}
 	OK(w, st)
+}
+
+// RefererImages GET /api/v1/admin/referers/images?host=&days=&limit=
+func (h *AdminHandlers) RefererImages(w http.ResponseWriter, r *http.Request) {
+	host := r.URL.Query().Get("host")
+	if host == "" {
+		Fail(w, http.StatusBadRequest, CodeInvalidRequest, "host 必填")
+		return
+	}
+	days := 30
+	if v := r.URL.Query().Get("days"); v != "" {
+		if n, err := strconv.Atoi(v); err == nil && n > 0 {
+			days = n
+		}
+	}
+	limit := 20
+	if v := r.URL.Query().Get("limit"); v != "" {
+		if n, err := strconv.Atoi(v); err == nil && n > 0 {
+			limit = n
+		}
+	}
+	rows, err := h.D.Adm.TopImagesByRefererHost(host, days, limit)
+	if err != nil {
+		Fail(w, http.StatusBadRequest, CodeInvalidRequest, err.Error())
+		return
+	}
+	OK(w, map[string]any{"host": host, "items": rows})
 }
 
 // adminUserDTO 管理端视角的用户字段（不含 image_count，供 PATCH 响应复用）。
@@ -48,6 +76,7 @@ func adminUserDTO(u *model.User) map[string]any {
 		"nickname": u.Nickname, "group_id": u.GroupID, "status": u.Status,
 		"is_admin": u.IsAdmin, "used_storage": u.UsedStorage,
 		"email_verified": u.EmailVerifiedAt != nil,
+		"signup_channel": u.SignupChannel,
 		"created_at":     u.CreatedAt.Format(time.RFC3339),
 	}
 }

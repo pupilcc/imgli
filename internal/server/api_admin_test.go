@@ -1654,6 +1654,7 @@ func TestAdminGateMatrix(t *testing.T) {
 		body   string
 	}{
 		{"GET", "/api/v1/admin/stats", ""},
+		{"GET", "/api/v1/admin/referers/images", ""},
 		{"GET", "/api/v1/admin/users", ""},
 		{"PATCH", "/api/v1/admin/users/1", `{"status":"active"}`},
 		{"POST", "/api/v1/admin/users/1/reset-password", ""},
@@ -1677,8 +1678,8 @@ func TestAdminGateMatrix(t *testing.T) {
 		{"POST", "/api/v1/admin/settings/smtp/test", `{"to":"a@b.c"}`},
 		{"GET", "/api/v1/admin/logs", ""},
 	}
-	if len(routes) != 23 {
-		t.Fatalf("路由清单应为 23 条（对照 server.go mountAPI 的 /admin Route 注册）, got %d", len(routes))
+	if len(routes) != 24 {
+		t.Fatalf("路由清单应为 24 条（对照 server.go mountAPI 的 /admin Route 注册）, got %d", len(routes))
 	}
 
 	s, _, user := adminTestServer(t)

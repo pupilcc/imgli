@@ -77,9 +77,15 @@ func New(db *gorm.DB, st *settings.Service) *Service {
 	return &Service{db: db, st: st}
 }
 
-// Register 创建用户。open 直接注册(忽略邀请码);invite 需有效邀请码(事务内核销,
-// 条件 UPDATE 防并发双用);closed 拒绝。第一个注册用户自动成为管理员(spec §7)。
+// Register 创建用户（无归因）。等价于 RegisterWithMeta(..., SignupMeta{})。
 func (s *Service) Register(username, email, password, inviteCode string) (*model.User, error) {
+	return s.RegisterWithMeta(username, email, password, inviteCode, SignupMeta{})
+}
+
+// RegisterWithMeta 创建用户并可写入注册时刻轻量归因。open 直接注册(忽略邀请码);
+// invite 需有效邀请码(事务内核销,条件 UPDATE 防并发双用);closed 拒绝。
+// 第一个注册用户自动成为管理员(spec §7)。
+func (s *Service) RegisterWithMeta(username, email, password, inviteCode string, meta SignupMeta) (*model.User, error) {
 	mode := s.st.RegistrationMode()
 	code := strings.ToUpper(strings.TrimSpace(inviteCode))
 	switch mode {
@@ -104,6 +110,7 @@ func (s *Service) Register(username, email, password, inviteCode string) (*model
 	if err != nil {
 		return nil, err
 	}
+	meta = meta.Sanitize()
 	var u *model.User
 	err = s.db.Transaction(func(tx *gorm.DB) error {
 		var n int64
@@ -123,15 +130,22 @@ func (s *Service) Register(username, email, password, inviteCode string) (*model
 		if err := tx.Where("is_default = ?", true).First(&group).Error; err != nil {
 			return err
 		}
+		inviteUsed := mode == "invite"
 		u = &model.User{
 			Username: username, Email: email, PasswordHash: hash,
 			Nickname: username, GroupID: group.ID,
-			Status: "active",
+			Status:            "active",
+			SignupChannel:     DeriveChannel(inviteUsed, meta),
+			SignupUTMSource:   meta.UTMSource,
+			SignupUTMMedium:   meta.UTMMedium,
+			SignupUTMCampaign: meta.UTMCampaign,
+			SignupRefererHost: meta.RefererHost,
 		}
 		if err := tx.Create(u).Error; err != nil {
 			return err
 		}
 		if mode == "invite" {
+			var inv model.InviteCode
 			res := tx.Model(&model.InviteCode{}).
 				Where("code = ? AND used_by IS NULL AND (expires_at IS NULL OR expires_at > ?)", code, time.Now()).
 				Updates(map[string]any{"used_by": u.ID, "used_at": time.Now()})
@@ -140,6 +154,12 @@ func (s *Service) Register(username, email, password, inviteCode string) (*model
 			}
 			if res.RowsAffected == 0 {
 				return ErrInviteInvalid
+			}
+			// capture invite id for attribution (best-effort after use)
+			if err := tx.Where("code = ?", code).First(&inv).Error; err == nil {
+				_ = tx.Model(u).Update("signup_invite_code_id", inv.ID).Error
+				id := inv.ID
+				u.SignupInviteCodeID = &id
 			}
 		}
 		// 首管理员认领：settings 主键唯一性保证恰有一人成功。必须用 ON CONFLICT

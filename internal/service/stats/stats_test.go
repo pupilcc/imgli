@@ -59,6 +59,27 @@ func TestRecordFlushUpsert(t *testing.T) {
 	if n != 3 {
 		t.Errorf("referer 行数=%d want 3", n)
 	}
+	var ri model.RefererImageStat
+	if err := db.First(&ri, "image_id = ? AND host = ?", 1, "a.example").Error; err != nil || ri.Count != 2 {
+		t.Errorf("refimg a.example count=%d err=%v want 2", ri.Count, err)
+	}
+}
+
+func TestPurgeOlderThan(t *testing.T) {
+	db := model.TestDB(t)
+	s := New(db, time.Hour)
+	old := time.Now().AddDate(0, 0, -100).Format("2006-01-02")
+	if err := db.Create(&model.RefererStat{Host: "old.example", Date: old, Count: 9}).Error; err != nil {
+		t.Fatal(err)
+	}
+	if err := s.PurgeOlderThan(90); err != nil {
+		t.Fatal(err)
+	}
+	var n int64
+	db.Model(&model.RefererStat{}).Where("host = ?", "old.example").Count(&n)
+	if n != 0 {
+		t.Fatalf("old rows remain: %d", n)
+	}
 }
 
 // TestImageStatsOwnerOnly:造两用户(直接 Create model.User{Username,Email,GroupID:播种默认组ID})

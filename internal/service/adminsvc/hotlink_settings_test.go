@@ -109,6 +109,15 @@ func TestStatsTrafficAndReferers(t *testing.T) {
 			t.Errorf("traffic_7d[%d]=%+v want 0", i, st.Traffic7d[i])
 		}
 	}
+	if len(st.Traffic30d) != 30 {
+		t.Fatalf("traffic_30d len=%d want 30", len(st.Traffic30d))
+	}
+	if !st.OriginMeteringOnly {
+		t.Error("origin_metering_only should be true")
+	}
+	if len(st.Signups30d) != 30 {
+		t.Fatalf("signups_30d len=%d want 30", len(st.Signups30d))
+	}
 	if len(st.TopReferers) < 2 {
 		t.Fatalf("top_referers=%+v want >=2", st.TopReferers)
 	}
@@ -117,5 +126,12 @@ func TestStatsTrafficAndReferers(t *testing.T) {
 	}
 	if st.TopReferers[1].Host != "b.example" || st.TopReferers[1].Count != 2 {
 		t.Errorf("top[1]=%+v want b.example/2", st.TopReferers[1])
+	}
+	if len(st.TopReferers30d) < 2 {
+		t.Fatalf("top_referers_30d=%+v", st.TopReferers30d)
+	}
+	// external hosts should be marked suspect without allowlist
+	if !st.TopReferers[0].Suspect {
+		t.Error("a.example should be suspect")
 	}
 }

@@ -83,21 +83,33 @@ type refKey struct {
 	date string
 }
 
+type refImgKey struct {
+	imageID uint64
+	host    string
+	date    string
+}
+
+// StatsRetentionDays is the default rolling retention for access/referer tables.
+const StatsRetentionDays = 90
+
 // Service 内存缓冲计数 + 定时 upsert 刷盘 + hotlink 快照。
 type Service struct {
 	db            *gorm.DB
 	flushInterval time.Duration
 	settings      *settings.Service
 
-	mu      sync.Mutex
-	access  map[accessKey]int64
-	referer map[refKey]int64
+	mu         sync.Mutex
+	access     map[accessKey]int64
+	referer    map[refKey]int64
+	refererImg map[refImgKey]int64
 
 	hotMu    sync.Mutex
 	hotCfg   HotlinkConfig
 	hotAt    time.Time
 	hotValid bool
 	hotGen   uint64 // Invalidate 递增;刷新只在读库前后代次一致时发布,防旧值复活(codex 终审)
+
+	lastPurge time.Time
 }
 
 // New 构造 Service；flushInterval 供 Start 使用。
@@ -108,6 +120,7 @@ func New(db *gorm.DB, flushInterval time.Duration) *Service {
 		settings:      settings.New(db),
 		access:        make(map[accessKey]int64),
 		referer:       make(map[refKey]int64),
+		refererImg:    make(map[refImgKey]int64),
 	}
 }
 
@@ -120,16 +133,19 @@ func (s *Service) Record(imageID uint64, refHost string) {
 	s.mu.Lock()
 	s.access[accessKey{imageID: imageID, date: date}]++
 	s.referer[refKey{host: refHost, date: date}]++
+	s.refererImg[refImgKey{imageID: imageID, host: refHost, date: date}]++
 	s.mu.Unlock()
 }
 
-// Flush 把缓冲搬出锁外,事务内对两表 clause.OnConflict upsert 累加。
+// Flush 把缓冲搬出锁外,事务内对统计表 clause.OnConflict upsert 累加。
 func (s *Service) Flush() error {
 	s.mu.Lock()
 	access := s.access
 	referer := s.referer
+	refererImg := s.refererImg
 	s.access = make(map[accessKey]int64)
 	s.referer = make(map[refKey]int64)
+	s.refererImg = make(map[refImgKey]int64)
 	s.mu.Unlock()
 
 	accessRows := make([]model.AccessStat, 0, len(access))
@@ -146,6 +162,15 @@ func (s *Service) Flush() error {
 			Host:  k.host,
 			Date:  k.date,
 			Count: v,
+		})
+	}
+	refImgRows := make([]model.RefererImageStat, 0, len(refererImg))
+	for k, v := range refererImg {
+		refImgRows = append(refImgRows, model.RefererImageStat{
+			ImageID: k.imageID,
+			Host:    k.host,
+			Date:    k.date,
+			Count:   v,
 		})
 	}
 
@@ -170,6 +195,16 @@ func (s *Service) Flush() error {
 				return err
 			}
 		}
+		if len(refImgRows) > 0 {
+			if err := tx.Clauses(clause.OnConflict{
+				Columns: []clause.Column{{Name: "image_id"}, {Name: "host"}, {Name: "date"}},
+				DoUpdates: clause.Assignments(map[string]any{
+					"count": gorm.Expr("referer_image_stats.count + excluded.count"),
+				}),
+			}).Create(&refImgRows).Error; err != nil {
+				return err
+			}
+		}
 		return nil
 	})
 	if err != nil {
@@ -182,15 +217,35 @@ func (s *Service) Flush() error {
 		for k, v := range referer {
 			s.referer[k] += v
 		}
+		for k, v := range refererImg {
+			s.refererImg[k] += v
+		}
 		s.mu.Unlock()
 	}
 	return err
 }
 
-// Start ticker 周期 Flush;ctx.Done 时终刷一次后返回。
+// PurgeOlderThan deletes access/referer rows with date older than cutoff days.
+func (s *Service) PurgeOlderThan(days int) error {
+	if days <= 0 {
+		days = StatsRetentionDays
+	}
+	cutoff := time.Now().AddDate(0, 0, -days).Format("2006-01-02")
+	if err := s.db.Where("date < ?", cutoff).Delete(&model.AccessStat{}).Error; err != nil {
+		return err
+	}
+	if err := s.db.Where("date < ?", cutoff).Delete(&model.RefererStat{}).Error; err != nil {
+		return err
+	}
+	return s.db.Where("date < ?", cutoff).Delete(&model.RefererImageStat{}).Error
+}
+
+// Start ticker 周期 Flush; 每日一次滚动删除; ctx.Done 时终刷一次后返回。
 func (s *Service) Start(ctx context.Context) {
 	ticker := time.NewTicker(s.flushInterval)
 	defer ticker.Stop()
+	_ = s.PurgeOlderThan(StatsRetentionDays)
+	s.lastPurge = time.Now()
 	for {
 		select {
 		case <-ctx.Done():
@@ -198,6 +253,10 @@ func (s *Service) Start(ctx context.Context) {
 			return
 		case <-ticker.C:
 			_ = s.Flush()
+			if time.Since(s.lastPurge) >= 24*time.Hour {
+				_ = s.PurgeOlderThan(StatsRetentionDays)
+				s.lastPurge = time.Now()
+			}
 		}
 	}
 }

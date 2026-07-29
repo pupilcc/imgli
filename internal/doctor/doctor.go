@@ -72,7 +72,33 @@ func Run(cfg *config.Config) Report {
 	}()
 	checkDatabase(db, cfg, &r)
 	checkLocalPolicies(cfg, db, &r)
+	checkCDNMetering(db, &r)
 	return r
+}
+
+// checkCDNMetering warns when any enabled policy has cdn_domain set: admin
+// traffic/referer stats are origin-only and under-count edge cache hits.
+func checkCDNMetering(db *gorm.DB, r *Report) {
+	var policies []model.StoragePolicy
+	if err := db.Where("enabled = ?", true).Find(&policies).Error; err != nil {
+		r.add("cdn_metering", Warn, fmt.Sprintf("列举存储策略失败: %v（可先 imgli migrate）", err))
+		return
+	}
+	var named []string
+	for _, p := range policies {
+		cdn := strings.TrimSpace(p.CDNDomain)
+		if cdn == "" {
+			continue
+		}
+		named = append(named, fmt.Sprintf("%q→%s", p.Name, cdn))
+	}
+	if len(named) == 0 {
+		r.add("cdn_metering", OK, "无启用策略配置 cdn_domain；仪表盘流量≈源站可见访问")
+		return
+	}
+	r.add("cdn_metering", Warn,
+		"已配置 CDN 回源前缀 ("+strings.Join(named, "; ")+
+			")：管理端流量/Referer 仅统计源站 /i 门禁命中，边缘缓存未计入；成本请看 CDN/桶账单。见 deploy/ops/admin-stats-metering.md")
 }
 
 func checkDataDir(cfg *config.Config, r *Report) {
