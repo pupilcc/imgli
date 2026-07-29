@@ -16,6 +16,7 @@ import { VerifyEmailPage } from './pages/auth/VerifyEmailPage'
 import { DiscoverLayout } from './pages/discover/DiscoverLayout'
 import { ExplorePage } from './pages/discover/ExplorePage'
 import { UserPublicPage } from './pages/discover/UserPublicPage'
+import { SharePage } from './pages/share/SharePage'
 import { ImagesPage } from './pages/images/ImagesPage'
 import { SettingsPage } from './pages/settings/SettingsPage'
 import { TrashPage } from './pages/trash/TrashPage'
@@ -87,6 +88,7 @@ export function App() {
           <Route path="/explore" element={<ExplorePage />} />
           <Route path="/u/:username" element={<UserPublicPage />} />
         </Route>
+        <Route path="/s/:key" element={<SharePage />} />
         <Route
           path="/admin/*"
           element={

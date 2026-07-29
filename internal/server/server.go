@@ -170,11 +170,12 @@ func (s *Server) mountAPI() {
 		api.Use(handler.OriginCheck(s.opts.Cfg.BaseURL))
 		api.Use(handler.Auth(res))
 		api.With(limiter.Middleware("config", 60)).Get("/config", cfgH.Config)
-		// 公开发现面（广场 + 用户公开主页）：无需鉴权，按 IP 限速
+		// 公开发现面（广场 + 用户公开主页 + 分享页）：无需鉴权，按 IP 限速
 		dh := &handler.DiscoverHandler{DB: s.opts.DB}
 		api.With(limiter.IPMiddleware("plaza", 120)).Get("/plaza", dh.Plaza)
 		api.With(limiter.IPMiddleware("plaza", 120)).Get("/u/{username}", dh.UserProfile)
 		api.With(limiter.IPMiddleware("plaza", 120)).Get("/u/{username}/images", dh.UserImages)
+		api.With(limiter.IPMiddleware("share", 120)).Get("/s/{key}", imgH.Share)
 		api.With(limiter.Middleware("auth", 20)).Post("/auth/register", ah.Register)
 		api.With(limiter.Middleware("auth", 20)).Post("/auth/login", ah.Login)
 		api.Post("/auth/logout", ah.Logout)

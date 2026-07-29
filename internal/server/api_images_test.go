@@ -1,7 +1,9 @@
 package server
 
 import (
+	"bytes"
 	"encoding/json"
+	"mime/multipart"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -208,5 +210,69 @@ func TestBatchTooManyKeys400(t *testing.T) {
 	rec, e := doJSON(t, s, "POST", "/api/v1/images/batch", string(b), []*http.Cookie{sess})
 	if rec.Code != http.StatusBadRequest || code(t, e) != "invalid_request" {
 		t.Errorf("超 100 键应 400, got %d %s", rec.Code, rec.Body.String())
+	}
+}
+
+func TestSharePublicNoAuth(t *testing.T) {
+	s := newUploadTestServer(t)
+	sess := register(t, s)
+	keys := uploadN(t, s, sess, 1)
+	// no cookie
+	rec, e := doJSON(t, s, "GET", "/api/v1/s/"+keys[0], "", nil)
+	if rec.Code != http.StatusOK {
+		t.Fatalf("share public: %d %s", rec.Code, rec.Body.String())
+	}
+	var d struct {
+		Key      string `json:"key"`
+		ShareURL string `json:"share_url"`
+		Links    struct {
+			URL      string `json:"url"`
+			Markdown string `json:"markdown"`
+			ShareURL string `json:"share_url"`
+		} `json:"links"`
+		Width  int `json:"width"`
+		Height int `json:"height"`
+	}
+	if err := json.Unmarshal(e.Data, &d); err != nil {
+		t.Fatal(err)
+	}
+	if d.Key != keys[0] || d.Links.URL == "" || d.Width == 0 {
+		t.Fatalf("share dto incomplete: %s", rec.Body.String())
+	}
+	if d.ShareURL == "" && d.Links.ShareURL == "" {
+		t.Errorf("expect share_url: %s", rec.Body.String())
+	}
+}
+
+func TestSharePrivateReturns404(t *testing.T) {
+	s := newUploadTestServer(t)
+	sess := register(t, s)
+	req, _ := uploadReq(t, "file", "priv.png", pngBytes(40, 41))
+	req.AddCookie(sess)
+	// multipart already built — need visibility private via form
+	// re-upload with private using raw multipart
+	var body bytes.Buffer
+	mw := multipart.NewWriter(&body)
+	fw, _ := mw.CreateFormFile("file", "priv.png")
+	fw.Write(pngBytes(40, 41))
+	_ = mw.WriteField("visibility", "private")
+	mw.Close()
+	req = httptest.NewRequest("POST", "/api/v1/upload", &body)
+	req.Header.Set("Content-Type", mw.FormDataContentType())
+	req.AddCookie(sess)
+	rec := httptest.NewRecorder()
+	s.Handler().ServeHTTP(rec, req)
+	if rec.Code != http.StatusOK {
+		t.Fatalf("upload private: %d %s", rec.Code, rec.Body.String())
+	}
+	var e env
+	json.Unmarshal(rec.Body.Bytes(), &e)
+	var d struct {
+		Key string `json:"key"`
+	}
+	json.Unmarshal(e.Data, &d)
+	rec2, _ := doJSON(t, s, "GET", "/api/v1/s/"+d.Key, "", nil)
+	if rec2.Code != http.StatusNotFound {
+		t.Fatalf("private share want 404, got %d %s", rec2.Code, rec2.Body.String())
 	}
 }

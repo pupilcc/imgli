@@ -97,6 +97,29 @@ func (h *ImageHandlers) imageDetailDTO(row *imagesvc.Row) map[string]any {
 	return m
 }
 
+// Share GET /api/v1/s/{key} —— 公开分享页元数据（无需登录）。
+// 仅 public+normal+未过期；其余一律 404，不区分 private 是否存在。
+func (h *ImageHandlers) Share(w http.ResponseWriter, r *http.Request) {
+	ref := chi.URLParam(r, "key")
+	row, err := h.D.Img.GetPublicShare(ref)
+	if errors.Is(err, imagesvc.ErrNotFound) {
+		Fail(w, http.StatusNotFound, CodeNotFound, "资源不存在")
+		return
+	}
+	if err != nil {
+		Fail(w, http.StatusInternalServerError, CodeInternal, "服务器内部错误")
+		return
+	}
+	dto := h.imageItemDTO(row)
+	// 分享页用稳定 key 预览；外链仍用 slug-aware links
+	base := h.D.Res.LinkBase(&row.Policy)
+	dto["share_url"] = base + "/s/" + row.Img.Key
+	if row.Img.Slug != nil && *row.Img.Slug != "" {
+		dto["share_url"] = base + "/s/" + *row.Img.Slug
+	}
+	OK(w, dto)
+}
+
 // Detail GET /api/v1/images/{key}
 func (h *ImageHandlers) Detail(w http.ResponseWriter, r *http.Request) {
 	row, err := h.D.Img.Get(PrincipalFrom(r).User.ID, chi.URLParam(r, "key"))

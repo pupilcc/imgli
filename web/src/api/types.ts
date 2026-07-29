@@ -64,6 +64,7 @@ export interface Links {
   html: string
   bbcode: string
   thumbnail_url: string
+  share_url?: string
 }
 
 export interface UploadResult {
@@ -100,7 +101,12 @@ export interface ImageItem {
   /** RFC3339;null=永久 */
   expires_at: string | null
   links: Links
+  /** 分享页 URL（公开分享 API 额外字段） */
+  share_url?: string
 }
+
+/** GET /api/v1/s/{key} public share payload */
+export type ShareImage = ImageItem
 
 export interface ImageDetail extends ImageItem {
   mime: string

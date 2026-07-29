@@ -19,6 +19,9 @@ func TestBuild(t *testing.T) {
 	if l.BBCode != "[img]https://img.li/i/aB3xK9mQ2wZp.png[/img]" {
 		t.Errorf("BB=%q", l.BBCode)
 	}
+	if l.ShareURL != "https://img.li/s/aB3xK9mQ2wZp" {
+		t.Errorf("ShareURL=%q", l.ShareURL)
+	}
 }
 
 func TestBuildEscapesNameInHTML(t *testing.T) {

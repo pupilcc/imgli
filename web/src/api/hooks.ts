@@ -16,6 +16,7 @@ import type {
   PolicyOption,
   DiscoverPage,
   PublicProfileData,
+  ShareImage,
 } from './types'
 
 export const sessionKey = ['session'] as const
@@ -155,6 +156,16 @@ export function useImageDetail(key: string | null) {
     queryKey: ['image', key],
     enabled: !!key,
     queryFn: () => api<ImageDetail>(`/images/${key}`),
+  })
+}
+
+/** Public share landing meta (no auth). */
+export function useShareImage(key: string | null) {
+  return useQuery({
+    queryKey: ['share', key],
+    enabled: !!key,
+    retry: false,
+    queryFn: () => api<ShareImage>(`/s/${key}`),
   })
 }
 

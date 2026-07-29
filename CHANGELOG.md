@@ -26,6 +26,9 @@ separate version in `go.mod` or `web/package.json`.
 - **Settings API Token snippets:** curl / PicGo / ShareX / `imgli upload` CLI
   cards using public `base_url`; plain token only while create-once banner is
   open (`GET /api/v1/config` exposes `base_url`).
+- **Public share page:** `GET /api/v1/s/{key}` + SPA `/s/{key}` for
+  public+normal images (preview, dimensions, copy URL/Markdown); private /
+  pending / rejected / expired → 404.
 - **Monthly bandwidth hard cap (v1):** user-group `bandwidth_quota_month` (Free/default
   seed **5 GiB/month**, Asia/Shanghai calendar month); meter on successful `/i`/`/t`
   gate release by object size; block upload + 429 when exceeded; usage on

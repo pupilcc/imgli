@@ -8,6 +8,7 @@ import albums from './albums'
 import trash from './trash'
 import settings from './settings'
 import discover from './discover'
+import share from './share'
 import ui from './ui'
 import errors from './errors'
 import adminA from './adminA'
@@ -25,6 +26,7 @@ export default {
   trash,
   settings,
   discover,
+  share,
   ui,
   errors,
   adminA,
