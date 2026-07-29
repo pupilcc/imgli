@@ -25,6 +25,23 @@ it('QuotaBar 显示用量数字', () => {
   expect(screen.getByText('2.14 / 10 GB')).toBeInTheDocument()
 })
 
+it('NavQuotaCluster 叠放 STOR + BW', async () => {
+  const { NavQuotaCluster } = await import('./QuotaBar')
+  render(
+    <MemoryRouter>
+      <NavQuotaCluster
+        storage={{ used: 2.14 * GB, total: 10 * GB }}
+        bandwidth={{ used: 1 * GB, total: 5 * GB }}
+      />
+    </MemoryRouter>,
+  )
+  expect(screen.getByTestId('nav-quota-cluster')).toBeInTheDocument()
+  expect(screen.getByText('STOR')).toBeInTheDocument()
+  expect(screen.getByText('BW')).toBeInTheDocument()
+  expect(screen.getByText('2.14 / 10 GB')).toBeInTheDocument()
+  expect(screen.getByText('1 / 5 GB')).toBeInTheDocument()
+})
+
 it('QuotaAlertBar 三态', () => {
   const { rerender, container } = render(
     <MemoryRouter>

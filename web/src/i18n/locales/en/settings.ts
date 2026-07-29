@@ -136,4 +136,10 @@ export default {
   usageNoteBefore: 'Images in trash still count toward quota. ',
   usageNoteLink: 'Clean up trash',
   usageNoteAfter: '. Space is freed immediately after permanent delete.',
+  bandwidthKicker: 'BANDWIDTH — Monthly egress',
+  bandwidthPeriod: 'Period {period} (Asia/Shanghai)',
+  bandwidthNote:
+    'Counted when image links are served successfully (original/thumb). At cap: uploads blocked and serves return 429; resets next month; images are kept.',
+  bandwidthUnlimitedNote: 'Your group has no monthly bandwidth cap (0 = unlimited).',
+
 }

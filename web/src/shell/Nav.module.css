@@ -20,7 +20,7 @@
 .links a { display: flex; align-items: center; color: var(--muted); }
 .links a:hover { color: var(--text); }
 .links a.active { color: var(--text); box-shadow: inset 0 -2px 0 var(--text); }
-.right { margin-left: auto; display: flex; align-items: center; gap: 14px; }
+.right { margin-left: auto; display: flex; align-items: center; gap: 12px; flex: none; }
 .themeBtn {
   width: 30px;
   height: 30px;

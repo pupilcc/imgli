@@ -86,9 +86,11 @@ it('已登录：/ 渲染导航与占位页', async () => {
   expect(screen.getByRole('link', { name: '设置' })).toBeInTheDocument()
   // plaza_enabled 默认 false：广场入口不挂 DOM
   expect(screen.queryByRole('link', { name: '广场' })).not.toBeInTheDocument()
-  // Nav + 上传页各一条 STORAGE 用量
+  // Nav 紧凑簇 + 上传页并排条
+  expect(await screen.findByTestId('nav-quota-cluster')).toBeInTheDocument()
   expect((await screen.findAllByText('2.14 / 10 GB')).length).toBeGreaterThanOrEqual(1)
-  expect(screen.getAllByText('BANDWIDTH').length).toBeGreaterThanOrEqual(1)
+  expect(screen.getByText('STOR')).toBeInTheDocument()
+  expect(screen.getByText('BW')).toBeInTheDocument()
   expect(screen.getByText('上传图片')).toBeInTheDocument()
 })
 
