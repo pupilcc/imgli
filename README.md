@@ -32,7 +32,9 @@ instance at [img.li](https://img.li).
   invite codes, SMTP email (verification/reset/reject notices), albums,
   public gallery, recycle bin, image expiry.
 - **Integrations** — clean upload API with API tokens; `imgli upload` CLI;
-  works with PicGo/Typora/VS Code out of the box ([guide](docs/picgo.md)).
+  PicGo/Typora/VS Code ([guide](docs/picgo.md)),
+  [ShareX](docs/integrations/sharex.md) / [uPic](docs/integrations/upic.md)
+  ([index](docs/integrations/README.md)).
 - **Polish** — bilingual UI (中文/English), PWA, dark mode, text watermark
   (embedded CJK font subset), admin dashboard with audit logs.
 
@@ -114,8 +116,9 @@ curl -X POST https://your-host/api/v1/upload \
 # → data.links.{url,markdown,html,bbcode,thumbnail_url}
 ```
 
-Create tokens under **Settings → API Token**. See [docs/picgo.md](docs/picgo.md)
-for PicGo/Typora/VS Code setup.
+Create tokens under **Settings → API Token**. Client guides:
+[PicGo](docs/picgo.md) · [ShareX](docs/integrations/sharex.md) ·
+[uPic](docs/integrations/upic.md) · [integrations index](docs/integrations/README.md).
 
 ### CLI upload
 

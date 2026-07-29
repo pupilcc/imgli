@@ -28,7 +28,8 @@
 - **账号与分享**:用户组配额/限速、游客上传、邀请码、SMTP 邮件
   (验证/重置/拒审通知)、相册、公开画廊、回收站、图片过期。
 - **生态对接**:干净的上传 API + API Token;`imgli upload` CLI;PicGo/Typora/VS Code
-  开箱即用([指南](docs/picgo.md))。
+  ([指南](docs/picgo.md))、[ShareX](docs/integrations/sharex.md) /
+  [uPic](docs/integrations/upic.md)（[索引](docs/integrations/README.md)）。
 - **细节**:中英双语界面、PWA、深色模式、文字水印(内嵌中文字体子集)、
   带审计日志的管理后台。
 
@@ -111,8 +112,9 @@ curl -X POST https://your-host/api/v1/upload \
 # → data.links.{url,markdown,html,bbcode,thumbnail_url}
 ```
 
-Token 在 **设置 → API Token** 创建;PicGo/Typora/VS Code 配置见
-[docs/picgo.md](docs/picgo.md)。
+Token 在 **设置 → API Token** 创建。客户端指南：
+[PicGo](docs/picgo.md) · [ShareX](docs/integrations/sharex.md) ·
+[uPic](docs/integrations/upic.md) · [integrations 索引](docs/integrations/README.md)。
 
 ### CLI 上传
 

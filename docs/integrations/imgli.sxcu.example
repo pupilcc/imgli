@@ -1,0 +1,19 @@
+{
+  "Version": "15.0.0",
+  "Name": "imgli",
+  "DestinationType": "ImageUploader",
+  "RequestMethod": "POST",
+  "RequestURL": "https://img.li/api/v1/upload",
+  "Headers": {
+    "Authorization": "Bearer YOUR_TOKEN_HERE"
+  },
+  "Body": "MultipartFormData",
+  "FileFormName": "file",
+  "Arguments": {
+    "visibility": "public"
+  },
+  "URL": "{json:data.links.url}",
+  "ThumbnailURL": "{json:data.links.thumbnail_url}",
+  "DeletionURL": "",
+  "ErrorMessage": "{json:message}"
+}
