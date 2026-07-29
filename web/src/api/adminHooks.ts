@@ -297,6 +297,9 @@ export interface SettingsBody {
   smtp?: AdminSettings['smtp']
   hotlink?: AdminSettings['hotlink']
   processing?: AdminSettings['processing']
+  announcement?: AdminSettings['announcement']
+  footer?: AdminSettings['footer']
+  html_inject?: AdminSettings['html_inject']
 }
 
 export function useUpdateSettings() {

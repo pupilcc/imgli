@@ -78,6 +78,48 @@
   color: var(--muted);
 }
 
+.hintWarn {
+  font-size: 12px;
+  color: var(--danger, #b45309);
+  line-height: 1.45;
+}
+
+.textarea {
+  width: 100%;
+  font: inherit;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-size: 12px;
+  padding: 10px 12px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--bg);
+  color: var(--text);
+  resize: vertical;
+}
+
+.slotCard {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 14px;
+  border: 1px dashed var(--border);
+  border-radius: 8px;
+}
+
+.slotRow {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding-top: 4px;
+  border-top: 1px solid var(--border);
+}
+
+.slotActions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
 .fixed {
   padding: 9px 12px;
   border: 1px solid var(--border);

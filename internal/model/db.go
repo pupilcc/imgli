@@ -24,6 +24,10 @@ const (
 	SettingSMTP             = "smtp"          // SMTP 配置 JSON,见 internal/mail.Config
 	SettingHotlink          = "hotlink"       // 防盗链配置 JSON,见 stats.HotlinkConfig
 	SettingProcessing       = "processing"    // 图片处理规则 JSON,见 upload.Processing
+	// 引流/站点插槽（开源通用；内容存 DB，不进代码）
+	SettingAnnouncement = "announcement" // 顶栏公告 JSON
+	SettingFooter       = "footer"       // 页脚链接组 JSON
+	SettingHTMLInject   = "html_inject"  // 自定义 HTML 注入 JSON（head / body_end）
 )
 
 // settingModerationDefaultJSON 是 moderation.DefaultConfig() 的 JSON 字面量，手写在此
@@ -44,6 +48,11 @@ const settingHotlinkDefaultJSON = `{"enabled":false,"allowed_domains":[],"allow_
 // settingProcessingDefaultJSON 是 upload.DefaultProcessing() 的 JSON 字面量,手写原因同上
 // (避免 model→upload 依赖;一致性由 processing_seed_test.go 外部断言)。
 const settingProcessingDefaultJSON = `{"text_watermark":{"enabled":false,"text":"","position":"br","opacity":0.35,"size_ratio":0.04},"max_edge":0}`
+
+// 插槽默认 JSON：与 adminsvc.DefaultAnnouncement/Footer/HTMLInject 一致。
+const settingAnnouncementDefaultJSON = `{"enabled":false,"text":"","link_url":"","link_label":"","dismissible":true,"starts_at":"","ends_at":""}`
+const settingFooterDefaultJSON = `{"groups":[]}`
+const settingHTMLInjectDefaultJSON = `{"head":"","body_end":""}`
 
 // Open 按配置打开数据库。sqlite 未配置 DSN 时落到 DataDir/imgli.db 并开 WAL。
 func Open(cfg *config.Config) (*gorm.DB, error) {
@@ -179,6 +188,9 @@ func Seed(db *gorm.DB) error {
 			SettingSMTP:             settingSMTPDefaultJSON,
 			SettingHotlink:          settingHotlinkDefaultJSON,
 			SettingProcessing:       settingProcessingDefaultJSON,
+			SettingAnnouncement:     settingAnnouncementDefaultJSON,
+			SettingFooter:           settingFooterDefaultJSON,
+			SettingHTMLInject:       settingHTMLInjectDefaultJSON,
 		} {
 			if err := tx.Where("key = ?", k).
 				FirstOrCreate(&Setting{Key: k, Value: v}).Error; err != nil {

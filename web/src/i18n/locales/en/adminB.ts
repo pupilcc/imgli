@@ -186,6 +186,32 @@ export default {
   posBC: 'Bottom center',
   posBR: 'Bottom right',
 
+  // Site slots (announcement / footer / HTML inject)
+  slotsTab: 'Site slots',
+  announcement: 'Announcement bar',
+  announcementHint:
+    'When enabled, shown at the top of the public UI. Optional schedule and dismiss. Stored in DB for self-host branding/links.',
+  announcementText: 'Message',
+  announcementLinkUrl: 'Link URL (optional)',
+  announcementLinkLabel: 'Link label',
+  announcementDismissible: 'Allow visitors to dismiss',
+  announcementStarts: 'Starts at (RFC3339, optional)',
+  announcementEnds: 'Ends at (RFC3339, optional)',
+  footerLinks: 'Footer links',
+  footerLinksHint: 'Groups rendered in the site footer. URLs must be http(s) or a site path /…',
+  footerGroupTitle: 'Group title',
+  footerLinkLabel: 'Link label',
+  footerLinkUrl: 'Link URL',
+  addGroup: '+ Add group',
+  removeGroup: 'Remove group',
+  addLink: '+ Add link',
+  removeLink: 'Remove link',
+  htmlInject: 'Custom HTML',
+  htmlInjectWarn:
+    'Admin-only. You may inject analytics scripts; broken or malicious markup affects the whole site. Do not paste untrusted HTML.',
+  htmlHead: 'Inject into head',
+  htmlBodyEnd: 'Inject before body end',
+
   // Logs
   logsTitle: 'Audit log',
   filterActionAria: 'Filter by action',

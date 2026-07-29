@@ -24,6 +24,9 @@ separate version in `go.mod` or `web/package.json`.
 - **S4 slice:** refuse unauthenticated CDN URLs for `private/` object keys
   (`CDNEligibleObjectKey` + serve visibility/surface checks); operator probe
   `scripts/probe-private-object-anon.sh`.
+- **Site slots (settings):** announcement bar, footer link groups, and
+  admin-only HTML inject (`announcement` / `footer` / `html_inject` settings),
+  exposed on public `/api/v1/config` and rendered in the SPA shell.
 
 ### Changed
 

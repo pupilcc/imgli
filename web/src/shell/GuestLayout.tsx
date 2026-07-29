@@ -3,6 +3,7 @@ import { useConfig } from '../api/hooks'
 import { useT } from '../i18n'
 import { BrandLockup } from '../ui/Brand'
 import { LangToggle } from '../ui/LangToggle'
+import { SiteFooter } from '../ui/SiteSlots'
 import { useGlobal } from '../store'
 import styles from './GuestLayout.module.css'
 
@@ -36,6 +37,7 @@ export function GuestLayout() {
       <main className={styles.main}>
         <Outlet />
       </main>
+      <SiteFooter footer={config?.footer} />
     </>
   )
 }

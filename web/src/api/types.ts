@@ -332,6 +332,35 @@ export interface ProcessingSettings {
   max_edge: number
 }
 
+export interface SiteAnnouncement {
+  enabled: boolean
+  text: string
+  link_url: string
+  link_label: string
+  dismissible: boolean
+  starts_at: string
+  ends_at: string
+}
+
+export interface FooterLink {
+  label: string
+  url: string
+}
+
+export interface FooterGroup {
+  title: string
+  links: FooterLink[]
+}
+
+export interface SiteFooter {
+  groups: FooterGroup[]
+}
+
+export interface HTMLInject {
+  head: string
+  body_end: string
+}
+
 export interface AdminSettings {
   site_name: string
   registration_mode: string
@@ -341,6 +370,9 @@ export interface AdminSettings {
   smtp: AdminSMTP
   hotlink: HotlinkSettings
   processing: ProcessingSettings
+  announcement?: SiteAnnouncement
+  footer?: SiteFooter
+  html_inject?: HTMLInject
 }
 
 export interface GuestLimits {
@@ -355,6 +387,9 @@ export interface PublicConfig {
   guest_upload_enabled: boolean
   guest: GuestLimits | null
   plaza_enabled: boolean
+  announcement?: SiteAnnouncement | null
+  footer?: SiteFooter
+  html_inject?: HTMLInject
 }
 
 export interface DiscoverAuthor {

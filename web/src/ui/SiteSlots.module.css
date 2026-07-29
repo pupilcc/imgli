@@ -1,0 +1,90 @@
+.bar {
+  background: var(--text);
+  color: var(--bg);
+  font-size: 13px;
+  line-height: 1.4;
+}
+
+.barInner {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 8px 16px;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 12px;
+}
+
+.barText {
+  flex: 1 1 auto;
+  min-width: 12rem;
+}
+
+.barLink {
+  color: inherit;
+  font-weight: 600;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.barClose {
+  border: none;
+  background: transparent;
+  color: inherit;
+  font-size: 18px;
+  line-height: 1;
+  cursor: pointer;
+  opacity: 0.75;
+  padding: 0 4px;
+}
+
+.barClose:hover {
+  opacity: 1;
+}
+
+.footer {
+  border-top: 1px solid var(--border);
+  margin-top: auto;
+  padding: 28px 16px 40px;
+  background: var(--surface);
+}
+
+.footerInner {
+  max-width: 1100px;
+  margin: 0 auto;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 24px 40px;
+}
+
+.footerGroup {
+  min-width: 8rem;
+}
+
+.footerTitle {
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--muted);
+  margin-bottom: 10px;
+}
+
+.footerList {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.footerList a {
+  color: var(--text);
+  font-size: 13px;
+  text-decoration: none;
+}
+
+.footerList a:hover {
+  text-decoration: underline;
+}

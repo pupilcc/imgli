@@ -26,6 +26,7 @@ import { RequireAuth } from './shell/RequireAuth'
 import { RequireAdmin } from './shell/RequireAdmin'
 import { RequireAuthOrGuest } from './shell/RequireAuthOrGuest'
 import { InstallPrompt } from './ui/InstallPrompt'
+import { AnnouncementBar, HtmlInject } from './ui/SiteSlots'
 import { Skeleton } from './ui/Skeleton'
 import { Toasts } from './ui/Toasts'
 
@@ -72,6 +73,8 @@ export function App() {
 
   return (
     <>
+      <HtmlInject inject={config.data?.html_inject} />
+      <AnnouncementBar announcement={config.data?.announcement} />
       <Routes>
         <Route path="/login" element={<AuthPage />} />
         <Route path="/forgot-password" element={<ForgotPasswordPage />} />

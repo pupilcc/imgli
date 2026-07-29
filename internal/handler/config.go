@@ -3,10 +3,12 @@ package handler
 import (
 	"errors"
 	"net/http"
+	"time"
 
 	"gorm.io/gorm"
 
 	"github.com/yixian-huang/imgli/internal/model"
+	"github.com/yixian-huang/imgli/internal/service/adminsvc"
 	"github.com/yixian-huang/imgli/internal/service/settings"
 )
 
@@ -53,11 +55,41 @@ func (h *ConfigHandler) Config(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
+	// 引流插槽：公开面只出安全字段；公告按时间窗过滤。
+	ann := adminsvc.DefaultAnnouncement()
+	if err := st.Get(model.SettingAnnouncement, &ann); err != nil && !errors.Is(err, settings.ErrNotFound) {
+		Fail(w, http.StatusInternalServerError, CodeInternal, "服务器内部错误")
+		return
+	}
+	ann = adminsvc.NormalizeAnnouncement(ann)
+	var annOut any
+	if adminsvc.AnnouncementActive(ann, time.Now()) {
+		annOut = ann
+	} else {
+		annOut = nil
+	}
+	foot := adminsvc.DefaultFooter()
+	if err := st.Get(model.SettingFooter, &foot); err != nil && !errors.Is(err, settings.ErrNotFound) {
+		Fail(w, http.StatusInternalServerError, CodeInternal, "服务器内部错误")
+		return
+	}
+	if foot.Groups == nil {
+		foot.Groups = []adminsvc.FooterGroup{}
+	}
+	htmlInj := adminsvc.DefaultHTMLInject()
+	if err := st.Get(model.SettingHTMLInject, &htmlInj); err != nil && !errors.Is(err, settings.ErrNotFound) {
+		Fail(w, http.StatusInternalServerError, CodeInternal, "服务器内部错误")
+		return
+	}
+
 	OK(w, map[string]any{
 		"site_name":            siteName,
 		"registration_mode":    regMode,
 		"guest_upload_enabled": guestUpload,
 		"plaza_enabled":        plazaEnabled,
 		"guest":                guest,
+		"announcement":         annOut,
+		"footer":               foot,
+		"html_inject":          htmlInj,
 	})
 }

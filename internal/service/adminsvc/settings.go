@@ -22,7 +22,7 @@ var smtpFromRe = regexp.MustCompile(`^[^@\s]+@[^@\s]+\.[^@\s]+$`)
 var hotlinkHostRe = regexp.MustCompile(`^[a-z0-9]([a-z0-9-]*[a-z0-9])?(\.[a-z0-9]([a-z0-9-]*[a-z0-9])?)*$`)
 
 var (
-	// ErrUnknownSetting PutSettings 只认 site_name/registration_mode/guest_upload_enabled/plaza_enabled/moderation/smtp/hotlink/processing 键。
+	// ErrUnknownSetting PutSettings 只认 site_name/registration_mode/guest_upload_enabled/plaza_enabled/moderation/smtp/hotlink/processing/announcement/footer/html_inject 键。
 	ErrUnknownSetting = errors.New("未知的设置键")
 	// ErrSiteNameInvalid site_name 需 1-64 个字符（TrimSpace 后）。
 	ErrSiteNameInvalid = errors.New("site_name 需 1-64 个字符")
@@ -95,6 +95,22 @@ func (s *Service) GetSettings() (map[string]any, error) {
 	if err := st.Get(model.SettingProcessing, &procCfg); err != nil && !errors.Is(err, settings.ErrNotFound) {
 		return nil, err
 	}
+	ann := DefaultAnnouncement()
+	if err := st.Get(model.SettingAnnouncement, &ann); err != nil && !errors.Is(err, settings.ErrNotFound) {
+		return nil, err
+	}
+	ann = NormalizeAnnouncement(ann)
+	foot := DefaultFooter()
+	if err := st.Get(model.SettingFooter, &foot); err != nil && !errors.Is(err, settings.ErrNotFound) {
+		return nil, err
+	}
+	if foot.Groups == nil {
+		foot.Groups = []FooterGroup{}
+	}
+	htmlInj := DefaultHTMLInject()
+	if err := st.Get(model.SettingHTMLInject, &htmlInj); err != nil && !errors.Is(err, settings.ErrNotFound) {
+		return nil, err
+	}
 
 	return map[string]any{
 		"site_name":            siteName,
@@ -130,8 +146,11 @@ func (s *Service) GetSettings() (map[string]any, error) {
 			"from":       smtpCfg.From,
 			"encryption": smtpCfg.Encryption,
 		},
-		"hotlink":    hotCfg,
-		"processing": procCfg,
+		"hotlink":      hotCfg,
+		"processing":   procCfg,
+		"announcement": ann,
+		"footer":       foot,
+		"html_inject":  htmlInj,
 	}, nil
 }
 
@@ -143,7 +162,7 @@ type settingWrite struct {
 	value any
 }
 
-// PutSettings 部分更新设置面。patch 只认 site_name/registration_mode/guest_upload_enabled/plaza_enabled/moderation/smtp/hotlink/processing
+// PutSettings 部分更新设置面。patch 只认 site_name/registration_mode/guest_upload_enabled/plaza_enabled/moderation/smtp/hotlink/processing/announcement/footer/html_inject
 // 键，未知键返回 ErrUnknownSetting。moderation 按整对象校验（moderation.ValidateConfig）；
 // 其 api_key / access_key_secret 若以 "****" 开头，视为前端把打码后的展示值原样回传：
 // api_key 仅当 provider 与 endpoint 均未变才沿用库中明文；access_key_secret 仅当
@@ -284,6 +303,40 @@ func (s *Service) PutSettings(patch map[string]json.RawMessage) error {
 				return err
 			}
 			writes = append(writes, settingWrite{model.SettingProcessing, cfg})
+
+		case model.SettingAnnouncement:
+			var cfg Announcement
+			if err := json.Unmarshal(raw, &cfg); err != nil {
+				return ErrAnnouncementInvalid
+			}
+			cfg = NormalizeAnnouncement(cfg)
+			if err := ValidateAnnouncement(cfg); err != nil {
+				return err
+			}
+			writes = append(writes, settingWrite{model.SettingAnnouncement, cfg})
+
+		case model.SettingFooter:
+			var cfg Footer
+			if err := json.Unmarshal(raw, &cfg); err != nil {
+				return ErrFooterInvalid
+			}
+			if cfg.Groups == nil {
+				cfg.Groups = []FooterGroup{}
+			}
+			if err := ValidateFooter(cfg); err != nil {
+				return err
+			}
+			writes = append(writes, settingWrite{model.SettingFooter, cfg})
+
+		case model.SettingHTMLInject:
+			var cfg HTMLInject
+			if err := json.Unmarshal(raw, &cfg); err != nil {
+				return ErrHTMLInjectInvalid
+			}
+			if err := ValidateHTMLInject(cfg); err != nil {
+				return err
+			}
+			writes = append(writes, settingWrite{model.SettingHTMLInject, cfg})
 
 		default:
 			return ErrUnknownSetting

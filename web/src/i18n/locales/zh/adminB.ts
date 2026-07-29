@@ -189,6 +189,31 @@ export default {
   posBC: '下中',
   posBR: '右下',
 
+  // Site slots (announcement / footer / HTML inject)
+  slotsTab: '站点插槽',
+  announcement: '顶栏公告',
+  announcementHint: '开启后前台顶部展示；可设时间窗与可关闭。内容存库，适合站内通知或外链引流。',
+  announcementText: '公告文案',
+  announcementLinkUrl: '链接 URL（可选）',
+  announcementLinkLabel: '链接文案',
+  announcementDismissible: '允许访客关闭',
+  announcementStarts: '生效开始（RFC3339，可空）',
+  announcementEnds: '生效结束（RFC3339，可空）',
+  footerLinks: '页脚链接',
+  footerLinksHint: '分组展示在站点页脚；URL 须为 http(s) 或站内路径 /…',
+  footerGroupTitle: '分组标题',
+  footerLinkLabel: '链接文案',
+  footerLinkUrl: '链接 URL',
+  addGroup: '+ 添加分组',
+  removeGroup: '删除分组',
+  addLink: '+ 添加链接',
+  removeLink: '删除链接',
+  htmlInject: '自定义 HTML',
+  htmlInjectWarn:
+    '仅管理员可配置。可注入分析脚本等，错误或恶意代码会影响全站（自托管自伤面）。请勿粘贴不可信内容。',
+  htmlHead: '注入 head',
+  htmlBodyEnd: '注入 body 末尾',
+
   // Logs
   logsTitle: '操作日志',
   filterActionAria: '操作筛选',

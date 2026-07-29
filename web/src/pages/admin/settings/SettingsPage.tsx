@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { ApiError } from '../../../api/client'
 import { useAdminSettings, useTestModeration, useTestSMTP, useUpdateSettings } from '../../../api/adminHooks'
-import { POSITIONS, type AdminSettings } from '../../../api/types'
+import { POSITIONS, type AdminSettings, type FooterGroup, type SiteAnnouncement } from '../../../api/types'
 import { useT } from '../../../i18n'
 import { errorText } from '../../../i18n/errorText'
 import { PageHeader } from '../../../shell/PageHeader'
@@ -17,16 +17,30 @@ import styles from './SettingsPage.module.css'
 
 type ModProvider = 'webhook' | 'aliyun' | 'tencent' | 'openai' | 'nsfwjs'
 
-type SettingsTab = 'basic' | 'moderation' | 'ocr' | 'smtp' | 'hotlink' | 'processing'
+type SettingsTab = 'basic' | 'slots' | 'moderation' | 'ocr' | 'smtp' | 'hotlink' | 'processing'
 
-const SETTINGS_TABS: { key: SettingsTab; labelKey: 'basic' | 'moderation' | 'ocrSection' | 'smtpSection' | 'hotlink' | 'processing' }[] = [
+const SETTINGS_TABS: {
+  key: SettingsTab
+  labelKey: 'basic' | 'slotsTab' | 'moderation' | 'ocrSection' | 'smtpSection' | 'hotlink' | 'processing'
+}[] = [
   { key: 'basic', labelKey: 'basic' },
+  { key: 'slots', labelKey: 'slotsTab' },
   { key: 'moderation', labelKey: 'moderation' },
   { key: 'ocr', labelKey: 'ocrSection' },
   { key: 'smtp', labelKey: 'smtpSection' },
   { key: 'hotlink', labelKey: 'hotlink' },
   { key: 'processing', labelKey: 'processing' },
 ]
+
+const emptyAnn = (): SiteAnnouncement => ({
+  enabled: false,
+  text: '',
+  link_url: '',
+  link_label: '',
+  dismissible: true,
+  starts_at: '',
+  ends_at: '',
+})
 
 interface FormState {
   siteName: string
@@ -65,6 +79,10 @@ interface FormState {
   twOpacity: number
   twSizeRatio: number
   maxEdge: number
+  ann: SiteAnnouncement
+  footerGroups: FooterGroup[]
+  htmlHead: string
+  htmlBodyEnd: string
 }
 
 const MOD_PROVIDERS: ModProvider[] = ['webhook', 'aliyun', 'tencent', 'openai', 'nsfwjs']
@@ -112,6 +130,25 @@ function formOf(s: AdminSettings): FormState {
     twOpacity: tw?.opacity != null && tw.opacity >= 0.05 ? tw.opacity : 0.35,
     twSizeRatio: tw?.size_ratio != null && tw.size_ratio >= 0.01 ? tw.size_ratio : 0.05,
     maxEdge: s.processing?.max_edge ?? 0,
+    ann: s.announcement
+      ? {
+          enabled: !!s.announcement.enabled,
+          text: s.announcement.text ?? '',
+          link_url: s.announcement.link_url ?? '',
+          link_label: s.announcement.link_label ?? '',
+          dismissible: s.announcement.dismissible !== false,
+          starts_at: s.announcement.starts_at ?? '',
+          ends_at: s.announcement.ends_at ?? '',
+        }
+      : emptyAnn(),
+    footerGroups: s.footer?.groups?.length
+      ? s.footer.groups.map((g) => ({
+          title: g.title ?? '',
+          links: (g.links ?? []).map((l) => ({ label: l.label ?? '', url: l.url ?? '' })),
+        }))
+      : [],
+    htmlHead: s.html_inject?.head ?? '',
+    htmlBodyEnd: s.html_inject?.body_end ?? '',
   }
 }
 
@@ -258,6 +295,27 @@ export function SettingsPage() {
           },
           max_edge: form.maxEdge,
         },
+        announcement: {
+          enabled: form.ann.enabled,
+          text: form.ann.text.trim(),
+          link_url: form.ann.link_url.trim(),
+          link_label: form.ann.link_label.trim(),
+          dismissible: form.ann.dismissible,
+          starts_at: form.ann.starts_at.trim(),
+          ends_at: form.ann.ends_at.trim(),
+        },
+        footer: {
+          groups: form.footerGroups.map((g) => ({
+            title: g.title.trim(),
+            links: g.links
+              .map((l) => ({ label: l.label.trim(), url: l.url.trim() }))
+              .filter((l) => l.label && l.url),
+          })),
+        },
+        html_inject: {
+          head: form.htmlHead,
+          body_end: form.htmlBodyEnd,
+        },
       },
       {
         onSuccess: (data) => {
@@ -267,6 +325,27 @@ export function SettingsPage() {
       },
     )
   }
+
+  const setAnn = <K extends keyof SiteAnnouncement>(k: K, v: SiteAnnouncement[K]) =>
+    setForm((f) => (f ? { ...f, ann: { ...f.ann, [k]: v } } : f))
+
+  const patchFooterGroup = (gi: number, patch: Partial<FooterGroup>) =>
+    setForm((f) => {
+      if (!f) return f
+      const groups = f.footerGroups.map((g, i) => (i === gi ? { ...g, ...patch } : g))
+      return { ...f, footerGroups: groups }
+    })
+
+  const patchFooterLink = (gi: number, li: number, patch: { label?: string; url?: string }) =>
+    setForm((f) => {
+      if (!f) return f
+      const groups = f.footerGroups.map((g, i) => {
+        if (i !== gi) return g
+        const links = g.links.map((l, j) => (j === li ? { ...l, ...patch } : l))
+        return { ...g, links }
+      })
+      return { ...f, footerGroups: groups }
+    })
 
   return (
     <div>
@@ -322,6 +401,164 @@ export function SettingsPage() {
                 <span className={styles.hint}>{t('adminB.plazaEnabledHint')}</span>
               </div>
             </section>
+          )}
+
+          {tab === 'slots' && (
+            <>
+              <section className={styles.section}>
+                <div className={styles.h2Row}>
+                  <h2 className={styles.h2}>{t('adminB.announcement')}</h2>
+                  <Toggle checked={form.ann.enabled} onChange={(v) => setAnn('enabled', v)} />
+                </div>
+                <span className={styles.hint}>{t('adminB.announcementHint')}</span>
+                <Input
+                  label={t('adminB.announcementText')}
+                  value={form.ann.text}
+                  maxLength={500}
+                  onChange={(e) => setAnn('text', e.target.value)}
+                />
+                <Input
+                  label={t('adminB.announcementLinkUrl')}
+                  value={form.ann.link_url}
+                  placeholder="https://… or /path"
+                  onChange={(e) => setAnn('link_url', e.target.value)}
+                />
+                <Input
+                  label={t('adminB.announcementLinkLabel')}
+                  value={form.ann.link_label}
+                  maxLength={80}
+                  onChange={(e) => setAnn('link_label', e.target.value)}
+                />
+                <div className={styles.field}>
+                  <div className={styles.sliderHead}>
+                    <span className={styles.label}>{t('adminB.announcementDismissible')}</span>
+                    <Toggle
+                      aria-label={t('adminB.announcementDismissible')}
+                      checked={form.ann.dismissible}
+                      onChange={(v) => setAnn('dismissible', v)}
+                    />
+                  </div>
+                </div>
+                <Input
+                  label={t('adminB.announcementStarts')}
+                  value={form.ann.starts_at}
+                  placeholder="2026-07-01T00:00:00Z"
+                  onChange={(e) => setAnn('starts_at', e.target.value)}
+                />
+                <Input
+                  label={t('adminB.announcementEnds')}
+                  value={form.ann.ends_at}
+                  placeholder="2026-08-01T00:00:00Z"
+                  onChange={(e) => setAnn('ends_at', e.target.value)}
+                />
+              </section>
+
+              <section className={styles.section}>
+                <h2 className={styles.h2}>{t('adminB.footerLinks')}</h2>
+                <span className={styles.hint}>{t('adminB.footerLinksHint')}</span>
+                {form.footerGroups.map((g, gi) => (
+                  <div key={gi} className={styles.slotCard}>
+                    <Input
+                      label={t('adminB.footerGroupTitle')}
+                      value={g.title}
+                      maxLength={80}
+                      onChange={(e) => patchFooterGroup(gi, { title: e.target.value })}
+                    />
+                    {g.links.map((l, li) => (
+                      <div key={li} className={styles.slotRow}>
+                        <Input
+                          label={t('adminB.footerLinkLabel')}
+                          value={l.label}
+                          maxLength={80}
+                          onChange={(e) => patchFooterLink(gi, li, { label: e.target.value })}
+                        />
+                        <Input
+                          label={t('adminB.footerLinkUrl')}
+                          value={l.url}
+                          onChange={(e) => patchFooterLink(gi, li, { url: e.target.value })}
+                        />
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          onClick={() =>
+                            patchFooterGroup(gi, {
+                              links: g.links.filter((_, j) => j !== li),
+                            })
+                          }
+                        >
+                          {t('adminB.removeLink')}
+                        </Button>
+                      </div>
+                    ))}
+                    <div className={styles.slotActions}>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        onClick={() =>
+                          patchFooterGroup(gi, {
+                            links: [...g.links, { label: '', url: '' }],
+                          })
+                        }
+                      >
+                        {t('adminB.addLink')}
+                      </Button>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        onClick={() =>
+                          setForm((f) =>
+                            f ? { ...f, footerGroups: f.footerGroups.filter((_, i) => i !== gi) } : f,
+                          )
+                        }
+                      >
+                        {t('adminB.removeGroup')}
+                      </Button>
+                    </div>
+                  </div>
+                ))}
+                <Button
+                  type="button"
+                  variant="ghost"
+                  onClick={() =>
+                    setForm((f) =>
+                      f
+                        ? {
+                            ...f,
+                            footerGroups: [...f.footerGroups, { title: '', links: [{ label: '', url: '' }] }],
+                          }
+                        : f,
+                    )
+                  }
+                >
+                  {t('adminB.addGroup')}
+                </Button>
+              </section>
+
+              <section className={styles.section}>
+                <h2 className={styles.h2}>{t('adminB.htmlInject')}</h2>
+                <span className={styles.hintWarn}>{t('adminB.htmlInjectWarn')}</span>
+                <div className={styles.field}>
+                  <span className={styles.label}>{t('adminB.htmlHead')}</span>
+                  <textarea
+                    className={styles.textarea}
+                    rows={5}
+                    value={form.htmlHead}
+                    onChange={(e) => set('htmlHead', e.target.value)}
+                    spellCheck={false}
+                  />
+                </div>
+                <div className={styles.field}>
+                  <span className={styles.label}>{t('adminB.htmlBodyEnd')}</span>
+                  <textarea
+                    className={styles.textarea}
+                    rows={5}
+                    value={form.htmlBodyEnd}
+                    onChange={(e) => set('htmlBodyEnd', e.target.value)}
+                    spellCheck={false}
+                  />
+                </div>
+              </section>
+            </>
           )}
 
           {tab === 'moderation' && (
