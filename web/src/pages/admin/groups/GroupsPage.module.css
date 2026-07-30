@@ -59,19 +59,6 @@
   grid-template-columns: 1fr 1fr 1fr;
   gap: 12px;
 }
-.field {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-}
-.label {
-  font-size: 13px;
-  color: var(--muted);
-}
-.hint {
-  font-size: 12px;
-  color: var(--muted);
-}
 .tags {
   display: flex;
   flex-wrap: wrap;

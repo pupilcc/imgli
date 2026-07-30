@@ -56,3 +56,37 @@ func TestRegistrationMode(t *testing.T) {
 		t.Errorf("改后 = %q, want closed", m)
 	}
 }
+
+func TestGetBoolCacheAndInvalidate(t *testing.T) {
+	svc := New(model.TestDB(t))
+	if err := svc.Set(model.SettingGuestUpload, true); err != nil {
+		t.Fatal(err)
+	}
+	if !svc.GuestUploadEnabled() {
+		t.Fatal("want true")
+	}
+	// Set flips cache via Invalidate
+	if err := svc.Set(model.SettingGuestUpload, false); err != nil {
+		t.Fatal(err)
+	}
+	if svc.GuestUploadEnabled() {
+		t.Fatal("want false after set")
+	}
+}
+
+func TestPlazaEnabled(t *testing.T) {
+	svc := New(model.TestDB(t))
+	on, err := svc.PlazaEnabled()
+	if err != nil {
+		t.Fatal(err)
+	}
+	// seed default may be false
+	_ = on
+	if err := svc.Set(model.SettingPlazaEnabled, true); err != nil {
+		t.Fatal(err)
+	}
+	on, err = svc.PlazaEnabled()
+	if err != nil || !on {
+		t.Fatalf("want true, got %v err=%v", on, err)
+	}
+}

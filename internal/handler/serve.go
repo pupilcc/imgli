@@ -9,14 +9,14 @@ import (
 	"net/url"
 	"strconv"
 	"strings"
-	"time"
 
 	"github.com/go-chi/chi/v5"
+	"golang.org/x/sync/singleflight"
 	"gorm.io/gorm"
 
 	"github.com/yixian-huang/imgli/internal/imaging"
 	"github.com/yixian-huang/imgli/internal/model"
-	"github.com/yixian-huang/imgli/internal/service/bandwidth"
+	"github.com/yixian-huang/imgli/internal/service/servesvc"
 	"github.com/yixian-huang/imgli/internal/service/stats"
 	"github.com/yixian-huang/imgli/internal/service/storagesvc"
 	"github.com/yixian-huang/imgli/internal/storage"
@@ -25,6 +25,9 @@ import (
 // 受控边长白名单（/t?w=）；其它值 400。
 var allowedThumbWidths = map[int]struct{}{200: {}, 400: {}, 800: {}}
 
+// errThumbGen 标记单次 ?w= 生成失败，调用方回退默认 thumb（非存储/IO 故障）。
+var errThumbGen = errors.New("serve: width thumb generate failed")
+
 // ServeDeps 直链处理器依赖。
 type ServeDeps struct {
 	DB      *gorm.DB
@@ -32,9 +35,14 @@ type ServeDeps struct {
 	Stats   *stats.Service // D-①:hotlink 快照+访问计数;nil=跳过(轻量测试兼容)
 	OwnHost string         // BaseURL 的 host(去端口),hotlink 恒放行自站
 	Proc    imaging.Processor // 可选；nil 时按需 imaging.New()（测试可省略）
+	Gate    *servesvc.Service // 可选；nil 时按 DB/Stats/OwnHost 惰性构造（测试兼容）
 }
 
-type ServeHandlers struct{ D ServeDeps }
+type ServeHandlers struct {
+	D       ServeDeps
+	gate    *servesvc.Service
+	thumbSF singleflight.Group // ?w= 缓存生成防击穿
+}
 
 func (h *ServeHandlers) proc() imaging.Processor {
 	if h.D.Proc != nil {
@@ -43,17 +51,18 @@ func (h *ServeHandlers) proc() imaging.Processor {
 	return imaging.New()
 }
 
-// loadFilePolicy 按 fileID 取 File+Policy；任一缺失返回 ok=false。
+func (h *ServeHandlers) gateSvc() *servesvc.Service {
+	if h.D.Gate != nil {
+		return h.D.Gate
+	}
+	if h.gate == nil {
+		h.gate = servesvc.New(h.D.DB, h.D.Stats, h.D.OwnHost)
+	}
+	return h.gate
+}
+
 func (h *ServeHandlers) loadFilePolicy(fileID uint64) (model.File, model.StoragePolicy, bool) {
-	var file model.File
-	if err := h.D.DB.First(&file, fileID).Error; err != nil {
-		return file, model.StoragePolicy{}, false
-	}
-	var policy model.StoragePolicy
-	if err := h.D.DB.First(&policy, file.StoragePolicyID).Error; err != nil {
-		return file, policy, false
-	}
-	return file, policy, true
+	return h.gateSvc().LoadFilePolicy(fileID)
 }
 
 // splitKeyExt 从 "aB3xK9mQ2wZp.png" 拆出 key 与 ext。
@@ -129,87 +138,61 @@ func (s *statusCapture) ok() bool { return s.status >= 200 && s.status < 300 && 
 // 否则已写好占位响应(404/410/401)并返回 (nil,false)。是 /i 与 /t 唯一的门禁。
 func (h *ServeHandlers) lookupServable(w http.ResponseWriter, r *http.Request) (*model.Image, bool) {
 	key, _ := splitKeyExt(chi.URLParam(r, "name"))
-	var img model.Image
-	// 先 key，再 slug（vanity 别名）
-	err := h.D.DB.Where("key = ?", key).First(&img).Error
-	if err != nil {
-		err = h.D.DB.Where("slug = ?", key).First(&img).Error
+	g := h.gateSvc()
+	img, soft := g.Find(key)
+	if soft {
+		h.placeholder(w, r, http.StatusGone, "IMAGE REMOVED")
+		return nil, false
 	}
-	if err != nil {
-		var deleted model.Image
-		if h.D.DB.Unscoped().Where("key = ? OR slug = ?", key, key).First(&deleted).Error == nil {
-			h.placeholder(w, r, http.StatusGone, "IMAGE REMOVED")
-			return nil, false
-		}
+	if img == nil {
 		h.placeholder(w, r, http.StatusNotFound, "NOT FOUND")
 		return nil, false
 	}
-	if img.Status == "rejected" {
-		// 机审/人审判定违规——与软删同视觉呈现：内容已被平台移除。
-		h.placeholder(w, r, http.StatusGone, "IMAGE REMOVED")
+	acc := servesvc.Access{
+		IsOwner:     h.isOwner(r, img),
+		PasswordOK:  imgPasswordOK(r, img),
+		RefererHost: refererHost(r),
+	}
+	if d := g.Authorize(img, acc); d != nil {
+		h.writeDeny(w, r, d)
 		return nil, false
 	}
-	// 内容安全 P1：pending 仅属主可看；外链/非属主 410（同 rejected 视觉，不泄露审态）。
-	// 游客图 user_id 为空 → 无人属主 → pending 对所有人不可直出。
-	if img.Status == "pending" && !h.isOwner(r, &img) {
+	return img, true
+}
+
+// writeDeny 把 servesvc.Deny 映射为占位图/JSON 信封。
+func (h *ServeHandlers) writeDeny(w http.ResponseWriter, r *http.Request, d *servesvc.Deny) {
+	switch d.Kind {
+	case servesvc.DenyRemoved:
 		h.placeholder(w, r, http.StatusGone, "IMAGE REMOVED")
-		return nil, false
-	}
-	if img.Visibility == "private" && !h.isOwner(r, &img) {
+	case servesvc.DenyPrivate:
 		h.placeholder(w, r, http.StatusUnauthorized, "PRIVATE IMAGE")
-		return nil, false
-	}
-	if img.ExpiresAt != nil && img.ExpiresAt.Before(time.Now()) {
-		// 与已移除/违规图一致：/i /t 返占位图(浏览器/热链得图形占位),Accept JSON 才回信封。
+	case servesvc.DenyExpired:
 		h.placeholder(w, r, http.StatusGone, "IMAGE EXPIRED")
-		return nil, false
-	}
-	// 阅后即焚 / 次数上限：已耗尽则非属主 410（属主仍可看，便于核对）。
-	if img.MaxViews > 0 && img.ViewsServed >= img.MaxViews && !h.isOwner(r, &img) {
+	case servesvc.DenyExhausted:
 		h.placeholder(w, r, http.StatusGone, "IMAGE EXHAUSTED")
-		return nil, false
-	}
-	// 访问口令：非属主须 cookie/header 解锁（不区分是否设了口令时不泄露，仅当有哈希才拦）。
-	if imgHasPassword(&img) && !imgPasswordOK(r, &img) {
+	case servesvc.DenyPassword:
 		h.placeholder(w, r, http.StatusUnauthorized, "PASSWORD REQUIRED")
-		return nil, false
-	}
-	// D-① 防盗链:配置快照判定,拒绝给 403 横幅占位(/i /t 同门禁)。
-	if h.D.Stats != nil && !stats.HotlinkAllowed(h.D.Stats.Hotlink(), refererHost(r), h.D.OwnHost) {
+	case servesvc.DenyHotlink:
 		h.placeholder(w, r, http.StatusForbidden, "HOTLINK DENIED")
-		return nil, false
+	case servesvc.DenyBandwidth:
+		h.placeholder(w, r, http.StatusTooManyRequests, "BANDWIDTH EXCEEDED")
+	case servesvc.DenyInternal:
+		Fail(w, http.StatusInternalServerError, CodeInternal, "服务器内部错误")
+	default:
+		h.placeholder(w, r, http.StatusNotFound, "NOT FOUND")
 	}
-	// 月流量硬顶：记属主；无属主（游客图）不拦截个人硬顶。
-	if img.UserID != nil {
-		if err := bandwidth.Check(h.D.DB, *img.UserID); errors.Is(err, bandwidth.ErrExceeded) {
-			h.placeholder(w, r, http.StatusTooManyRequests, "BANDWIDTH EXCEEDED")
-			return nil, false
-		} else if err != nil {
-			Fail(w, http.StatusInternalServerError, CodeInternal, "服务器内部错误")
-			return nil, false
-		}
-	}
-	return &img, true
 }
 
 // meterOwner 成功放行后按字节计入属主本月用量（裁决 1/3）。
 func (h *ServeHandlers) meterOwner(img *model.Image, n int64) {
-	if img == nil || img.UserID == nil || n <= 0 {
-		return
-	}
-	_ = bandwidth.Add(h.D.DB, *img.UserID, n)
+	h.gateSvc().MeterOwner(img, n)
 }
 
 // claimView 原子消耗一次 max_views 配额（仅 max_views>0）。多实例靠 DB 原子 UPDATE。
 // 成功返回 true；已用尽或错误返回 false（调用方应 410）。
 func (h *ServeHandlers) claimView(img *model.Image) bool {
-	if img.MaxViews <= 0 {
-		return true
-	}
-	res := h.D.DB.Model(&model.Image{}).
-		Where("id = ? AND max_views > 0 AND views_served < max_views", img.ID).
-		UpdateColumn("views_served", gorm.Expr("views_served + 1"))
-	return res.Error == nil && res.RowsAffected == 1
+	return h.gateSvc().ClaimView(img)
 }
 
 // Original GET /i/{name} —— 原图直链，访问控制的唯一汇聚点。
@@ -338,28 +321,36 @@ func (h *ServeHandlers) streamWidthThumb(w http.ResponseWriter, r *http.Request,
 	key := storagesvc.WidthThumbKey(file.Surface, file.Hash, width)
 	rc, err := d.Open(r.Context(), key)
 	if errors.Is(err, storage.ErrNotFound) {
-		// 生成缓存
-		src, oerr := d.Open(r.Context(), file.Path)
-		if oerr != nil {
-			if errors.Is(oerr, storage.ErrNotFound) {
+		// singleflight：同对象同边长并发 miss 只生成一次，防缓存击穿。
+		sfKey := file.Hash + "|w" + strconv.Itoa(width) + "|" + file.Surface
+		_, genErr, _ := h.thumbSF.Do(sfKey, func() (any, error) {
+			src, oerr := d.Open(r.Context(), file.Path)
+			if oerr != nil {
+				return nil, oerr
+			}
+			raw, rerr := io.ReadAll(src)
+			_ = src.Close()
+			if rerr != nil {
+				return nil, rerr
+			}
+			out, terr := h.proc().Thumbnail(bytes.NewReader(raw), width)
+			if terr != nil {
+				return nil, errThumbGen
+			}
+			_ = d.Put(r.Context(), key, bytes.NewReader(out))
+			return nil, nil
+		})
+		if genErr != nil {
+			if errors.Is(genErr, errThumbGen) {
+				return h.streamFile(w, r, file, policy, true, public)
+			}
+			if errors.Is(genErr, storage.ErrNotFound) {
 				h.placeholder(w, r, http.StatusNotFound, "NOT FOUND")
 				return 0, false
 			}
 			Fail(w, http.StatusInternalServerError, CodeInternal, "读取失败")
 			return 0, false
 		}
-		raw, rerr := io.ReadAll(src)
-		_ = src.Close()
-		if rerr != nil {
-			Fail(w, http.StatusInternalServerError, CodeInternal, "读取失败")
-			return 0, false
-		}
-		out, terr := h.proc().Thumbnail(bytes.NewReader(raw), width)
-		if terr != nil {
-			// 非 JPEG/PNG 等：回退默认 thumb 路径
-			return h.streamFile(w, r, file, policy, true, public)
-		}
-		_ = d.Put(r.Context(), key, bytes.NewReader(out))
 		rc, err = d.Open(r.Context(), key)
 	}
 	if err != nil {

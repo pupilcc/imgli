@@ -5,9 +5,17 @@ export const queryKeys = {
   quota: ['quota'] as const,
   albums: ['albums'] as const,
   config: ['config'] as const,
+  imagesRoot: ['images'] as const,
   images: (f: unknown) => ['images', f] as const,
   image: (key: string) => ['image', key] as const,
+  imageStats: (key: string) => ['image-stats', key] as const,
   trash: ['trash'] as const,
+  tokens: ['tokens'] as const,
+  userPolicies: ['user-policies'] as const,
+  plaza: (sort: string) => ['plaza', sort] as const,
+  userPublic: (username: string) => ['u', username] as const,
+  userImages: (username: string, sort: string) => ['u-images', username, sort] as const,
+  share: (key: string) => ['share', key] as const,
   admin: {
     stats: ['admin', 'stats'] as const,
     /** Prefix keys for invalidateQueries (matches all filtered variants). */

@@ -84,15 +84,9 @@ func New(db *gorm.DB, res *storagesvc.Resolver, proc imaging.Processor, run *tas
 }
 
 // GuestEnabled 返回 guest_upload_enabled 开关当前值；键缺失或读取异常一律按 false
-// 处理（fail closed）。异常（非"键不存在"）会记一条 slog.Warn，便于运维区分"确实
-// 关闭"与"设置服务读取故障"。供 Save 的权威门禁与 handler 层的前置门禁共用
-// （handler 侧提前挡掉匿名请求、避免关闭时还去抓取/落盘再拒绝，见 upload.go）。
+// 处理（fail closed）。经 settings 30s 缓存；Set 后立即失效。供 Save 与 handler 共用。
 func (s *Service) GuestEnabled() bool {
-	var enabled bool
-	if err := s.st.Get(model.SettingGuestUpload, &enabled); err != nil && !errors.Is(err, settings.ErrNotFound) {
-		slog.Warn("读取 guest_upload_enabled 失败", "err", err)
-	}
-	return enabled
+	return s.st.GuestUploadEnabled()
 }
 
 // Save 处理一个已落盘的临时文件。临时文件在返回前会被删除。

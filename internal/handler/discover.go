@@ -36,13 +36,9 @@ func (h *DiscoverHandler) discover() *discoversvc.Service {
 }
 
 // enabled 读 plaza_enabled 开关；键缺失视为 false；其它错误返回给调用方当 500。
+// 经 settings 30s 缓存；后台 PutSettings 后 Invalidate 即时生效。
 func (h *DiscoverHandler) enabled() (bool, error) {
-	var on bool
-	err := h.settings().Get(model.SettingPlazaEnabled, &on)
-	if err != nil && !errors.Is(err, settings.ErrNotFound) {
-		return false, err
-	}
-	return on, nil
+	return h.settings().PlazaEnabled()
 }
 
 func parseSort(r *http.Request) string {

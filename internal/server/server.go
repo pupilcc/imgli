@@ -28,6 +28,7 @@ import (
 	"github.com/yixian-huang/imgli/internal/service/discoversvc"
 	"github.com/yixian-huang/imgli/internal/service/imagesvc"
 	"github.com/yixian-huang/imgli/internal/service/moderation"
+	"github.com/yixian-huang/imgli/internal/service/servesvc"
 	"github.com/yixian-huang/imgli/internal/service/settings"
 	"github.com/yixian-huang/imgli/internal/service/stats"
 	"github.com/yixian-huang/imgli/internal/service/storagesvc"
@@ -304,10 +305,12 @@ func (s *Server) mountAPI() {
 // 以便私密图属主可见（匿名放行，由 handler 判定 401/404/410）。
 // 复用 mountAPI 已装配的 storageRes / authRes / imgProc，避免双 driver 缓存与双 auth 实例。
 func (s *Server) mountServe() {
+	own := baseHost(s.opts.Cfg.BaseURL)
+	gate := servesvc.New(s.opts.DB, s.stats, own)
 	sh := &handler.ServeHandlers{D: handler.ServeDeps{
 		DB: s.opts.DB, Res: s.storageRes,
-		Stats: s.stats, OwnHost: baseHost(s.opts.Cfg.BaseURL),
-		Proc: s.imgProc,
+		Stats: s.stats, OwnHost: own,
+		Proc: s.imgProc, Gate: gate,
 	}}
 	s.mux.Group(func(g chi.Router) {
 		g.Use(handler.Auth(s.authRes))

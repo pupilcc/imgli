@@ -118,7 +118,7 @@ function imagesQuery(f: ImagesFilter, cursor: string): string {
 
 export function useImages(f: ImagesFilter) {
   return useInfiniteQuery({
-    queryKey: ['images', f],
+    queryKey: queryKeys.images(f),
     queryFn: ({ pageParam }) => api<ImagesPage>(`/images?${imagesQuery(f, pageParam)}`),
     initialPageParam: '',
     getNextPageParam: (last) => last.next_cursor || undefined,
@@ -128,7 +128,7 @@ export function useImages(f: ImagesFilter) {
 /** 广场公开流；plaza 关闭时后端 404，不重试。 */
 export function usePlaza(sort: 'new' | 'hot') {
   return useInfiniteQuery({
-    queryKey: ['plaza', sort],
+    queryKey: queryKeys.plaza(sort),
     queryFn: ({ pageParam }) =>
       api<DiscoverPage>(`/plaza?sort=${sort}&cursor=${encodeURIComponent(pageParam)}&limit=24`),
     initialPageParam: '',
@@ -140,7 +140,7 @@ export function usePlaza(sort: 'new' | 'hot') {
 /** 公开用户主页；用户不存在/未公开时后端 404。 */
 export function useUserPublic(username: string) {
   return useQuery({
-    queryKey: ['u', username],
+    queryKey: queryKeys.userPublic(username),
     queryFn: () => api<{ user: PublicProfileData }>(`/u/${encodeURIComponent(username)}`),
     retry: false,
     enabled: !!username,
@@ -150,7 +150,7 @@ export function useUserPublic(username: string) {
 /** 公开用户图库分页。 */
 export function useUserImages(username: string, sort: 'new' | 'hot') {
   return useInfiniteQuery({
-    queryKey: ['u-images', username, sort],
+    queryKey: queryKeys.userImages(username, sort),
     queryFn: ({ pageParam }) =>
       api<DiscoverPage>(
         `/u/${encodeURIComponent(username)}/images?sort=${sort}&cursor=${encodeURIComponent(pageParam)}&limit=24`,
@@ -164,7 +164,7 @@ export function useUserImages(username: string, sort: 'new' | 'hot') {
 
 export function useImageDetail(key: string | null) {
   return useQuery({
-    queryKey: ['image', key],
+    queryKey: queryKeys.image(key!),
     enabled: !!key,
     queryFn: () => api<ImageDetail>(`/images/${key}`),
   })
@@ -173,7 +173,7 @@ export function useImageDetail(key: string | null) {
 /** Public share landing meta (no auth). */
 export function useShareImage(key: string | null) {
   return useQuery({
-    queryKey: ['share', key],
+    queryKey: queryKeys.share(key!),
     enabled: !!key,
     retry: false,
     queryFn: () => api<ShareImage>(`/s/${key}`),
@@ -187,8 +187,8 @@ export function useUnlockShare() {
     mutationFn: ({ key, password }: { key: string; password: string }) =>
       post<ShareImage>(`/s/${key}/unlock`, { password }),
     onSuccess: (data, v) => {
-      qc.setQueryData(['share', v.key], data)
-      qc.invalidateQueries({ queryKey: ['share', v.key] })
+      qc.setQueryData(queryKeys.share(v.key), data)
+      qc.invalidateQueries({ queryKey: queryKeys.share(v.key) })
     },
   })
 }
@@ -196,7 +196,7 @@ export function useUnlockShare() {
 /** 详情弹窗 ACCESS 区块;key 为 null(弹窗关闭)不发请求。 */
 export function useImageStats(key: string | null) {
   return useQuery({
-    queryKey: ['image-stats', key],
+    queryKey: queryKeys.imageStats(key!),
     enabled: !!key,
     queryFn: () => api<ImageStats>(`/images/${key}/stats`),
   })
@@ -221,8 +221,8 @@ export function useUpdateImage() {
       }
     }) => patch<ImageDetail>(`/images/${key}`, body),
     onSuccess: (_d, v) => {
-      qc.invalidateQueries({ queryKey: ['images'] })
-      qc.invalidateQueries({ queryKey: ['image', v.key] })
+      qc.invalidateQueries({ queryKey: queryKeys.imagesRoot })
+      qc.invalidateQueries({ queryKey: queryKeys.image(v.key) })
       qc.invalidateQueries({ queryKey: queryKeys.albums })
     },
   })
@@ -233,7 +233,7 @@ export function useDeleteImage() {
   return useMutation({
     mutationFn: (key: string) => del(`/images/${key}`),
     onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ['images'] })
+      qc.invalidateQueries({ queryKey: queryKeys.imagesRoot })
       qc.invalidateQueries({ queryKey: queryKeys.quota })
       qc.invalidateQueries({ queryKey: queryKeys.albums })
     },
@@ -246,7 +246,7 @@ export function useBatchImages() {
     mutationFn: (body: { action: 'delete' | 'visibility' | 'move'; keys: string[]; visibility?: string; album_id?: number | null }) =>
       post<{ results: BatchResult[] }>('/images/batch', body),
     onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ['images'] })
+      qc.invalidateQueries({ queryKey: queryKeys.imagesRoot })
       qc.invalidateQueries({ queryKey: queryKeys.quota })
       qc.invalidateQueries({ queryKey: queryKeys.albums })
     },
@@ -280,15 +280,15 @@ export function useDeleteAlbum() {
       del(`/albums/${id}?with_images=${withImages}`),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: queryKeys.albums })
-      qc.invalidateQueries({ queryKey: ['images'] })
-      qc.invalidateQueries({ queryKey: ['trash'] })
+      qc.invalidateQueries({ queryKey: queryKeys.imagesRoot })
+      qc.invalidateQueries({ queryKey: queryKeys.trash })
     },
   })
 }
 
 export function useTrash() {
   return useInfiniteQuery({
-    queryKey: ['trash'],
+    queryKey: queryKeys.trash,
     queryFn: ({ pageParam }) =>
       api<TrashPage>(`/trash?limit=24${pageParam ? `&cursor=${encodeURIComponent(pageParam)}` : ''}`),
     initialPageParam: '',
@@ -301,8 +301,8 @@ export function useRestoreImage() {
   return useMutation({
     mutationFn: (key: string) => post(`/trash/${key}/restore`),
     onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ['trash'] })
-      qc.invalidateQueries({ queryKey: ['images'] })
+      qc.invalidateQueries({ queryKey: queryKeys.trash })
+      qc.invalidateQueries({ queryKey: queryKeys.imagesRoot })
     },
   })
 }
@@ -312,7 +312,7 @@ export function usePurgeImage() {
   return useMutation({
     mutationFn: (key: string) => del(`/trash/${key}`),
     onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ['trash'] })
+      qc.invalidateQueries({ queryKey: queryKeys.trash })
       qc.invalidateQueries({ queryKey: queryKeys.quota })
     },
   })
@@ -323,21 +323,21 @@ export function useEmptyTrash() {
   return useMutation({
     mutationFn: () => del<{ purged: number }>('/trash'),
     onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ['trash'] })
+      qc.invalidateQueries({ queryKey: queryKeys.trash })
       qc.invalidateQueries({ queryKey: queryKeys.quota })
     },
   })
 }
 
 export function useTokens() {
-  return useQuery({ queryKey: ['tokens'], queryFn: () => api<ApiToken[]>('/user/tokens') })
+  return useQuery({ queryKey: queryKeys.tokens, queryFn: () => api<ApiToken[]>('/user/tokens') })
 }
 
 export function useCreateToken() {
   const qc = useQueryClient()
   return useMutation({
     mutationFn: (body: { name: string; scope: 'upload' | 'full' }) => post<ApiToken>('/user/tokens', body),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['tokens'] }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: queryKeys.tokens }),
   })
 }
 
@@ -345,7 +345,7 @@ export function useRevokeToken() {
   const qc = useQueryClient()
   return useMutation({
     mutationFn: (id: number) => del(`/user/tokens/${id}`),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['tokens'] }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: queryKeys.tokens }),
   })
 }
 
@@ -424,7 +424,7 @@ export function useUpdatePreferences() {
 /** 当前用户可选存储策略;仅 >1 时前端渲染选择器。 */
 export function useUserPolicies(enabled = true) {
   return useQuery({
-    queryKey: ['user-policies'],
+    queryKey: queryKeys.userPolicies,
     queryFn: () => api<PolicyOption[]>('/user/policies'),
     staleTime: 5 * 60_000,
     enabled,
