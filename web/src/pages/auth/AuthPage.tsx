@@ -207,6 +207,13 @@ export function AuthPage() {
             >
               {submitLabel}
             </Button>
+            {isLogin && config.data?.oidc_enabled && (
+              <a href="/api/v1/auth/oidc/start" className={styles.submit} style={{ display: 'block', textAlign: 'center', marginTop: 10 }}>
+                <Button variant="secondary" type="button" style={{ width: '100%' }}>
+                  {t('auth.oidcLogin')}
+                </Button>
+              </a>
+            )}
           </form>
         </div>
       </main>

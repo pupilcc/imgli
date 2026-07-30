@@ -441,6 +441,8 @@ export interface PublicConfig {
   announcement?: SiteAnnouncement | null
   footer?: SiteFooter
   html_inject?: HTMLInject
+  /** OIDC SSO available */
+  oidc_enabled?: boolean
 }
 
 export interface DiscoverAuthor {

@@ -65,4 +65,6 @@ export default {
   verifyFailed: '验证失败',
   verifyFailHint: '(可登录后在「设置-资料」重发验证邮件)',
   verifyOkText: '你的邮箱已完成验证。',
+
+  oidcLogin: '使用 SSO / OIDC 登录',
 }

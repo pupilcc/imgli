@@ -10,6 +10,7 @@ import (
 
 	"github.com/yixian-huang/imgli/internal/model"
 	"github.com/yixian-huang/imgli/internal/service/adminsvc"
+	"github.com/yixian-huang/imgli/internal/service/auth"
 	"github.com/yixian-huang/imgli/internal/service/settings"
 )
 
@@ -89,6 +90,10 @@ func (h *ConfigHandler) Config(w http.ResponseWriter, r *http.Request) {
 
 	baseURL := strings.TrimRight(strings.TrimSpace(h.BaseURL), "/")
 
+	var oidcCfg auth.OIDCConfig
+	_ = st.Get(auth.OIDCSettingKey, &oidcCfg)
+	oidcOn := oidcCfg.Enabled && strings.TrimSpace(oidcCfg.Issuer) != "" && strings.TrimSpace(oidcCfg.ClientID) != ""
+
 	OK(w, map[string]any{
 		"site_name":            siteName,
 		"registration_mode":    regMode,
@@ -99,5 +104,6 @@ func (h *ConfigHandler) Config(w http.ResponseWriter, r *http.Request) {
 		"footer":               foot,
 		"html_inject":          htmlInj,
 		"base_url":             baseURL,
+		"oidc_enabled":         oidcOn,
 	})
 }
