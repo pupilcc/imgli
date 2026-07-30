@@ -132,6 +132,17 @@ export function SharePage() {
                     <span>{t('share.expires', { date: expiryLabel })}</span>
                   </>
                 )}
+                {!!data.max_views && data.max_views > 0 && (
+                  <>
+                    <span className={styles.dot}>·</span>
+                    <span>
+                      {t('images.maxViewsUsed', {
+                        used: data.views_served ?? 0,
+                        max: data.max_views,
+                      })}
+                    </span>
+                  </>
+                )}
               </div>
               <div className={styles.actions}>
                 <Button
