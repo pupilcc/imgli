@@ -347,7 +347,8 @@ export function PoliciesPage() {
 
   const config = buildConfig(form)
 
-  const needsCompatAck = form.driver === 'ftp' && form.enabled && (sel === 'new' || (current && !current.enabled))
+  const needsCompatAck =
+    form.driver === 'ftp' && form.enabled && (sel === 'new' || Boolean(current && !current.enabled))
 
   const submit = () => {
     setTestMsg(null)
