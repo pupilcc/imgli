@@ -12,6 +12,12 @@ separate version in `go.mod` or `web/package.json`.
 
 ### Added
 
+## [0.3.0] - 2026-07-30
+
+Theme: **Share · Migrate · Integrate**
+
+### Added
+
 - **OIDC login (generic):** admin GET/PUT `/admin/oidc`; `/auth/oidc/start` + callback; auto-provision user by email; `oidc_enabled` on public config.
 - **Outbound webhooks:** admin GET/PUT `/admin/webhooks`; async `image.uploaded` / `image.moderated` with optional HMAC `X-Imgli-Signature`.
 - **Admin users ops:** filter by signup `channel`, sort by `bandwidth`, CSV export `/admin/export/users.csv`.
@@ -121,7 +127,8 @@ Theme: **Workflow & Trust** — CLI/integrations, share landing, privacy
 - Bilingual UI (中文/English), PWA, dark mode, text watermark, admin audit logs.
 - Docker Compose quick start and GitHub Actions CI (Go matrix, web, e2e smoke).
 
-[Unreleased]: https://github.com/yixian-huang/imgli/compare/v0.2.0...HEAD
+[Unreleased]: https://github.com/yixian-huang/imgli/compare/v0.3.0...HEAD
+[0.3.0]: https://github.com/yixian-huang/imgli/compare/v0.2.0...v0.3.0
 [0.2.0]: https://github.com/yixian-huang/imgli/compare/v0.1.1...v0.2.0
 [0.1.1]: https://github.com/yixian-huang/imgli/compare/v0.1.0...v0.1.1
 [0.1.0]: https://github.com/yixian-huang/imgli/releases/tag/v0.1.0
