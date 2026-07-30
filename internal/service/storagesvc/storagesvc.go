@@ -17,6 +17,7 @@ import (
 	"github.com/yixian-huang/imgli/internal/config"
 	"github.com/yixian-huang/imgli/internal/model"
 	"github.com/yixian-huang/imgli/internal/storage"
+	"github.com/yixian-huang/imgli/internal/storage/ftp"
 	"github.com/yixian-huang/imgli/internal/storage/local"
 	"github.com/yixian-huang/imgli/internal/storage/s3"
 	"github.com/yixian-huang/imgli/internal/storage/webdav"
@@ -57,7 +58,7 @@ func policyFP(p *model.StoragePolicy) string {
 	return b.String()
 }
 
-// Driver 返回策略对应驱动（local/s3/webdav）。按 (policyID, 配置指纹) 缓存——策略配置更新后
+// Driver 返回策略对应驱动（local/s3/webdav/ftp）。按 (policyID, 配置指纹) 缓存——策略配置更新后
 // 指纹变化,自动重建驱动,不会无限沿用旧 endpoint/凭据（codex 终审）。
 func (r *Resolver) Driver(p *model.StoragePolicy) (storage.Driver, error) {
 	r.mu.Lock()
@@ -79,6 +80,8 @@ func (r *Resolver) Driver(p *model.StoragePolicy) (storage.Driver, error) {
 		d, err = s3.New(p.Config)
 	case "webdav":
 		d, err = webdav.New(p.Config)
+	case "ftp":
+		d, err = ftp.New(p.Config)
 	default:
 		return nil, fmt.Errorf("storagesvc: 暂不支持的驱动 %q", p.Driver)
 	}
@@ -87,6 +90,21 @@ func (r *Resolver) Driver(p *model.StoragePolicy) (storage.Driver, error) {
 	}
 	r.cache[p.ID] = cachedDriver{d: d, fp: fp}
 	return d, nil
+}
+
+// CapsFor returns static driver capabilities for a policy.
+func (r *Resolver) CapsFor(p *model.StoragePolicy) (storage.Caps, error) {
+	if d, err := r.Driver(p); err == nil {
+		if c, ok := d.(storage.CapabilityProvider); ok {
+			return c.Capabilities(), nil
+		}
+	}
+	return storage.CapsForDriver(p.Driver)
+}
+
+// EffectiveFor returns policy-level effective storage capabilities.
+func (r *Resolver) EffectiveFor(p *model.StoragePolicy) (storage.Effective, error) {
+	return storage.EffectiveFor(p.Driver, p.Config, p.CDNDomain)
 }
 
 const base62 = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz"

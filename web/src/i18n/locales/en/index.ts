@@ -14,6 +14,7 @@ import errors from './errors'
 import adminA from './adminA'
 import adminB from './adminB'
 import pwa from './pwa'
+import storage from './storage'
 
 export default {
   common,
@@ -32,4 +33,5 @@ export default {
   adminA,
   adminB,
   pwa,
+  storage,
 }

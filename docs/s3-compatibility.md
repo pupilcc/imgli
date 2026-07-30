@@ -32,7 +32,7 @@ This page tracks **what we have verified** and how to contribute a report.
 | Tencent COS (S3 API) | `cos.*.myqcloud.com` | no | TBD | TBD | Bucket often `name-APPID` | Untested in-tree | — |
 | Qiniu Kodo (S3 API) | `s3.*.qiniucs.com` | no | TBD | TBD | Template in env example | Untested in-tree | — |
 | Upyun (S3 API) | vendor docs | TBD | TBD | TBD | Prefer S3 endpoint over FTP | Untested in-tree | — |
-| WebDAV | (separate driver) | n/a | yes | n/a | Not S3; listed for completeness | Unit-tested | ≥0.1 |
+| WebDAV | (separate driver) | n/a | yes | n/a | Not S3; listed for completeness. Good exit for OpenList/proxies | Unit-tested | ≥0.1 |
 
 **Status legend:** Verified = live or production evidence; Untested in-tree = no
 automated report in this repo yet.
@@ -44,7 +44,28 @@ automated report in this repo yet.
 - Set `presign_domain` / CDN domain per storage policy in admin when offloading.
 - Path-style is required for many MinIO deployments (`force path style`).
 
+## FTP and legacy vendors (dual track)
+
+Some hosts only expose **FTP** (e.g. certain virtual-host / panel storage). imgli
+treats this as a **compatibility** concern, not a first-class object-store path.
+
+1. **Preferred (ops):** front FTP with an external tool, then use a normal imgli
+   driver:
+   - [OpenList](https://github.com/OpenListTeam/OpenList) (or similar) mount FTP →
+     expose **WebDAV** (or sync to disk) → imgli **webdav** / **local** policy
+   - **rclone** sync/mount → local disk or S3-compatible bucket → imgli **local** / **s3**
+2. **Optional (product):** in-tree **FTP compat driver** (when shipped): same
+   `Driver` contract only, `tier=compat`, explicit feature loss (no presign, CDN
+   not recommended, not for hot traffic). **No special cases in the serve path.**
+
+Do **not** expect FTP (proxy or in-tree) to match S3 CDN offload or private
+presign. Prefer S3-compatible APIs when the vendor offers them (including Upyun
+S3).
+
+Design / checklist: [design/storage-caps-draft.md](design/storage-caps-draft.md),
+[design/storage-caps-impl-checklist.md](design/storage-caps-impl-checklist.md).
+
 ## Out of scope
 
-- FTP as a first-class driver (roadmap: not planned; use S3-compatible if available).
+- FTP as a **first-class** driver (equal to S3 in docs, defaults, or CDN/presign).
 - Guaranteeing every regional quirk without a report — file an issue with the template.

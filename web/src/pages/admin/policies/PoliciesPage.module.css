@@ -71,6 +71,73 @@
   font-size: 13px;
   color: var(--ok);
 }
+.capsPanel {
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 12px 14px;
+  background: var(--soft);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.capsPanel[data-tier='compat'] {
+  border-color: color-mix(in srgb, var(--err) 45%, var(--border));
+}
+.capsTitle {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 600;
+  font-size: 13px;
+}
+.capsSummary {
+  margin: 0;
+  font-size: 13px;
+  color: var(--muted);
+  line-height: 1.45;
+}
+.capsList {
+  margin: 0;
+  padding-left: 1.1em;
+  font-size: 12px;
+  color: var(--text);
+}
+.limitations ul {
+  margin: 4px 0 0;
+  padding-left: 1.1em;
+  font-size: 12px;
+  color: var(--muted);
+}
+.tierBadge {
+  font-size: 11px;
+  padding: 1px 6px;
+  border-radius: 4px;
+  background: color-mix(in srgb, var(--warn, #c90) 25%, var(--soft));
+  color: var(--text);
+  font-weight: 500;
+}
+.warnList {
+  margin: 0;
+  padding-left: 1.1em;
+  font-size: 12px;
+  color: var(--err);
+}
+.warnInline {
+  margin: 0;
+  font-size: 12px;
+  color: var(--err);
+  line-height: 1.4;
+}
+.ackRow {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+  font-size: 13px;
+  line-height: 1.4;
+}
+.ackRow input {
+  margin-top: 3px;
+}
 @media (max-width: 768px) {
   .split {
     grid-template-columns: 1fr;

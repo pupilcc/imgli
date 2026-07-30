@@ -224,13 +224,13 @@ func TestUpdatePolicyPartialFields(t *testing.T) {
 
 	got, err := svc.UpdatePolicy(p.ID, PolicyPatch{
 		Name:      strP("renamed"),
-		CDNDomain: strP("cdn.example.com"),
+		CDNDomain: strP("https://cdn.example.com"),
 		Enabled:   boolP(false),
 	})
 	if err != nil {
 		t.Fatal(err)
 	}
-	if got.Name != "renamed" || got.CDNDomain != "cdn.example.com" || got.Enabled {
+	if got.Name != "renamed" || got.CDNDomain != "https://cdn.example.com" || got.Enabled {
 		t.Errorf("got = %+v", got)
 	}
 	if got.Config["root"] != "/data/orig" {
