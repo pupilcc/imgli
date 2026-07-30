@@ -10,6 +10,10 @@ separate version in `go.mod` or `web/package.json`.
 
 ## [Unreleased]
 
+### Changed
+
+- **FTP driver:** in-package control connection pool + remembered TLS mode (no dual-dial per request); still compat-tier, no serve changes.
+
 ## [0.4.0] - 2026-07-30
 
 Theme: **Storage Caps · FTP · Detail UX**

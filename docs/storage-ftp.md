@@ -33,6 +33,10 @@ See also [s3-compatibility.md](s3-compatibility.md) and the design notes under
 - **No** special cases in the image serve path (`/i` still streams when no CDN/presign)  
 - Admin **Test connection** runs write/read/delete probe  
 - Enabling an enabled compat policy records audit `policy_enable_compat`  
+- **In-package only:** small control-connection pool (default max 4, idle ~90s) and
+  remembered TLS mode (explicit vs implicit) so hot reads do not dial+login every
+  time or dual-probe FTPS. Still **not** recommended as the default hot store.  
+
 
 ## Removal
 
