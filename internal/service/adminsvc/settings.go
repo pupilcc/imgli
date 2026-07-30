@@ -6,6 +6,7 @@ import (
 	"regexp"
 	"strings"
 
+	"github.com/yixian-huang/imgli/internal/apperr"
 	"github.com/yixian-huang/imgli/internal/mail"
 	"github.com/yixian-huang/imgli/internal/model"
 	"github.com/yixian-huang/imgli/internal/service/moderation"
@@ -23,21 +24,21 @@ var hotlinkHostRe = regexp.MustCompile(`^[a-z0-9]([a-z0-9-]*[a-z0-9])?(\.[a-z0-9
 
 var (
 	// ErrUnknownSetting PutSettings 只认 site_name/registration_mode/guest_upload_enabled/plaza_enabled/moderation/smtp/hotlink/processing/announcement/footer/html_inject 键。
-	ErrUnknownSetting = errors.New("未知的设置键")
+	ErrUnknownSetting = apperr.New("未知的设置键")
 	// ErrSiteNameInvalid site_name 需 1-64 个字符（TrimSpace 后）。
-	ErrSiteNameInvalid = errors.New("site_name 需 1-64 个字符")
+	ErrSiteNameInvalid = apperr.New("site_name 需 1-64 个字符")
 	// ErrRegistrationModeInvalid registration_mode 仅支持 open|invite|closed。
-	ErrRegistrationModeInvalid = errors.New("registration_mode 仅支持 open|invite|closed")
+	ErrRegistrationModeInvalid = apperr.New("registration_mode 仅支持 open|invite|closed")
 	// ErrModerationInvalid moderation 键的值不是合法 JSON 对象。
-	ErrModerationInvalid = errors.New("moderation 配置格式错误")
+	ErrModerationInvalid = apperr.New("moderation 配置格式错误")
 	// ErrGuestUploadInvalid guest_upload_enabled 需为布尔值。
-	ErrGuestUploadInvalid = errors.New("guest_upload_enabled 需为布尔值")
+	ErrGuestUploadInvalid = apperr.New("guest_upload_enabled 需为布尔值")
 	// ErrPlazaEnabledInvalid plaza_enabled 需为布尔值。
-	ErrPlazaEnabledInvalid = errors.New("plaza_enabled 需为布尔值")
+	ErrPlazaEnabledInvalid = apperr.New("plaza_enabled 需为布尔值")
 	// ErrSMTPInvalid smtp 配置：port 需 1-65535、encryption 需 none|starttls|ssl、from 需为邮箱或留空。
-	ErrSMTPInvalid = errors.New("smtp 配置无效:port 需 1-65535、encryption 需 none|starttls|ssl、from 需为邮箱或留空")
+	ErrSMTPInvalid = apperr.New("smtp 配置无效:port 需 1-65535、encryption 需 none|starttls|ssl、from 需为邮箱或留空")
 	// ErrHotlinkDomainInvalid 防盗链域名不合法（空/空白/scheme/路径/非法通配）。
-	ErrHotlinkDomainInvalid = errors.New("防盗链域名不合法")
+	ErrHotlinkDomainInvalid = apperr.New("防盗链域名不合法")
 )
 
 // maskAPIKey 打码 api_key：非空时返回 "****"+尾4字符（长度<=4 时全打码为 "****"），

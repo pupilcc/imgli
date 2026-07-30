@@ -7,27 +7,28 @@
 package moderation
 
 import (
-	"errors"
 	"net/url"
+
+	"github.com/yixian-huang/imgli/internal/apperr"
 )
 
 var (
 	// ErrThresholdRange threshold 必须落在 [0,1] 闭区间。
-	ErrThresholdRange = errors.New("threshold 必须在 0-1 之间")
+	ErrThresholdRange = apperr.New("threshold 必须在 0-1 之间")
 	// ErrActionInvalid action 仅支持 pending|rejected。
-	ErrActionInvalid = errors.New("action 仅支持 pending|rejected")
+	ErrActionInvalid = apperr.New("action 仅支持 pending|rejected")
 	// ErrProviderInvalid provider 仅支持 webhook|aliyun|tencent|openai|nsfwjs。
-	ErrProviderInvalid = errors.New("provider 仅支持 webhook|aliyun|tencent|openai|nsfwjs")
+	ErrProviderInvalid = apperr.New("provider 仅支持 webhook|aliyun|tencent|openai|nsfwjs")
 	// ErrEndpointInvalid enabled=true 时 endpoint 必须是合法的 http(s) URL。
-	ErrEndpointInvalid = errors.New("enabled 时 endpoint 必须是 http(s) URL")
+	ErrEndpointInvalid = apperr.New("enabled 时 endpoint 必须是 http(s) URL")
 	// ErrCredentialMissing 所选机审服务商缺少必填凭据。
-	ErrCredentialMissing = errors.New("所选机审服务商缺少必填凭据")
+	ErrCredentialMissing = apperr.New("所选机审服务商缺少必填凭据")
 	// ErrOCRKeywordsInvalid ocr_keywords 子配置非法（endpoint/on_hit）。
-	ErrOCRKeywordsInvalid = errors.New("ocr_keywords 配置无效")
+	ErrOCRKeywordsInvalid = apperr.New("ocr_keywords 配置无效")
 	// ErrLoginSampleRate login_sample_rate 必须在 [0,1]。
-	ErrLoginSampleRate = errors.New("login_sample_rate 必须在 0-1 之间")
+	ErrLoginSampleRate = apperr.New("login_sample_rate 必须在 0-1 之间")
 	// ErrOnPluginError on_plugin_error 仅支持 open|review。
-	ErrOnPluginError = errors.New("on_plugin_error 仅支持 open|review")
+	ErrOnPluginError = apperr.New("on_plugin_error 仅支持 open|review")
 )
 
 // OCRKeywordsConfig OCR+词表插件（PR3）。默认关闭；OCR 外置，词表在 imgli 匹配。

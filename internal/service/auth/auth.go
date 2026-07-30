@@ -13,10 +13,10 @@ import (
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
 
+	"github.com/yixian-huang/imgli/internal/imaging"
 	"github.com/yixian-huang/imgli/internal/model"
 	"github.com/yixian-huang/imgli/internal/service/bandwidth"
 	"github.com/yixian-huang/imgli/internal/service/settings"
-	"github.com/yixian-huang/imgli/internal/service/upload"
 	"github.com/yixian-huang/imgli/internal/token"
 )
 
@@ -336,7 +336,7 @@ func (s *Service) UpdatePreferences(userID uint64, p model.Preferences) error {
 		}
 	}
 	if w := p.Watermark; true {
-		if w.Position != "" && !upload.Positions[w.Position] {
+		if w.Position != "" && !imaging.Positions[w.Position] {
 			return ErrInvalidInput
 		}
 		if w.Opacity < 0 || w.Opacity > 1 {

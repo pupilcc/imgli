@@ -195,6 +195,33 @@ func TestDecideRefetchSucceedsWhenConcurrentlySoftDeletedAfterUpdate(t *testing.
 	}
 }
 
+func TestNSFWScoresAndImagesByKeys(t *testing.T) {
+	db := model.TestDB(t)
+	svc := New(db)
+	f := &model.File{Hash: "hs", StoragePolicyID: 1, Path: "ps", Size: 1, RefCount: 1}
+	db.Create(f)
+	sc := 0.42
+	db.Create(&model.Image{Key: "s1", FileID: f.ID, Name: "a.png", Ext: "png", Status: "pending", NSFWScore: &sc})
+	db.Create(&model.Image{Key: "s2", FileID: f.ID, Name: "b.png", Ext: "png", Status: "pending"})
+	scores, err := svc.NSFWScoresByKeys([]string{"s1", "s2", "nope"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if scores["s1"] == nil || *scores["s1"] != 0.42 {
+		t.Fatalf("s1 score=%v", scores["s1"])
+	}
+	if _, ok := scores["s2"]; !ok {
+		t.Fatal("s2 should be present")
+	}
+	if _, ok := scores["nope"]; ok {
+		t.Fatal("nope should be absent")
+	}
+	imgs, err := svc.ImagesByKeys([]string{"s1", "s2"})
+	if err != nil || len(imgs) != 2 {
+		t.Fatalf("imgs=%d err=%v", len(imgs), err)
+	}
+}
+
 func TestDecideBatchPartialSuccess(t *testing.T) {
 	db := model.TestDB(t)
 	svc := New(db)

@@ -6,13 +6,15 @@ import (
 	"strings"
 	"time"
 	"unicode/utf8"
+
+	"github.com/yixian-huang/imgli/internal/apperr"
 )
 
 // 引流/站点插槽校验错误（PutSettings 映射 400）。
 var (
-	ErrAnnouncementInvalid = errors.New("announcement 配置无效")
-	ErrFooterInvalid       = errors.New("footer 配置无效")
-	ErrHTMLInjectInvalid   = errors.New("html_inject 配置无效")
+	ErrAnnouncementInvalid = apperr.New("announcement 配置无效")
+	ErrFooterInvalid       = apperr.New("footer 配置无效")
+	ErrHTMLInjectInvalid   = apperr.New("html_inject 配置无效")
 )
 
 const (

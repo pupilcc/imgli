@@ -99,6 +99,45 @@ func (s *Service) NSFWScoreByKey(key string) (*float64, error) {
 	return img.NSFWScore, nil
 }
 
+// NSFWScoresByKeys 批量取 nsfw_score；不存在的 key 不在 map 中。一次 IN 查询。
+func (s *Service) NSFWScoresByKeys(keys []string) (map[string]*float64, error) {
+	out := make(map[string]*float64, len(keys))
+	if len(keys) == 0 {
+		return out, nil
+	}
+	var rows []struct {
+		Key       string
+		NSFWScore *float64
+	}
+	if err := s.db.Model(&model.Image{}).
+		Select("key", "nsfw_score").
+		Where("key IN ?", keys).
+		Find(&rows).Error; err != nil {
+		return nil, err
+	}
+	for _, r := range rows {
+		out[r.Key] = r.NSFWScore
+	}
+	return out, nil
+}
+
+// ImagesByKeys 批量取图片行（默认 scope，不含软删）；一次 IN 查询。
+// 供批量裁决后 reject 通知等路径避免逐 key GetImageRow。
+func (s *Service) ImagesByKeys(keys []string) (map[string]model.Image, error) {
+	out := make(map[string]model.Image, len(keys))
+	if len(keys) == 0 {
+		return out, nil
+	}
+	var imgs []model.Image
+	if err := s.db.Where("key IN ?", keys).Find(&imgs).Error; err != nil {
+		return nil, err
+	}
+	for i := range imgs {
+		out[imgs[i].Key] = imgs[i]
+	}
+	return out, nil
+}
+
 // ModerationTrigger 审核队列展示用的机审触发摘要（来自 moderation_flag audit）。
 type ModerationTrigger struct {
 	Plugin   string   `json:"plugin"`

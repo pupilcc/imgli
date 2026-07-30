@@ -2,20 +2,18 @@
 package upload
 
 import (
-	"errors"
 	"strings"
 	"unicode/utf8"
+
+	"github.com/yixian-huang/imgli/internal/apperr"
+	"github.com/yixian-huang/imgli/internal/imaging"
 )
 
-// Positions 九宫格 position 合法枚举,供 preferences 校验等后续任务复用。
-var Positions = map[string]bool{
-	"tl": true, "tc": true, "tr": true,
-	"ml": true, "mc": true, "mr": true,
-	"bl": true, "bc": true, "br": true,
-}
+// Positions 兼容别名——真源在 imaging.Positions，避免 auth 等包 import upload。
+var Positions = imaging.Positions
 
 // ErrProcessingInvalid 图片处理配置无效。
-var ErrProcessingInvalid = errors.New("图片处理配置无效:position 需九宫格、opacity 需 (0,1]、size_ratio 需 0.01-0.2、启用时 text 非空且 ≤64 字符、max_edge 需 0 或 256-16384")
+var ErrProcessingInvalid = apperr.New("图片处理配置无效:position 需九宫格、opacity 需 (0,1]、size_ratio 需 0.01-0.2、启用时 text 非空且 ≤64 字符、max_edge 需 0 或 256-16384")
 
 // TextWatermark 站点级文字水印配置(settings "processing".text_watermark)。
 type TextWatermark struct {
@@ -71,7 +69,7 @@ func DefaultProcessing() Processing {
 //   enabled 时 TrimSpace(text) 非空且 utf8 长度 ≤64;max_edge == 0 || 256 ≤ max_edge ≤ 16384。
 func ValidateProcessing(p Processing) error {
 	tw := p.TextWatermark
-	if !Positions[tw.Position] {
+	if !imaging.Positions[tw.Position] {
 		return ErrProcessingInvalid
 	}
 	if tw.Opacity <= 0 || tw.Opacity > 1 {

@@ -9,6 +9,7 @@ import (
 
 	"github.com/go-chi/chi/v5"
 
+	"github.com/yixian-huang/imgli/internal/linkbuilder"
 	"github.com/yixian-huang/imgli/internal/service/auth"
 	"github.com/yixian-huang/imgli/internal/service/imagesvc"
 	"github.com/yixian-huang/imgli/internal/service/stats"
@@ -26,37 +27,9 @@ type ImageHandlers struct{ D ImageDeps }
 
 const maxListLimit = 100
 
-// imageItemDTO 列表项（精简）。
-func (h *ImageHandlers) imageItemDTO(row *imagesvc.Row) map[string]any {
-	base := h.D.Res.LinkBase(&row.Policy)
-	links := imageLinksFrom(base, &row.Img)
-	var expiresAt any
-	if row.Img.ExpiresAt != nil {
-		// 与 upload.go 同口径归一 UTC:Postgres timestamptz 按会话时区返回,
-		// 不归一会让同一时刻在非 UTC 服务器上序列化出带偏移的字符串。
-		expiresAt = row.Img.ExpiresAt.UTC().Format(time.RFC3339)
-	}
-	var slug any
-	if row.Img.Slug != nil {
-		slug = *row.Img.Slug
-	}
-	return map[string]any{
-		"key":          row.Img.Key,
-		"slug":         slug,
-		"name":         row.Img.Name,
-		"ext":          row.Img.Ext,
-		"size":         row.File.Size,
-		"width":        row.File.Width,
-		"height":       row.File.Height,
-		"visibility":   row.Img.Visibility,
-		"album_id":     row.Img.AlbumID,
-		"created_at":   row.Img.CreatedAt.Format(time.RFC3339),
-		"expires_at":   expiresAt,
-		"max_views":    row.Img.MaxViews,
-		"views_served": row.Img.ViewsServed,
-		"has_access_password": strings.TrimSpace(row.Img.AccessPasswordHash) != "",
-		"links":        links,
-	}
+// imageItemDTO 列表项（精简）——类型化 DTO，JSON 字段与历史 map 契约一致。
+func (h *ImageHandlers) imageItemDTO(row *imagesvc.Row) ImageItemDTO {
+	return imageItemDTOFrom(row, h.D.Res.LinkBase(&row.Policy))
 }
 
 // List GET /api/v1/images
@@ -80,7 +53,7 @@ func (h *ImageHandlers) List(w http.ResponseWriter, r *http.Request) {
 		Fail(w, http.StatusBadRequest, CodeInvalidRequest, "列表参数无效")
 		return
 	}
-	items := make([]map[string]any, 0, len(rows))
+	items := make([]ImageItemDTO, 0, len(rows))
 	for i := range rows {
 		items = append(items, h.imageItemDTO(&rows[i]))
 	}
@@ -88,10 +61,10 @@ func (h *ImageHandlers) List(w http.ResponseWriter, r *http.Request) {
 }
 
 // imageDetailDTO 详情（含 mime、仅属主 upload_ip）。
-func (h *ImageHandlers) imageDetailDTO(row *imagesvc.Row) map[string]any {
+func (h *ImageHandlers) imageDetailDTO(row *imagesvc.Row) ImageItemDTO {
 	m := h.imageItemDTO(row)
-	m["mime"] = row.File.MIME
-	m["upload_ip"] = row.Img.UploadIP // 仅属主可达此端点，故直接给出
+	m.MIME = row.File.MIME
+	m.UploadIP = row.Img.UploadIP // 仅属主可达此端点，故直接给出
 	return m
 }
 
@@ -111,16 +84,15 @@ func (h *ImageHandlers) Share(w http.ResponseWriter, r *http.Request) {
 	dto := h.imageItemDTO(row)
 	// 分享页用稳定 key 预览；外链仍用 slug-aware links
 	base := h.D.Res.LinkBase(&row.Policy)
-	dto["share_url"] = base + "/s/" + row.Img.Key
+	dto.ShareURL = base + "/s/" + row.Img.Key
 	if row.Img.Slug != nil && *row.Img.Slug != "" {
-		dto["share_url"] = base + "/s/" + *row.Img.Slug
+		dto.ShareURL = base + "/s/" + *row.Img.Slug
 	}
 	// 有口令且未解锁：不给可直出 URL，避免分享页 <img> 触发无口令请求噪声。
-	if imgHasPassword(&row.Img) && !imgPasswordOK(r, &row.Img) {
-		dto["password_required"] = true
-		dto["links"] = map[string]any{}
-	} else {
-		dto["password_required"] = false
+	needPW := imgHasPassword(&row.Img) && !imgPasswordOK(r, &row.Img)
+	dto.PasswordRequired = &needPW
+	if needPW {
+		dto.Links = linkbuilder.Links{}
 	}
 	OK(w, dto)
 }
@@ -163,11 +135,12 @@ func (h *ImageHandlers) UnlockShare(w http.ResponseWriter, r *http.Request) {
 	// 复用 Share 组装（此时 cookie 已写，但当前 r 尚无 cookie——手动标已解锁）
 	dto := h.imageItemDTO(row)
 	base := h.D.Res.LinkBase(&row.Policy)
-	dto["share_url"] = base + "/s/" + row.Img.Key
+	dto.ShareURL = base + "/s/" + row.Img.Key
 	if row.Img.Slug != nil && *row.Img.Slug != "" {
-		dto["share_url"] = base + "/s/" + *row.Img.Slug
+		dto.ShareURL = base + "/s/" + *row.Img.Slug
 	}
-	dto["password_required"] = false
+	falseV := false
+	dto.PasswordRequired = &falseV
 	OK(w, dto)
 }
 

@@ -6,6 +6,7 @@ import (
 
 	"github.com/go-chi/chi/v5"
 
+	"github.com/yixian-huang/imgli/internal/model"
 	"github.com/yixian-huang/imgli/internal/service/adminsvc"
 )
 
@@ -90,6 +91,7 @@ func (h *AdminHandlers) ReviewDecide(w http.ResponseWriter, r *http.Request) {
 
 // ReviewBatch POST /api/v1/admin/review/batch {keys,action} → {results}。上限 100
 // （超限 400）；action 非法整体 400；否则逐项裁决部分成功，每个成功项各落一条 audit。
+// 成功项的 score/拒审通知用批量查询，避免 per-key N+1。
 func (h *AdminHandlers) ReviewBatch(w http.ResponseWriter, r *http.Request) {
 	var req struct {
 		Keys   []string `json:"keys"`
@@ -104,16 +106,30 @@ func (h *AdminHandlers) ReviewBatch(w http.ResponseWriter, r *http.Request) {
 	case err == nil:
 		actor := PrincipalFrom(r).User
 		auditAction := reviewAuditAction(req.Action)
+		okKeys := make([]string, 0, len(results))
+		for _, res := range results {
+			if res.OK {
+				okKeys = append(okKeys, res.Key)
+			}
+		}
+		scores, _ := h.D.Adm.NSFWScoresByKeys(okKeys) // best-effort；失败则 score=nil
+		var imgs map[string]model.Image
+		if req.Action == "reject" && h.D.Mod != nil && len(okKeys) > 0 {
+			imgs, _ = h.D.Adm.ImagesByKeys(okKeys)
+		}
 		for _, res := range results {
 			if !res.OK {
 				continue
 			}
-			score, _ := h.D.Adm.NSFWScoreByKey(res.Key)
+			var score *float64
+			if scores != nil {
+				score = scores[res.Key]
+			}
 			h.D.Adm.Audit(&actor.ID, "admin", auditAction,
 				map[string]any{"key": res.Key, "score": score}, ClientIP(r))
-			if req.Action == "reject" && h.D.Mod != nil {
-				if row, rerr := h.D.Adm.GetImageRow(res.Key); rerr == nil {
-					h.D.Mod.NotifyRejectIfConfigured(row.Img)
+			if req.Action == "reject" && h.D.Mod != nil && imgs != nil {
+				if img, ok := imgs[res.Key]; ok {
+					h.D.Mod.NotifyRejectIfConfigured(img)
 				}
 			}
 		}

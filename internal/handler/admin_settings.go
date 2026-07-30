@@ -2,14 +2,11 @@ package handler
 
 import (
 	"encoding/json"
-	"errors"
 	"net/http"
 	"sort"
 
+	"github.com/yixian-huang/imgli/internal/apperr"
 	"github.com/yixian-huang/imgli/internal/model"
-	"github.com/yixian-huang/imgli/internal/service/adminsvc"
-	"github.com/yixian-huang/imgli/internal/service/moderation"
-	"github.com/yixian-huang/imgli/internal/service/upload"
 )
 
 // GetSettings GET /api/v1/admin/settings → {site_name, registration_mode, moderation:{...}}
@@ -34,8 +31,7 @@ func (h *AdminHandlers) PutSettings(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	err := h.D.Adm.PutSettings(patch)
-	switch {
-	case err == nil:
+	if err == nil {
 		fields := make([]string, 0, len(patch))
 		for k := range patch {
 			fields = append(fields, k)
@@ -52,23 +48,12 @@ func (h *AdminHandlers) PutSettings(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		OK(w, m)
-	case errors.Is(err, adminsvc.ErrUnknownSetting), errors.Is(err, adminsvc.ErrSiteNameInvalid),
-		errors.Is(err, adminsvc.ErrRegistrationModeInvalid), errors.Is(err, adminsvc.ErrGuestUploadInvalid),
-		errors.Is(err, adminsvc.ErrPlazaEnabledInvalid),
-		errors.Is(err, adminsvc.ErrModerationInvalid), errors.Is(err, adminsvc.ErrSMTPInvalid),
-		errors.Is(err, adminsvc.ErrHotlinkDomainInvalid),
-		errors.Is(err, adminsvc.ErrAnnouncementInvalid),
-		errors.Is(err, adminsvc.ErrFooterInvalid),
-		errors.Is(err, adminsvc.ErrHTMLInjectInvalid),
-		errors.Is(err, upload.ErrProcessingInvalid),
-		errors.Is(err, moderation.ErrThresholdRange), errors.Is(err, moderation.ErrActionInvalid),
-		errors.Is(err, moderation.ErrProviderInvalid), errors.Is(err, moderation.ErrEndpointInvalid),
-		errors.Is(err, moderation.ErrCredentialMissing),
-		errors.Is(err, moderation.ErrOCRKeywordsInvalid),
-		errors.Is(err, moderation.ErrLoginSampleRate),
-		errors.Is(err, moderation.ErrOnPluginError): // 客户端校验错→400 而非 500
-		Fail(w, http.StatusBadRequest, CodeInvalidRequest, err.Error())
-	default:
-		Fail(w, http.StatusInternalServerError, CodeInternal, "服务器内部错误")
+		return
 	}
+	// adminsvc/moderation/upload 校验错误均实现 apperr.Client → 400
+	if apperr.IsClient(err) {
+		Fail(w, http.StatusBadRequest, CodeInvalidRequest, err.Error())
+		return
+	}
+	Fail(w, http.StatusInternalServerError, CodeInternal, "服务器内部错误")
 }
