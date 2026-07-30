@@ -12,6 +12,8 @@ separate version in `go.mod` or `web/package.json`.
 
 ### Added
 
+- **Share UX:** detail modal lists share page URL first (public); upload success row copies share page; access password Generate + copy before save; clearer hint that existing  links become gated.
+
 ## [0.3.0] - 2026-07-30
 
 Theme: **Share · Migrate · Integrate**

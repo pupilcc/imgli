@@ -60,7 +60,7 @@ export function UploadCard({ item }: { item: QueueItem }) {
         { label: t('upload.thumbnail'), text: links.thumbnail_url, name: t('upload.linkNameThumb') },
         {
           label: t('upload.copyAll'),
-          text: [links.url, links.markdown, links.html, links.bbcode].join('\n'),
+          text: [links.url, links.markdown, links.html, links.bbcode, shareURL].filter(Boolean).join('\n'),
           name: t('upload.linkNameAll'),
         },
       ]
@@ -128,6 +128,25 @@ export function UploadCard({ item }: { item: QueueItem }) {
               {t('upload.copyUrl')}
             </button>
           </div>
+          {shareURL && (
+            <div className={styles.primaryRow}>
+              <input
+                className={styles.primaryUrl}
+                readOnly
+                value={shareURL}
+                aria-label={t('upload.linkNameShare')}
+                onFocus={(e) => e.currentTarget.select()}
+              />
+              <button
+                type="button"
+                className={styles.shareCopy}
+                onClick={() => copyText(shareURL, t('upload.linkNameShare'))}
+              >
+                {t('upload.copyShare')}
+              </button>
+            </div>
+          )}
+          {shareURL && <p className={styles.shareHint}>{t('upload.shareHint')}</p>}
           <div className={styles.formatsRow}>
             <div className={styles.copyGroup} role="group" aria-label={t('upload.formatsAria')}>
               {formats.map((c) => (

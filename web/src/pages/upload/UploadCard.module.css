@@ -71,6 +71,16 @@
   white-space: nowrap;
 }
 .primaryCopy:hover { filter: brightness(1.05); }
+.shareCopy {
+  flex: none; border: none; border-left: 1px solid var(--border);
+  background: var(--surface); color: var(--text);
+  padding: 0 16px; font-size: 12.5px; font-weight: 700; cursor: pointer;
+  white-space: nowrap;
+}
+.shareCopy:hover { background: var(--soft); }
+.shareHint {
+  margin: 0; font-size: 11px; color: var(--muted); line-height: 1.4;
+}
 .formatsRow {
   display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap;
 }
