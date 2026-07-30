@@ -65,13 +65,17 @@ verify upstream docs before migrating.
   review queue, per-group policies.
 - **Accounts & sharing** — user groups with quotas/rate limits, guest upload,
   invite codes, SMTP email (verification/reset/reject notices), albums,
-  public gallery, recycle bin, image expiry.
-- **Integrations** — clean upload API with API tokens; `imgli upload` / `imgli import-dir` CLI;
+  public gallery (`/a/{id}`), recycle bin, image expiry, access passwords,
+  max views; Open Graph previews on share/album pages.
+- **Integrations** — clean upload API with API tokens; `imgli upload` /
+  `imgli import-dir` CLI; optional **OIDC** SSO and outbound **webhooks**;
   PicGo/Typora/VS Code ([guide](docs/picgo.md)),
   [ShareX](docs/integrations/sharex.md) / [uPic](docs/integrations/upic.md)
   ([index](docs/integrations/README.md)).
-- **Polish** — bilingual UI (中文/English), PWA, dark mode, text watermark
-  (embedded CJK font subset), admin dashboard with audit logs.
+- **Transforms** — controlled thumbnails via `/t/{key}?w=200|400|800`.
+- **Polish** — bilingual UI (中文/English), PWA, light/dark/**system** theme,
+  text watermark (embedded CJK font subset), admin dashboard with audit logs
+  and light ops analytics.
 
 ## Quick start
 

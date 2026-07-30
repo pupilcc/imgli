@@ -59,12 +59,15 @@
 - **内容安全**:可插拔机审链——NSFW 检测端点 + OCR 词表筛查
   (自托管旁路服务见 `deploy/ocr-paddle/`),审核队列,按用户组配策略。
 - **账号与分享**:用户组配额/限速、游客上传、邀请码、SMTP 邮件
-  (验证/重置/拒审通知)、相册、公开画廊、回收站、图片过期。
-- **生态对接**:干净的上传 API + API Token;`imgli upload` / `imgli import-dir` CLI;PicGo/Typora/VS Code
+  (验证/重置/拒审通知)、相册、公开相册访客页 `/a/{id}`、回收站、图片过期、
+  访问口令、阅后即焚/次数上限；分享页与公开相册自动 Open Graph 预览。
+- **生态对接**:干净的上传 API + API Token;`imgli upload` / `imgli import-dir` CLI；
+  可选 **OIDC** SSO 与出站 **Webhook**；PicGo/Typora/VS Code
   ([指南](docs/picgo.md))、[ShareX](docs/integrations/sharex.md) /
   [uPic](docs/integrations/upic.md)（[索引](docs/integrations/README.md)）。
-- **细节**:中英双语界面、PWA、深色模式、文字水印(内嵌中文字体子集)、
-  带审计日志的管理后台。
+- **变换**:受控缩略 `/t/{key}?w=200|400|800`。
+- **细节**:中英双语界面、PWA、浅色/深色/**跟随系统**主题、文字水印(内嵌中文字体子集)、
+  带审计日志与轻量运营统计的管理后台。
 
 ## 快速开始
 
