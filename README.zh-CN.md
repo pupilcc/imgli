@@ -60,7 +60,7 @@
   (自托管旁路服务见 `deploy/ocr-paddle/`),审核队列,按用户组配策略。
 - **账号与分享**:用户组配额/限速、游客上传、邀请码、SMTP 邮件
   (验证/重置/拒审通知)、相册、公开画廊、回收站、图片过期。
-- **生态对接**:干净的上传 API + API Token;`imgli upload` CLI;PicGo/Typora/VS Code
+- **生态对接**:干净的上传 API + API Token;`imgli upload` / `imgli import-dir` CLI;PicGo/Typora/VS Code
   ([指南](docs/picgo.md))、[ShareX](docs/integrations/sharex.md) /
   [uPic](docs/integrations/upic.md)（[索引](docs/integrations/README.md)）。
 - **细节**:中英双语界面、PWA、深色模式、文字水印(内嵌中文字体子集)、
