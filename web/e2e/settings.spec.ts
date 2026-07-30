@@ -76,9 +76,10 @@ test.describe('C-③ 设置：偏好 / 头像 / 注销', () => {
     await page.getByTestId('dropzone').click()
     await (await chooser).setFiles({ name: 'c3-del-shot.png', mimeType: 'image/png', buffer: DEL_PNG })
     await expect(page.getByText('已完成', { exact: true })).toBeVisible()
-    const directUrl = (await page.locator('[class*=urlText]').first().textContent())?.trim()
+    // 成功卡主链是 readonly input（primaryUrl），不再是 .urlText 文本节点
+    const directUrl = (await page.getByLabel('直链 URL').inputValue()).trim()
     expect(directUrl).toBeTruthy()
-    expect(directUrl!).toMatch(/^https?:\/\//)
+    expect(directUrl).toMatch(/^https?:\/\//)
 
     await page.goto('/settings')
     await expect(page.getByText(/危险区/)).toBeVisible()

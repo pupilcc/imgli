@@ -62,8 +62,8 @@ test('防盗链全链:未开放行→开启拦截→详情 ACCESS', async ({ pag
   await (await chooser).setFiles({ name: 'd1hot-shot.png', mimeType: 'image/png', buffer: PNG })
   await expect(page.getByText('已完成', { exact: true })).toBeVisible()
 
-  await page.getByRole('button', { name: 'URL', exact: true }).click()
-  await expect(page.getByText(/已复制 URL/)).toBeVisible()
+  await page.getByRole('button', { name: '复制直链' }).click()
+  await expect(page.getByText(/已复制 直链 URL/)).toBeVisible()
   const directUrl = await page.evaluate(() => navigator.clipboard.readText())
   expect(directUrl).toMatch(/^https?:\/\//)
 

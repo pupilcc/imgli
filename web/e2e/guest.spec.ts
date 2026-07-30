@@ -40,8 +40,9 @@ test('游客上传：开开关→匿名上传拿链接→关开关→匿名跳�
   await page.getByTestId('dropzone').click()
   await (await chooser).setFiles({ name: 'guest-shot.png', mimeType: 'image/png', buffer: PNG })
   await expect(page.getByText('已完成', { exact: true })).toBeVisible()
-  await page.getByRole('button', { name: 'URL', exact: true }).click()
-  await expect(page.getByText(/已复制 URL/)).toBeVisible()
+  // UploadCard 主按钮文案「复制直链」（不再有 exact name=URL 的格式钮）
+  await page.getByRole('button', { name: '复制直链' }).click()
+  await expect(page.getByText(/已复制 直链 URL/)).toBeVisible()
 
   // admin 关回开关
   await loginBoss(page)
