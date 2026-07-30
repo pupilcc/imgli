@@ -7,6 +7,7 @@ import (
 	"net/url"
 	"path/filepath"
 	"sort"
+	"strconv"
 	"strings"
 	"sync"
 	"time"
@@ -169,6 +170,12 @@ const ThumbGen = "1"
 // ThumbKey 当前世代 JPEG 缩略图键（按 surface 前缀 + 内容寻址）。
 func ThumbKey(surface, hash string) string {
 	return SurfacePrefix(surface) + ".thumbs/g" + ThumbGen + "/" + hash + ".jpg"
+}
+
+// WidthThumbKey 白名单边长变体 JPEG 键（与默认 thumb 隔离，不污染 content-hash 秒传）。
+// 例：public/.thumbs/w400/g1/{hash}.jpg
+func WidthThumbKey(surface, hash string, width int) string {
+	return SurfacePrefix(surface) + ".thumbs/w" + strconv.Itoa(width) + "/g" + ThumbGen + "/" + hash + ".jpg"
 }
 
 // ThumbKeyWebP 当前世代 WebP 缩略图键(vips 构建)。
