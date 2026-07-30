@@ -1,23 +1,29 @@
 package handler
 
 import (
+	"bytes"
 	"context"
 	"errors"
 	"io"
 	"net/http"
 	"net/url"
+	"strconv"
 	"strings"
 	"time"
 
 	"github.com/go-chi/chi/v5"
 	"gorm.io/gorm"
 
+	"github.com/yixian-huang/imgli/internal/imaging"
 	"github.com/yixian-huang/imgli/internal/model"
 	"github.com/yixian-huang/imgli/internal/service/bandwidth"
 	"github.com/yixian-huang/imgli/internal/service/stats"
 	"github.com/yixian-huang/imgli/internal/service/storagesvc"
 	"github.com/yixian-huang/imgli/internal/storage"
 )
+
+// 受控边长白名单（/t?w=）；其它值 400。
+var allowedThumbWidths = map[int]struct{}{200: {}, 400: {}, 800: {}}
 
 // ServeDeps 直链处理器依赖。
 type ServeDeps struct {
@@ -258,14 +264,121 @@ func (h *ServeHandlers) Original(w http.ResponseWriter, r *http.Request) {
 }
 
 // Thumbnail GET /t/{name} —— 缩略图（.webp 优先,回退 .jpg）。
+// 可选 ?w=200|400|800：白名单边长变体，磁盘缓存键与默认 thumb 隔离。
 func (h *ServeHandlers) Thumbnail(w http.ResponseWriter, r *http.Request) {
 	img, ok := h.lookupServable(w, r)
 	if !ok {
 		return
 	}
-	if n, ok := h.streamFile(w, r, img.FileID, true, img.Visibility == "public"); ok {
+	public := img.Visibility == "public" && !imgHasPassword(img) && img.MaxViews == 0
+	if ws := strings.TrimSpace(r.URL.Query().Get("w")); ws != "" {
+		n, err := strconv.Atoi(ws)
+		if err != nil {
+			if strings.Contains(r.Header.Get("Accept"), "application/json") {
+				Fail(w, http.StatusBadRequest, CodeInvalidRequest, "w 须为 200、400 或 800")
+			} else {
+				h.placeholder(w, r, http.StatusBadRequest, "BAD WIDTH")
+			}
+			return
+		}
+		if _, ok := allowedThumbWidths[n]; !ok {
+			if strings.Contains(r.Header.Get("Accept"), "application/json") {
+				Fail(w, http.StatusBadRequest, CodeInvalidRequest, "w 须为 200、400 或 800")
+			} else {
+				h.placeholder(w, r, http.StatusBadRequest, "BAD WIDTH")
+			}
+			return
+		}
+		if m, ok := h.streamWidthThumb(w, r, img, n, public); ok {
+			h.meterOwner(img, m)
+		}
+		return
+	}
+	if n, ok := h.streamFile(w, r, img.FileID, true, public); ok {
 		h.meterOwner(img, n)
 	}
+}
+
+// streamWidthThumb 提供白名单边长 JPEG；缓存未命中时从原图生成并 Put。
+func (h *ServeHandlers) streamWidthThumb(w http.ResponseWriter, r *http.Request, img *model.Image, width int, public bool) (int64, bool) {
+	var file model.File
+	if err := h.D.DB.First(&file, img.FileID).Error; err != nil {
+		h.placeholder(w, r, http.StatusNotFound, "NOT FOUND")
+		return 0, false
+	}
+	var policy model.StoragePolicy
+	if err := h.D.DB.First(&policy, file.StoragePolicyID).Error; err != nil {
+		h.placeholder(w, r, http.StatusNotFound, "NOT FOUND")
+		return 0, false
+	}
+	d, err := h.D.Res.Driver(&policy)
+	if err != nil {
+		Fail(w, http.StatusInternalServerError, CodeInternal, "存储不可用")
+		return 0, false
+	}
+	key := storagesvc.WidthThumbKey(file.Surface, file.Hash, width)
+	rc, err := d.Open(r.Context(), key)
+	if errors.Is(err, storage.ErrNotFound) {
+		// 生成缓存
+		src, oerr := d.Open(r.Context(), file.Path)
+		if oerr != nil {
+			if errors.Is(oerr, storage.ErrNotFound) {
+				h.placeholder(w, r, http.StatusNotFound, "NOT FOUND")
+				return 0, false
+			}
+			Fail(w, http.StatusInternalServerError, CodeInternal, "读取失败")
+			return 0, false
+		}
+		raw, rerr := io.ReadAll(src)
+		_ = src.Close()
+		if rerr != nil {
+			Fail(w, http.StatusInternalServerError, CodeInternal, "读取失败")
+			return 0, false
+		}
+		out, terr := imaging.New().Thumbnail(bytes.NewReader(raw), width)
+		if terr != nil {
+			// 非 JPEG/PNG 等：回退默认 thumb 路径
+			return h.streamFile(w, r, img.FileID, true, public)
+		}
+		_ = d.Put(r.Context(), key, bytes.NewReader(out))
+		rc, err = d.Open(r.Context(), key)
+	}
+	if err != nil {
+		if errors.Is(err, storage.ErrNotFound) {
+			h.placeholder(w, r, http.StatusNotFound, "NOT FOUND")
+			return 0, false
+		}
+		Fail(w, http.StatusInternalServerError, CodeInternal, "读取失败")
+		return 0, false
+	}
+	defer rc.Close()
+	meter := int64(0)
+	if n, err := rc.Seek(0, io.SeekEnd); err == nil && n > 0 {
+		meter = n
+		_, _ = rc.Seek(0, io.SeekStart)
+	} else {
+		_, _ = rc.Seek(0, io.SeekStart)
+	}
+	etag := `"` + file.Hash + "-w" + strconv.Itoa(width) + "-t" + storagesvc.ThumbGen + `"`
+	if inm := r.Header.Get("If-None-Match"); inm != "" && inm == etag {
+		w.Header().Set("ETag", etag)
+		w.WriteHeader(http.StatusNotModified)
+		return 0, true
+	}
+	w.Header().Set("Content-Type", "image/jpeg")
+	w.Header().Set("X-Content-Type-Options", "nosniff")
+	w.Header().Set("ETag", etag)
+	if public {
+		w.Header().Set("Cache-Control", "public, max-age=31536000, immutable")
+	} else {
+		w.Header().Set("Cache-Control", "private, no-store")
+	}
+	sc := &statusCapture{ResponseWriter: w}
+	http.ServeContent(sc, r, "", file.CreatedAt, rc)
+	if !sc.ok() {
+		return 0, false
+	}
+	return meter, true
 }
 
 func (h *ServeHandlers) isOwner(r *http.Request, img *model.Image) bool {
