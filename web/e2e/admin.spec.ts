@@ -130,7 +130,8 @@ test('管理后台:用户组新建删除 + 存储策略测试连接', async ({ p
   await page.goto('/admin/policies')
   await page.getByRole('button', { name: /本地存储/ }).click()
   await expect(page.getByLabel('存储路径')).toHaveValue('uploads')
-  await expect(page.getByText('本地磁盘')).toBeVisible()
+  // Caps 摘要也含「本地磁盘：…」，须 exact，避免 strict mode 双命中
+  await expect(page.getByText('本地磁盘', { exact: true })).toBeVisible()
   await page.getByRole('button', { name: '测试连接' }).click()
   await expect(page.getByText(/已连接 ·/)).toBeVisible()
 })
