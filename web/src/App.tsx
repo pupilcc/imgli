@@ -8,6 +8,7 @@ import { BRAND_WORDMARK } from './ui/Brand'
 import { useGlobal } from './store'
 import { AlbumDetailPage } from './pages/albums/AlbumDetailPage'
 import { AlbumsPage } from './pages/albums/AlbumsPage'
+import { PublicAlbumPage } from './pages/albums/PublicAlbumPage'
 import { AuthPage } from './pages/auth/AuthPage'
 import { ForgotPasswordPage } from './pages/auth/ForgotPasswordPage'
 import { ResetPasswordPage } from './pages/auth/ResetPasswordPage'
@@ -87,6 +88,7 @@ export function App() {
         <Route element={<DiscoverLayout />}>
           <Route path="/explore" element={<ExplorePage />} />
           <Route path="/u/:username" element={<UserPublicPage />} />
+          <Route path="/a/:id" element={<PublicAlbumPage />} />
         </Route>
         <Route path="/s/:key" element={<SharePage />} />
         <Route
