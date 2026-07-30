@@ -53,5 +53,6 @@ test('游客上传：开开关→匿名上传拿链接→关开关→匿名跳�
   await page.goto('/')
   await expect(page).toHaveURL(/\/$/)
   await expect(page.getByTestId('login-gate')).toBeVisible()
-  await expect(page.getByRole('link', { name: /登录/ })).toBeVisible()
+  // 页眉与门闸可能各有一条登录链，限定在 login-gate 内
+  await expect(page.getByTestId('login-gate').getByRole('link', { name: /登录/ }).first()).toBeVisible()
 })

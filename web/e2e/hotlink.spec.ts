@@ -126,8 +126,11 @@ test('防盗链全链:未开放行→开启拦截→详情 ACCESS', async ({ pag
     await expect(userPage.getByText('d1hot-shot.png')).toBeVisible()
     await userPage.locator('main [class*=card]').first().click()
     await expect(userPage.getByRole('dialog')).toBeVisible()
-    await expect(userPage.getByText(/ACCESS/)).toBeVisible()
+    // 访问统计已收进 <details>；summary 常驻「总访问」，展开后见 ACCESS
+    await expect(userPage.getByText('访问统计')).toBeVisible()
     await expect(userPage.getByText(/总访问/)).toBeVisible()
+    await userPage.getByText('访问统计').click()
+    await expect(userPage.getByText(/ACCESS/)).toBeVisible()
   } finally {
     await userCtx.close()
   }
