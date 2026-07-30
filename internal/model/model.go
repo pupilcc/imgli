@@ -120,6 +120,9 @@ type Image struct {
 	// ViewsServed 已消耗次数（仅 max_views>0 时递增）。
 	MaxViews    int `gorm:"not null;default:0"`
 	ViewsServed int `gorm:"not null;default:0"`
+	// AccessPasswordHash 非空时非属主须口令解锁（argon2id PHC）；空=无口令。
+	// 永不经 API 返回明文/哈希；DTO 用 has_access_password。
+	AccessPasswordHash string `gorm:"size:255"`
 	CreatedAt   time.Time
 	UpdatedAt   time.Time
 	DeletedAt   gorm.DeletedAt `gorm:"index"`

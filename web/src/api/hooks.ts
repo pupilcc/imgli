@@ -179,6 +179,19 @@ export function useShareImage(key: string | null) {
   })
 }
 
+/** Unlock password-protected share; sets HttpOnly cookie on success. */
+export function useUnlockShare() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: ({ key, password }: { key: string; password: string }) =>
+      post<ShareImage>(`/s/${key}/unlock`, { password }),
+    onSuccess: (data, v) => {
+      qc.setQueryData(['share', v.key], data)
+      qc.invalidateQueries({ queryKey: ['share', v.key] })
+    },
+  })
+}
+
 /** 详情弹窗 ACCESS 区块;key 为 null(弹窗关闭)不发请求。 */
 export function useImageStats(key: string | null) {
   return useQuery({
@@ -203,6 +216,7 @@ export function useUpdateImage() {
         expires_in?: number
         slug?: string | null
         max_views?: number
+        access_password?: string
       }
     }) => patch<ImageDetail>(`/images/${key}`, body),
     onSuccess: (_d, v) => {

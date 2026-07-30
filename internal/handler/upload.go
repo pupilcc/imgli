@@ -10,6 +10,7 @@ import (
 	"net/http"
 	"os"
 	"strconv"
+	"strings"
 	"syscall"
 	"time"
 
@@ -161,6 +162,18 @@ func (h *UploadHandlers) Upload(w http.ResponseWriter, r *http.Request) {
 		}
 		opts.MaxViews = n
 	}
+	if ap := strings.TrimSpace(r.FormValue("access_password")); ap != "" {
+		if len(ap) > imgPassMaxLen {
+			Fail(w, http.StatusBadRequest, CodeInvalidRequest, "access_password 过长")
+			return
+		}
+		hsh, herr := HashAccessPassword(ap)
+		if herr != nil {
+			Fail(w, http.StatusBadRequest, CodeInvalidRequest, "access_password 不合法")
+			return
+		}
+		opts.AccessPasswordHash = hsh
+	}
 	tmp, err := spoolToTemp(file, h.D.MaxBytes)
 	if err != nil {
 		Fail(w, http.StatusInternalServerError, CodeInternal, "接收文件失败")
@@ -227,12 +240,13 @@ func (h *UploadHandlers) UploadURL(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	var req struct {
-		URL        string  `json:"url"`
-		Visibility string  `json:"visibility"`
-		AlbumID    *uint64 `json:"album_id"`
-		PolicyID   uint64  `json:"policy_id"`
-		ExpiresIn  int     `json:"expires_in"`
-		MaxViews   int     `json:"max_views"`
+		URL            string  `json:"url"`
+		Visibility     string  `json:"visibility"`
+		AlbumID        *uint64 `json:"album_id"`
+		PolicyID       uint64  `json:"policy_id"`
+		ExpiresIn      int     `json:"expires_in"`
+		MaxViews       int     `json:"max_views"`
+		AccessPassword string  `json:"access_password"`
 	}
 	if err := DecodeJSON(r, &req); err != nil || req.URL == "" {
 		Fail(w, http.StatusBadRequest, CodeInvalidRequest, "需要 url")
@@ -250,6 +264,19 @@ func (h *UploadHandlers) UploadURL(w http.ResponseWriter, r *http.Request) {
 	if req.ExpiresIn > 0 {
 		t := time.Now().Add(time.Duration(req.ExpiresIn) * time.Second)
 		expiresAt = &t
+	}
+	var accessHash string
+	if ap := strings.TrimSpace(req.AccessPassword); ap != "" {
+		if len(ap) > imgPassMaxLen {
+			Fail(w, http.StatusBadRequest, CodeInvalidRequest, "access_password 过长")
+			return
+		}
+		hsh, herr := HashAccessPassword(ap)
+		if herr != nil {
+			Fail(w, http.StatusBadRequest, CodeInvalidRequest, "access_password 不合法")
+			return
+		}
+		accessHash = hsh
 	}
 	if err := ValidateFetchURL(req.URL, h.D.FetchAllow); err != nil {
 		slog.Warn("URL 抓取被拒", "url", req.URL, "err", err)
@@ -278,6 +305,7 @@ func (h *UploadHandlers) UploadURL(w http.ResponseWriter, r *http.Request) {
 	name := filenameFromURL(req.URL)
 	res, err := h.D.Svc.Save(ctx, tmp, name, u, upload.Opts{
 		Visibility: req.Visibility, AlbumID: req.AlbumID, PolicyID: req.PolicyID, ExpiresAt: expiresAt, MaxViews: req.MaxViews,
+		AccessPasswordHash: accessHash,
 	}, ClientIP(r))
 	if err != nil {
 		failUpload(w, err)

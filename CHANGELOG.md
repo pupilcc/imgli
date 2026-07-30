@@ -12,6 +12,8 @@ separate version in `go.mod` or `web/package.json`.
 
 ### Added
 
+- **Access password for images:** optional password gate on `/i`/`/t` and share page; argon2 hash at rest; unlock via `POST /api/v1/s/{key}/unlock` cookie or `X-Image-Password`; no public CDN when set; detail UI to set/clear.
+
 - **Admin ops dashboard (light analytics):** signup trend + coarse channels
   (`direct|invite|utm|referer`); traffic 7d/30d; referer Top with window toggle,
   suspect flag, host → top images; bandwidth period sum + top users; origin-only

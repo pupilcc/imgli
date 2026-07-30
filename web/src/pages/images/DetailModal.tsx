@@ -131,6 +131,15 @@ export function DetailModal({ items, focusKey, onClose, onNavigate }: Props) {
     update.mutate({ key: base.key, body: { max_views: n } })
   }
 
+  const hasAccessPassword = !!(d?.has_access_password ?? base.has_access_password)
+  const [accessPw, setAccessPw] = useState('')
+  const setAccessPassword = (password: string) => {
+    update.mutate(
+      { key: base.key, body: { access_password: password } },
+      { onSuccess: () => setAccessPw('') },
+    )
+  }
+
   const copyRows = [
     { kind: 'URL', text: base.links.url },
     { kind: 'MD', text: base.links.markdown },
@@ -260,7 +269,7 @@ export function DetailModal({ items, focusKey, onClose, onNavigate }: Props) {
             <div className={styles.expiryWarn}>{t('images.expiryWarn')}</div>
           </div>
 
-          <div className={styles.metaGrid}>
+          <div className={styles.metaTable}>
             <span className={styles.metaKey}>{t('images.maxViews')}</span>
             <span className={styles.metaVal}>
               {maxViews > 0
@@ -282,6 +291,44 @@ export function DetailModal({ items, focusKey, onClose, onNavigate }: Props) {
               }}
             />
             <div className={styles.expiryWarn}>{t('images.maxViewsHint')}</div>
+          </div>
+
+          <div className={styles.metaTable}>
+            <span className={styles.metaKey}>{t('images.accessPassword')}</span>
+            <span className={styles.metaVal}>
+              {hasAccessPassword ? t('images.accessPasswordSet') : t('images.accessPasswordNone')}
+            </span>
+          </div>
+          <div className={styles.expiryEdit}>
+            <input
+              className={styles.renameInput}
+              type="password"
+              value={accessPw}
+              placeholder={t('images.accessPasswordPlaceholder')}
+              onChange={(e) => setAccessPw(e.target.value)}
+              autoComplete="new-password"
+            />
+            <div className={styles.renameRow}>
+              <button
+                type="button"
+                className={styles.renameSave}
+                disabled={!accessPw.trim() || update.isPending}
+                onClick={() => setAccessPassword(accessPw.trim())}
+              >
+                {t('images.accessPasswordSave')}
+              </button>
+              {hasAccessPassword && (
+                <button
+                  type="button"
+                  className={styles.removeExpiry}
+                  disabled={update.isPending}
+                  onClick={() => setAccessPassword('')}
+                >
+                  {t('images.accessPasswordClear')}
+                </button>
+              )}
+            </div>
+            <div className={styles.expiryWarn}>{t('images.accessPasswordHint')}</div>
           </div>
 
           <div className={styles.copySection}>

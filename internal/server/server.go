@@ -179,6 +179,7 @@ func (s *Server) mountAPI() {
 		api.With(limiter.IPMiddleware("plaza", 120)).Get("/u/{username}", dh.UserProfile)
 		api.With(limiter.IPMiddleware("plaza", 120)).Get("/u/{username}/images", dh.UserImages)
 		api.With(limiter.IPMiddleware("share", 120)).Get("/s/{key}", imgH.Share)
+		api.With(limiter.IPMiddleware("share_unlock", 30)).Post("/s/{key}/unlock", imgH.UnlockShare)
 		api.With(limiter.Middleware("auth", 20)).Post("/auth/register", ah.Register)
 		api.With(limiter.Middleware("auth", 20)).Post("/auth/login", ah.Login)
 		api.Post("/auth/logout", ah.Logout)

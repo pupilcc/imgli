@@ -18,6 +18,7 @@ import (
 	"gorm.io/gorm"
 
 	"github.com/yixian-huang/imgli/internal/model"
+	"github.com/yixian-huang/imgli/internal/service/auth"
 	"github.com/yixian-huang/imgli/internal/service/storagesvc"
 	"github.com/yixian-huang/imgli/internal/storage"
 	"github.com/yixian-huang/imgli/internal/task"
@@ -306,11 +307,15 @@ const MaxViewsMax = 10000
 // ErrInvalidMaxViews max_views 不合法。
 var ErrInvalidMaxViews = errors.New("imagesvc: max_views 须为 0 或 1–10000")
 
+// ErrInvalidAccessPassword 访问口令不合法。
+var ErrInvalidAccessPassword = errors.New("imagesvc: access_password 过长或不合法")
+
 // Update 部分更新单图。name/visibility 为 nil 表示不改；albumID：nil=不改，0=移出，>0=移入(校验归属)。
 // expiresAt/setExpires：setExpires=false 不改；true 时写入 expiresAt（nil 即清除为 NULL）。
 // slug：nil=不改；""=清除；否则校验 [a-z0-9-]{3,32} 并唯一。
 // maxViews：nil=不改；0=不限；1–MaxViewsMax=上限（不重置 views_served）。
-func (s *Service) Update(userID uint64, key string, name, visibility *string, albumID *int64, expiresAt *time.Time, setExpires bool, slug *string, maxViews *int) (*Row, error) {
+// accessPassword：nil=不改；""=清除；非空=argon2 哈希写入（明文不落库）。
+func (s *Service) Update(userID uint64, key string, name, visibility *string, albumID *int64, expiresAt *time.Time, setExpires bool, slug *string, maxViews *int, accessPassword *string) (*Row, error) {
 	var img model.Image
 	err := s.db.Where("key = ? AND user_id = ?", key, userID).First(&img).Error
 	if errors.Is(err, gorm.ErrRecordNotFound) {
@@ -357,6 +362,21 @@ func (s *Service) Update(userID uint64, key string, name, visibility *string, al
 			return nil, ErrInvalidMaxViews
 		}
 		updates["max_views"] = *maxViews
+	}
+	if accessPassword != nil {
+		pw := strings.TrimSpace(*accessPassword)
+		if pw == "" {
+			updates["access_password_hash"] = ""
+		} else {
+			if len(pw) > 128 {
+				return nil, ErrInvalidAccessPassword
+			}
+			h, err := auth.HashPassword(pw)
+			if err != nil {
+				return nil, err
+			}
+			updates["access_password_hash"] = h
+		}
 	}
 	if slug != nil {
 		v := strings.ToLower(strings.TrimSpace(*slug))
@@ -490,9 +510,9 @@ func (s *Service) Batch(userID uint64, action string, keys []string, visibility 
 			err = s.SoftDelete(userID, k)
 		case "visibility":
 			v := visibility
-			_, err = s.Update(userID, k, nil, &v, nil, nil, false, nil, nil)
+			_, err = s.Update(userID, k, nil, &v, nil, nil, false, nil, nil, nil)
 		case "move":
-			_, err = s.Update(userID, k, nil, nil, albumID, nil, false, nil, nil)
+			_, err = s.Update(userID, k, nil, nil, albumID, nil, false, nil, nil, nil)
 		}
 		br := BatchResult{Key: k, OK: err == nil}
 		if err != nil {

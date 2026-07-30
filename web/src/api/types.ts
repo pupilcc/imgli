@@ -103,9 +103,13 @@ export interface ImageItem {
   /** 0=不限 */
   max_views?: number
   views_served?: number
+  /** 是否设置了访问口令（永不返回明文） */
+  has_access_password?: boolean
   links: Links
   /** 分享页 URL（公开分享 API 额外字段） */
   share_url?: string
+  /** 分享 API：需要口令且当前未解锁 */
+  password_required?: boolean
 }
 
 /** GET /api/v1/s/{key} public share payload */
