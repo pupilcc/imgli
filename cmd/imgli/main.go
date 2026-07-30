@@ -30,6 +30,14 @@ func main() {
 			fmt.Fprintln(os.Stderr, "imgli:", err)
 			os.Exit(1)
 		}
+	case "import-dir":
+		if err := runImportDir(os.Args[2:]); err != nil {
+			if err == flag.ErrHelp {
+				os.Exit(0)
+			}
+			fmt.Fprintln(os.Stderr, "imgli:", err)
+			os.Exit(1)
+		}
 	case "upload":
 		if err := runUpload(os.Args[2:]); err != nil {
 			if err == flag.ErrHelp {
@@ -81,7 +89,7 @@ func main() {
 }
 
 func usage() {
-	fmt.Fprintln(os.Stderr, "用法: imgli <serve|upload|doctor|migrate|storage-migrate|version> [flags]")
+	fmt.Fprintln(os.Stderr, "用法: imgli <serve|upload|import-dir|doctor|migrate|storage-migrate|version> [flags]")
 	fmt.Fprintln(os.Stderr, "  upload  上传文件或 stdin 到图床（IMGLI_BASE_URL / IMGLI_TOKEN）")
 	fmt.Fprintln(os.Stderr, "  doctor  检查 data 目录、数据库、base_url、存储等常见误配")
 }

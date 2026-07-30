@@ -66,7 +66,7 @@ verify upstream docs before migrating.
 - **Accounts & sharing** — user groups with quotas/rate limits, guest upload,
   invite codes, SMTP email (verification/reset/reject notices), albums,
   public gallery, recycle bin, image expiry.
-- **Integrations** — clean upload API with API tokens; `imgli upload` CLI;
+- **Integrations** — clean upload API with API tokens; `imgli upload` / `imgli import-dir` CLI;
   PicGo/Typora/VS Code ([guide](docs/picgo.md)),
   [ShareX](docs/integrations/sharex.md) / [uPic](docs/integrations/upic.md)
   ([index](docs/integrations/README.md)).
