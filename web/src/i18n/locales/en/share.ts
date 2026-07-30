@@ -8,4 +8,9 @@ export default {
   copyUrl: 'Copy URL',
   copyMarkdown: 'Copy Markdown',
   copyShare: 'Copy share page',
+  passwordTitle: 'Password required',
+  passwordHint: 'This image is password-protected. Enter it to view and copy links.',
+  passwordPlaceholder: 'Access password',
+  passwordSubmit: 'Unlock',
+  passwordWrong: 'Incorrect password',
 }

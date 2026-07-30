@@ -8,4 +8,9 @@ export default {
   copyUrl: '复制链接',
   copyMarkdown: '复制 Markdown',
   copyShare: '复制分享页',
+  passwordTitle: '需要访问口令',
+  passwordHint: '此图已设置口令，输入后可查看与复制链接。',
+  passwordPlaceholder: '访问口令',
+  passwordSubmit: '解锁',
+  passwordWrong: '口令错误，请重试',
 }

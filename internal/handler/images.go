@@ -4,11 +4,13 @@ import (
 	"errors"
 	"net/http"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/go-chi/chi/v5"
 
 	"github.com/yixian-huang/imgli/internal/linkbuilder"
+	"github.com/yixian-huang/imgli/internal/service/auth"
 	"github.com/yixian-huang/imgli/internal/service/imagesvc"
 	"github.com/yixian-huang/imgli/internal/service/stats"
 	"github.com/yixian-huang/imgli/internal/service/storagesvc"
@@ -59,6 +61,7 @@ func (h *ImageHandlers) imageItemDTO(row *imagesvc.Row) map[string]any {
 		"expires_at":   expiresAt,
 		"max_views":    row.Img.MaxViews,
 		"views_served": row.Img.ViewsServed,
+		"has_access_password": strings.TrimSpace(row.Img.AccessPasswordHash) != "",
 		"links":        links,
 	}
 }
@@ -119,6 +122,59 @@ func (h *ImageHandlers) Share(w http.ResponseWriter, r *http.Request) {
 	if row.Img.Slug != nil && *row.Img.Slug != "" {
 		dto["share_url"] = base + "/s/" + *row.Img.Slug
 	}
+	// 有口令且未解锁：不给可直出 URL，避免分享页 <img> 触发无口令请求噪声。
+	if imgHasPassword(&row.Img) && !imgPasswordOK(r, &row.Img) {
+		dto["password_required"] = true
+		dto["links"] = map[string]any{}
+	} else {
+		dto["password_required"] = false
+	}
+	OK(w, dto)
+}
+
+// UnlockShare POST /api/v1/s/{key}/unlock —— 校验访问口令并写 cookie。
+func (h *ImageHandlers) UnlockShare(w http.ResponseWriter, r *http.Request) {
+	ref := chi.URLParam(r, "key")
+	var req struct {
+		Password string `json:"password"`
+	}
+	if err := DecodeJSON(r, &req); err != nil {
+		Fail(w, http.StatusBadRequest, CodeInvalidRequest, "请求体无效")
+		return
+	}
+	pw := strings.TrimSpace(req.Password)
+	if pw == "" || len(pw) > imgPassMaxLen {
+		Fail(w, http.StatusBadRequest, CodeInvalidRequest, "password 不合法")
+		return
+	}
+	row, err := h.D.Img.GetPublicShare(ref)
+	if errors.Is(err, imagesvc.ErrNotFound) {
+		// 不区分：统一 404，避免枚举
+		Fail(w, http.StatusNotFound, CodeNotFound, "资源不存在")
+		return
+	}
+	if err != nil {
+		Fail(w, http.StatusInternalServerError, CodeInternal, "服务器内部错误")
+		return
+	}
+	if !imgHasPassword(&row.Img) {
+		// 无口令不需要解锁
+		h.Share(w, r)
+		return
+	}
+	if !auth.VerifyPassword(row.Img.AccessPasswordHash, pw) {
+		Fail(w, http.StatusUnauthorized, CodeUnauthorized, "口令错误")
+		return
+	}
+	setImgPassCookie(w, r, row.Img.Key, row.Img.AccessPasswordHash)
+	// 复用 Share 组装（此时 cookie 已写，但当前 r 尚无 cookie——手动标已解锁）
+	dto := h.imageItemDTO(row)
+	base := h.D.Res.LinkBase(&row.Policy)
+	dto["share_url"] = base + "/s/" + row.Img.Key
+	if row.Img.Slug != nil && *row.Img.Slug != "" {
+		dto["share_url"] = base + "/s/" + *row.Img.Slug
+	}
+	dto["password_required"] = false
 	OK(w, dto)
 }
 
@@ -148,12 +204,13 @@ func (h *ImageHandlers) Stats(w http.ResponseWriter, r *http.Request) {
 // Update PATCH /api/v1/images/{key}
 func (h *ImageHandlers) Update(w http.ResponseWriter, r *http.Request) {
 	var req struct {
-		Name       *string `json:"name"`
-		Visibility *string `json:"visibility"`
-		AlbumID    *int64  `json:"album_id"`
-		ExpiresIn  *int    `json:"expires_in"`
-		Slug       *string `json:"slug"`
-		MaxViews   *int    `json:"max_views"`
+		Name           *string `json:"name"`
+		Visibility     *string `json:"visibility"`
+		AlbumID        *int64  `json:"album_id"`
+		ExpiresIn      *int    `json:"expires_in"`
+		Slug           *string `json:"slug"`
+		MaxViews       *int    `json:"max_views"`
+		AccessPassword *string `json:"access_password"`
 	}
 	if err := DecodeJSON(r, &req); err != nil {
 		Fail(w, http.StatusBadRequest, CodeInvalidRequest, "请求体无效")
@@ -174,9 +231,12 @@ func (h *ImageHandlers) Update(w http.ResponseWriter, r *http.Request) {
 		// <=0 → expAt=nil（清除）
 	}
 	row, err := h.D.Img.Update(PrincipalFrom(r).User.ID, chi.URLParam(r, "key"),
-		req.Name, req.Visibility, req.AlbumID, expAt, setExp, req.Slug, req.MaxViews)
+		req.Name, req.Visibility, req.AlbumID, expAt, setExp, req.Slug, req.MaxViews, req.AccessPassword)
 	switch {
 	case err == nil:
+		if req.AccessPassword != nil && strings.TrimSpace(*req.AccessPassword) == "" {
+			clearImgPassCookie(w, chi.URLParam(r, "key"))
+		}
 		OK(w, h.imageDetailDTO(row))
 	case errors.Is(err, imagesvc.ErrNotFound):
 		Fail(w, http.StatusNotFound, CodeNotFound, "图片不存在")
@@ -184,7 +244,7 @@ func (h *ImageHandlers) Update(w http.ResponseWriter, r *http.Request) {
 		Fail(w, http.StatusNotFound, CodeNotFound, "相册不存在")
 	case errors.Is(err, imagesvc.ErrInvalidVisibility), errors.Is(err, imagesvc.ErrInvalidName),
 		errors.Is(err, imagesvc.ErrInvalidSlug), errors.Is(err, imagesvc.ErrSlugTaken),
-		errors.Is(err, imagesvc.ErrInvalidMaxViews):
+		errors.Is(err, imagesvc.ErrInvalidMaxViews), errors.Is(err, imagesvc.ErrInvalidAccessPassword):
 		Fail(w, http.StatusBadRequest, CodeInvalidRequest, err.Error())
 	default:
 		Fail(w, http.StatusInternalServerError, CodeInternal, "服务器内部错误")

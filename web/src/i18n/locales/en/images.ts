@@ -95,6 +95,13 @@ export default {
   removeExpiry: 'Remove expiry',
   maxViews: 'View limit',
   maxViewsUsed: '{used} / {max} used',
+  accessPassword: 'Access password',
+  accessPasswordSet: 'Set',
+  accessPasswordNone: 'None',
+  accessPasswordPlaceholder: 'New password; clear with button',
+  accessPasswordSave: 'Set password',
+  accessPasswordClear: 'Clear password',
+  accessPasswordHint: 'Non-owners need the password for /i and the share page; no public CDN.',
   maxViewsHint:
     'Counts successful /i serves for non-owners only. Limited images never use public CDN 302. Multi-instance relies on atomic DB counters.',
   expiryWarn: 'Permanently deleted on expiry, not recoverable',

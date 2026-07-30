@@ -1,11 +1,13 @@
+import { useState } from 'react'
 import { useParams, Link } from 'react-router'
 import { ApiError } from '../../api/client'
-import { useShareImage } from '../../api/hooks'
+import { useShareImage, useUnlockShare } from '../../api/hooks'
 import { useT } from '../../i18n'
 import { copyText } from '../../lib/copy'
 import { formatBytes } from '../../lib/format'
 import { BrandLockup } from '../../ui/Brand'
 import { Button } from '../../ui/Button'
+import { Input } from '../../ui/Input'
 import { LangToggle } from '../../ui/LangToggle'
 import { useGlobal } from '../../store'
 import styles from './SharePage.module.css'
@@ -17,9 +19,12 @@ export function SharePage() {
   const theme = useGlobal((s) => s.theme)
   const toggleTheme = useGlobal((s) => s.toggleTheme)
   const q = useShareImage(key)
+  const unlock = useUnlockShare()
   const data = q.data
+  const [pw, setPw] = useState('')
 
   const notFound = q.error instanceof ApiError && q.error.httpStatus === 404
+  const needPw = !!(data?.password_required || (data?.has_access_password && !data?.links?.url))
 
   let expiryLabel = ''
   if (data?.expires_at) {
@@ -59,7 +64,46 @@ export function SharePage() {
         {q.isError && !notFound && (
           <div className={styles.msg}>{t('share.loadFailed')}</div>
         )}
-        {data && (
+        {data && needPw && (
+          <div className={styles.msgBox}>
+            <div className={styles.kicker}>PASSWORD</div>
+            <h1 className={styles.title}>{t('share.passwordTitle')}</h1>
+            <p className={styles.desc}>{t('share.passwordHint')}</p>
+            <form
+              className={styles.pwForm}
+              onSubmit={(e) => {
+                e.preventDefault()
+                unlock.mutate(
+                  { key, password: pw },
+                  {
+                    onError: () => {
+                      /* toast via mutation error display below */
+                    },
+                  },
+                )
+              }}
+            >
+              <Input
+                type="password"
+                label={t('share.passwordPlaceholder')}
+                value={pw}
+                onChange={(e) => setPw(e.target.value)}
+                autoComplete="current-password"
+              />
+              {unlock.isError && (
+                <p className={styles.desc}>
+                  {unlock.error instanceof ApiError && unlock.error.httpStatus === 401
+                    ? t('share.passwordWrong')
+                    : t('share.loadFailed')}
+                </p>
+              )}
+              <Button variant="primary" type="submit" disabled={!pw.trim() || unlock.isPending}>
+                {t('share.passwordSubmit')}
+              </Button>
+            </form>
+          </div>
+        )}
+        {data && !needPw && (
           <div className={styles.card}>
             <div className={styles.previewWrap}>
               <img

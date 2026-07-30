@@ -142,6 +142,11 @@ func (h *ServeHandlers) lookupServable(w http.ResponseWriter, r *http.Request) (
 		h.placeholder(w, r, http.StatusGone, "IMAGE EXHAUSTED")
 		return nil, false
 	}
+	// 访问口令：非属主须 cookie/header 解锁（不区分是否设了口令时不泄露，仅当有哈希才拦）。
+	if imgHasPassword(&img) && !imgPasswordOK(r, &img) {
+		h.placeholder(w, r, http.StatusUnauthorized, "PASSWORD REQUIRED")
+		return nil, false
+	}
 	// D-① 防盗链:配置快照判定,拒绝给 403 横幅占位(/i /t 同门禁)。
 	if h.D.Stats != nil && !stats.HotlinkAllowed(h.D.Stats.Hotlink(), refererHost(r), h.D.OwnHost) {
 		h.placeholder(w, r, http.StatusForbidden, "HOTLINK DENIED")
@@ -188,7 +193,7 @@ func (h *ServeHandlers) Original(w http.ResponseWriter, r *http.Request) {
 	}
 	// 次数上限：非属主在送字节前 claim；属主不消耗配额。
 	// 有 max_views 的公开图禁止 CDN 302，否则边缘缓存绕过计数。
-	limited := img.MaxViews > 0
+	limited := img.MaxViews > 0 || imgHasPassword(img)
 	owner := h.isOwner(r, img)
 	if limited && !owner {
 		if !h.claimView(img) {
