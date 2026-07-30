@@ -9,15 +9,15 @@ export default {
   loginRequiredDesc: '当前站点未开放游客上传。注册或登录后即可获取外链、管理图片与相册。',
   loginRequiredCta: '登录 / 注册',
   loginRequiredHint: '已有账号？登录后回到此页继续上传',
+  helpLink: '帮助文档',
+  upgradeLink: '自托管 / 升级',
   toastLoginRequired: '请先登录后再上传',
   toastBandwidthFull: '本月流量已用尽，无法上传',
   bandwidthFullTitle: '本月流量已用尽',
-  bandwidthFullDesc: '下月重置后可继续，或自托管开源版不受此限',
-
-
+  bandwidthFullDesc: '下月重置后可继续，或按站点说明处理',
   dropRelease: '松开即上传',
   fullTitle: '容量已满，上传已禁用',
-  fullDesc: '清理图片或升级容量后恢复',
+  fullDesc: '清理图片后恢复，或按站点说明处理',
   dropTitle: '拖拽图片到此处，或点击选择文件',
   pasteHint: '直接粘贴截图即可上传',
 

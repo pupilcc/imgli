@@ -1,7 +1,8 @@
 export default {
   headlineLine1: 'Drop in, paste out.',
   headlineLine2: 'Your image links, that simple.',
-  copyright: '© {year} img.li — images kept forever by default',
+  // Fixed product OSS credit; {site} is the instance site_name (default img.li)
+  copyright: '© {year} {site} · open-source imgli',
 
   signInKicker: 'SIGN IN',
   createAccountKicker: 'CREATE ACCOUNT',
@@ -10,6 +11,8 @@ export default {
   login: 'Sign in',
   register: 'Sign up',
   regClosed: 'Registration is closed. Contact an admin for an account.',
+  helpLink: 'Docs',
+  upgradeLink: 'Self-host / upgrade',
 
   username: 'Username',
   usernamePlaceholder: 'Your nickname',

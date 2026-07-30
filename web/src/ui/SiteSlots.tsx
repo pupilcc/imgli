@@ -1,15 +1,25 @@
 import { useEffect, useMemo, useState } from 'react'
-import type { HTMLInject, SiteAnnouncement, SiteFooter } from '../api/types'
+import type { HTMLInject, SiteAnnouncement, SiteFooter as SiteFooterConfig } from '../api/types'
+import { useT } from '../i18n'
+import { localeFingerprint, pickLocale } from '../lib/locale'
+import { BRAND_WORDMARK } from './Brand'
 import styles from './SiteSlots.module.css'
 
 const DISMISS_KEY = 'imgli_announcement_dismissed'
 
 function annFingerprint(a: SiteAnnouncement): string {
-  return [a.text, a.link_url, a.link_label, a.starts_at, a.ends_at].join('\0')
+  return [
+    localeFingerprint(a.text),
+    a.link_url,
+    localeFingerprint(a.link_label),
+    a.starts_at,
+    a.ends_at,
+  ].join('\0')
 }
 
-/** 顶栏公告：可关闭（localStorage 记指纹）。 */
+/** 顶栏公告：可关闭（localStorage 记指纹）。视觉与 Nav / Quota 条对齐。 */
 export function AnnouncementBar({ announcement }: { announcement?: SiteAnnouncement | null }) {
+  const { t, lang } = useT()
   const fp = useMemo(() => (announcement ? annFingerprint(announcement) : ''), [announcement])
   const [hidden, setHidden] = useState(false)
 
@@ -25,10 +35,16 @@ export function AnnouncementBar({ announcement }: { announcement?: SiteAnnouncem
     }
   }, [announcement, fp])
 
-  if (!announcement?.text || hidden) return null
+  const text = announcement ? pickLocale(announcement.text, lang) : ''
+  const linkLabel = announcement ? pickLocale(announcement.link_label, lang) : ''
+
+  if (!announcement || !text || hidden) return null
+
+  const linkURL = announcement.link_url
+  const canDismiss = announcement.dismissible
 
   const dismiss = () => {
-    if (!announcement.dismissible) return
+    if (!canDismiss) return
     try {
       localStorage.setItem(DISMISS_KEY, fp)
     } catch {
@@ -38,45 +54,101 @@ export function AnnouncementBar({ announcement }: { announcement?: SiteAnnouncem
   }
 
   return (
-    <div className={styles.bar} role="region" aria-label="announcement">
+    <div className={styles.bar} role="region" aria-label={t('common.announcementAria')}>
       <div className={styles.barInner}>
-        <span className={styles.barText}>{announcement.text}</span>
-        {announcement.link_url && announcement.link_label ? (
-          <a className={styles.barLink} href={announcement.link_url} rel="noopener noreferrer">
-            {announcement.link_label}
-          </a>
-        ) : null}
-        {announcement.dismissible ? (
-          <button type="button" className={styles.barClose} onClick={dismiss} aria-label="Dismiss">
-            ×
-          </button>
-        ) : null}
+        <span className={styles.barKicker}>{t('common.announcementKicker')}</span>
+        <span className={styles.barText}>{text}</span>
+        <div className={styles.barActions}>
+          {linkURL && linkLabel ? (
+            <a className={styles.barLink} href={linkURL} rel="noopener noreferrer">
+              {linkLabel}
+            </a>
+          ) : null}
+          {canDismiss ? (
+            <button
+              type="button"
+              className={styles.barClose}
+              onClick={dismiss}
+              aria-label={t('common.close')}
+              title={t('common.close')}
+            >
+              ×
+            </button>
+          ) : null}
+        </div>
       </div>
     </div>
   )
 }
 
-/** 页脚链接组。 */
-export function SiteFooter({ footer }: { footer?: SiteFooter | null }) {
+type SiteFooterProps = {
+  footer?: SiteFooterConfig | null
+  /** Instance site_name; falls back to product wordmark. */
+  siteName?: string | null
+}
+
+/**
+ * 页脚：以链接分组为主；底部一行克制署名。
+ * 不重复砸站名/img.li/图鲤（顶栏已有品牌，此处避免标题轰炸）。
+ */
+export function SiteFooter({ footer, siteName }: SiteFooterProps) {
+  const { t, lang } = useT()
   const groups = footer?.groups?.filter((g) => g.links?.length) ?? []
-  if (!groups.length) return null
+  const name = (siteName || '').trim() || BRAND_WORDMARK
+  const year = new Date().getFullYear()
+  // 站名已含 img.li / 图鲤 时不再叠开源工程名
+  const nameLower = name.toLowerCase()
+  const showOssSuffix =
+    !nameLower.includes('img.li') && !nameLower.includes('imgli') && !name.includes('图鲤')
+
+  if (groups.length === 0) {
+    return (
+      <footer className={`${styles.footer} ${styles.footerMinimal}`}>
+        <div className={styles.footerInner}>
+          <div className={styles.footerMeta}>
+            <span>
+              © {year} {name}
+              {showOssSuffix ? ` · ${t('common.footerOss')}` : ''}
+            </span>
+          </div>
+        </div>
+      </footer>
+    )
+  }
+
   return (
     <footer className={styles.footer}>
       <div className={styles.footerInner}>
-        {groups.map((g, i) => (
-          <div key={i} className={styles.footerGroup}>
-            {g.title ? <div className={styles.footerTitle}>{g.title}</div> : null}
-            <ul className={styles.footerList}>
-              {g.links.map((l, j) => (
-                <li key={j}>
-                  <a href={l.url} rel="noopener noreferrer">
-                    {l.label}
-                  </a>
-                </li>
-              ))}
-            </ul>
-          </div>
-        ))}
+        <div className={styles.footerGroups}>
+          {groups.map((g, i) => {
+            const title = pickLocale(g.title, lang)
+            return (
+              <div key={i} className={styles.footerGroup}>
+                {title ? <div className={styles.footerTitle}>{title}</div> : null}
+                <ul className={styles.footerList}>
+                  {g.links.map((l, j) => {
+                    const label = pickLocale(l.label, lang)
+                    if (!label || !l.url) return null
+                    return (
+                      <li key={j}>
+                        <a href={l.url} rel="noopener noreferrer">
+                          {label}
+                        </a>
+                      </li>
+                    )
+                  })}
+                </ul>
+              </div>
+            )
+          })}
+        </div>
+        <div className={styles.footerMeta}>
+          <span>
+            © {year} {name}
+            {showOssSuffix ? ` · ${t('common.footerOss')}` : ''}
+          </span>
+          <span className={styles.footerMetaQuiet}>{t('meta.tagline')}</span>
+        </div>
       </div>
     </footer>
   )

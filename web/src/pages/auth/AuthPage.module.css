@@ -31,6 +31,17 @@
   z-index: 1;
 }
 .copyright { font-family: var(--font-mono); font-size: 10.5px; opacity: 0.45; position: relative; z-index: 1; }
+.trialNote {
+  margin: 0 0 14px;
+  font-size: 12.5px;
+  line-height: 1.55;
+  color: var(--muted);
+}
+.trialNote a {
+  color: var(--text);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
 .deco {
   position: absolute;
   right: -60px;

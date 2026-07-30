@@ -238,6 +238,23 @@ export function UploadPage() {
           <Link to={loginTo} className={styles.loginGateCta}>
             {t('upload.loginRequiredCta')}
           </Link>
+          {(!!config.data?.help_url?.trim() || !!config.data?.upgrade_url?.trim()) && (
+            <div className={styles.loginGateLinks}>
+              {!!config.data?.help_url?.trim() && (
+                <a href={config.data.help_url.trim()} rel="noopener noreferrer">
+                  {t('upload.helpLink')}
+                </a>
+              )}
+              {!!config.data?.help_url?.trim() && !!config.data?.upgrade_url?.trim() && (
+                <span className={styles.loginGateDot}>·</span>
+              )}
+              {!!config.data?.upgrade_url?.trim() && (
+                <a href={config.data.upgrade_url.trim()} rel="noopener noreferrer">
+                  {t('upload.upgradeLink')}
+                </a>
+              )}
+            </div>
+          )}
           <p className={styles.loginGateHint}>{t('upload.loginRequiredHint')}</p>
         </div>
       )}
@@ -284,6 +301,16 @@ export function UploadPage() {
             <span className={styles.fullDesc}>
               {full ? t('upload.fullDesc') : t('upload.bandwidthFullDesc')}
             </span>
+            {!!config.data?.upgrade_url?.trim() && (
+              <a
+                className={styles.fullSelfHost}
+                href={config.data.upgrade_url.trim()}
+                rel="noopener noreferrer"
+                onClick={(e) => e.stopPropagation()}
+              >
+                {t('upload.upgradeLink')} →
+              </a>
+            )}
           </div>
         )}
         <div className={styles.upIcon}>↑</div>

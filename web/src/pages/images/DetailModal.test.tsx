@@ -82,7 +82,8 @@ it('ACCESS:总访问与近 30 天柱图', async () => {
   mockBackend({ stats: { total: 5, daily: makeDaily({ 10: 2, 20: 3 }) } })
   renderModal()
   expect(await screen.findByText(/ACCESS/)).toBeInTheDocument()
-  expect(screen.getByText(/总访问\s*5/)).toBeInTheDocument()
+  // summary + body may both mention total views
+  expect(screen.getAllByText(/总访问\s*5/).length).toBeGreaterThan(0)
   expect(document.querySelectorAll('[class*="accessBars"] > [class*="accessBar"]').length).toBe(30)
 })
 

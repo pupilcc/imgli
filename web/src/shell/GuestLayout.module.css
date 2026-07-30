@@ -32,7 +32,17 @@
   font-size: 12.5px; font-weight: 600;
 }
 .loginBtn:hover { opacity: 0.9; color: var(--btnText); }
-.main { width: 100%; box-sizing: border-box; padding: 0 24px 80px; }
+.shell {
+  min-height: 100dvh;
+  display: flex;
+  flex-direction: column;
+}
+.main {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 0 24px 48px;
+  flex: 1 0 auto;
+}
 
 @media (max-width: 768px) {
   .nav { padding: 0 16px; gap: 16px; }

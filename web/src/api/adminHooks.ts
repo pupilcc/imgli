@@ -317,6 +317,10 @@ export interface SettingsBody {
   announcement?: AdminSettings['announcement']
   footer?: AdminSettings['footer']
   html_inject?: AdminSettings['html_inject']
+  help_url?: string
+  upgrade_url?: string
+  register_notice?: AdminSettings['register_notice']
+  share_branding?: AdminSettings['share_branding']
 }
 
 export function useUpdateSettings() {

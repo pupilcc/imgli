@@ -49,8 +49,7 @@ test.afterEach(async ({ browser }) => {
 
 test('防盗链全链:未开放行→开启拦截→详情 ACCESS', async ({ page, request, browser }) => {
   // 1) 注册 d1hot → 上传 → 取直链;evil Referer 默认放行 200
-  await page.goto('/')
-  await expect(page).toHaveURL(/\/login$/)
+  await page.goto('/login')
   await page.getByRole('button', { name: '注册' }).click()
   await page.getByLabel('用户名').fill(D1HOT.username)
   await page.getByLabel('邮箱').fill(D1HOT.email)

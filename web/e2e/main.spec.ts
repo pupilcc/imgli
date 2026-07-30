@@ -8,8 +8,8 @@ const PNG = Buffer.from(
 
 test('主干：注册→上传→复制→删除→回收站恢复→彻底删除', async ({ page }) => {
   // 注册（本套件第三个用户——admin.spec 已先注册 boss/pleb，故非首管理员）
-  await page.goto('/')
-  await expect(page).toHaveURL(/\/login$/)
+  // guest 关闭时 / 仍是上传落地页（非硬跳登录）；注册走 /login
+  await page.goto('/login')
   await page.getByRole('button', { name: '注册' }).click()
   await page.getByLabel('用户名').fill('e2e')
   await page.getByLabel('邮箱').fill('e2e@img.li')

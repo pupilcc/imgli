@@ -194,6 +194,26 @@ export default {
 
   // Site slots (announcement / footer / HTML inject)
   slotsTab: '站点插槽',
+  slotsSubPublic: '公开 CTA',
+  slotsSubAnnouncement: '公告',
+  slotsSubFooter: '页脚',
+  slotsSubHtml: 'HTML',
+  localeZh: '中文',
+  localeEn: 'English',
+  announcementSchedule: '生效时间（可选）',
+  publicCopy: '公开文案与 CTA',
+  publicCopyHint:
+    '帮助/升级 URL 与注册说明由站长配置（默认空）。产品署名「imgli · 图鲤」始终保留；此处只补你的文档与试用话术，勿抹掉开源品牌。',
+  helpUrl: '帮助 / 文档 URL',
+  upgradeUrl: '自托管 / 升级说明 URL',
+  registerNotice: '注册页说明（可空）',
+  registerNoticeHint: '仅注册模式显示；可写试用限额等。留空则不展示。',
+  shareBranding: '分享页站名脚',
+  shareBrandingOff: '仅开源署名',
+  shareBrandingSite: '署名+站名',
+  shareBrandingLinks: '署名+站名+链接',
+  shareBrandingHint:
+    '开源产品署名（imgli · 图鲤）始终显示。off 只隐藏本站站名/外链；links 在已配置 help/upgrade URL 时显示。',
   announcement: '顶栏公告',
   announcementHint: '开启后前台顶部展示；可设时间窗与可关闭。内容存库，适合站内通知或外链引流。',
   announcementText: '公告文案',

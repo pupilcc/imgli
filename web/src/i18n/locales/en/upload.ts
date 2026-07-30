@@ -10,16 +10,15 @@ export default {
     'Guest upload is off on this site. Create an account or sign in for direct links, library, and albums.',
   loginRequiredCta: 'Sign in / Register',
   loginRequiredHint: 'Already have an account? Sign in and return here to upload',
+  helpLink: 'Docs',
+  upgradeLink: 'Self-host / upgrade',
   toastLoginRequired: 'Please sign in to upload',
   toastBandwidthFull: 'Monthly bandwidth used up — cannot upload',
   bandwidthFullTitle: 'Monthly bandwidth used up',
-  bandwidthFullDesc: 'Resets next month, or self-host the open-source build without this cap',
-
-
-
+  bandwidthFullDesc: 'Resets next month, or follow this site’s upgrade guidance',
   dropRelease: 'Drop to upload',
   fullTitle: 'Storage full — upload disabled',
-  fullDesc: 'Free up space or upgrade capacity to resume',
+  fullDesc: 'Free up space, or follow this site’s upgrade guidance',
   dropTitle: 'Drag images here, or click to choose files',
   pasteHint: 'Paste a screenshot to upload',
 

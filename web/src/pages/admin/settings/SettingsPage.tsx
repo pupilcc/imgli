@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { ApiError } from '../../../api/client'
 import { useAdminSettings, useTestModeration, useTestSMTP, useUpdateSettings } from '../../../api/adminHooks'
-import type { FooterGroup, SiteAnnouncement } from '../../../api/types'
+import type { SiteAnnouncement } from '../../../api/types'
 import { useT } from '../../../i18n'
 import { errorText } from '../../../i18n/errorText'
 import { PageHeader } from '../../../shell/PageHeader'
@@ -9,7 +9,14 @@ import { useGlobal } from '../../../store'
 import { Button } from '../../../ui/Button'
 import { AdminQueryGate } from '../ui/AdminQueryGate'
 import { formatLexiconExport, mergeLexiconText, parseLexiconText } from './lexicon'
-import { formOf, SETTINGS_TABS, type FormState, type SettingsTab } from './settingsForm'
+import {
+  formOf,
+  SETTINGS_TABS,
+  type FormFooterGroup,
+  type FormLocale,
+  type FormState,
+  type SettingsTab,
+} from './settingsForm'
 import styles from './SettingsPage.module.css'
 import { BasicTab } from './tabs/BasicTab'
 import { HotlinkTab } from './tabs/HotlinkTab'
@@ -165,25 +172,45 @@ export function SettingsPage() {
         },
         announcement: {
           enabled: form.ann.enabled,
-          text: form.ann.text.trim(),
+          text: {
+            zh: typeof form.ann.text === 'string' ? form.ann.text.trim() : (form.ann.text?.zh ?? '').trim(),
+            en: typeof form.ann.text === 'string' ? '' : (form.ann.text?.en ?? '').trim(),
+          },
           link_url: form.ann.link_url.trim(),
-          link_label: form.ann.link_label.trim(),
+          link_label: {
+            zh:
+              typeof form.ann.link_label === 'string'
+                ? form.ann.link_label.trim()
+                : (form.ann.link_label?.zh ?? '').trim(),
+            en:
+              typeof form.ann.link_label === 'string' ? '' : (form.ann.link_label?.en ?? '').trim(),
+          },
           dismissible: form.ann.dismissible,
           starts_at: form.ann.starts_at.trim(),
           ends_at: form.ann.ends_at.trim(),
         },
         footer: {
           groups: form.footerGroups.map((g) => ({
-            title: g.title.trim(),
+            title: { zh: g.title.zh.trim(), en: g.title.en.trim() },
             links: g.links
-              .map((l) => ({ label: l.label.trim(), url: l.url.trim() }))
-              .filter((l) => l.label && l.url),
+              .map((l) => ({
+                label: { zh: l.label.zh.trim(), en: l.label.en.trim() },
+                url: l.url.trim(),
+              }))
+              .filter((l) => (l.label.zh || l.label.en) && l.url),
           })),
         },
         html_inject: {
           head: form.htmlHead,
           body_end: form.htmlBodyEnd,
         },
+        help_url: form.helpUrl.trim(),
+        upgrade_url: form.upgradeUrl.trim(),
+        register_notice: {
+          zh: form.registerNotice.zh.trim(),
+          en: form.registerNotice.en.trim(),
+        },
+        share_branding: form.shareBranding,
       },
       {
         onSuccess: (data) => {
@@ -197,14 +224,18 @@ export function SettingsPage() {
   const setAnn = <K extends keyof SiteAnnouncement>(k: K, v: SiteAnnouncement[K]) =>
     setForm((f) => (f ? { ...f, ann: { ...f.ann, [k]: v } } : f))
 
-  const patchFooterGroup = (gi: number, patch: Partial<FooterGroup>) =>
+  const patchFooterGroup = (gi: number, patch: Partial<FormFooterGroup>) =>
     setForm((f) => {
       if (!f) return f
       const groups = f.footerGroups.map((g, i) => (i === gi ? { ...g, ...patch } : g))
       return { ...f, footerGroups: groups }
     })
 
-  const patchFooterLink = (gi: number, li: number, patch: { label?: string; url?: string }) =>
+  const patchFooterLink = (
+    gi: number,
+    li: number,
+    patch: { label?: FormLocale; url?: string },
+  ) =>
     setForm((f) => {
       if (!f) return f
       const groups = f.footerGroups.map((g, i) => {

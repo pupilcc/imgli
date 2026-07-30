@@ -381,23 +381,27 @@ export interface ProcessingSettings {
   strip_exif?: boolean | null
 }
 
+/** zh/en operator copy; API may still send a legacy plain string. */
+export type LocaleMap = { zh?: string; en?: string }
+export type LocaleField = string | LocaleMap
+
 export interface SiteAnnouncement {
   enabled: boolean
-  text: string
+  text: LocaleField
   link_url: string
-  link_label: string
+  link_label: LocaleField
   dismissible: boolean
   starts_at: string
   ends_at: string
 }
 
 export interface FooterLink {
-  label: string
+  label: LocaleField
   url: string
 }
 
 export interface FooterGroup {
-  title: string
+  title: LocaleField
   links: FooterLink[]
 }
 
@@ -409,6 +413,9 @@ export interface HTMLInject {
   head: string
   body_end: string
 }
+
+/** Share page branding: off | site name only | site + help/upgrade links */
+export type ShareBranding = 'off' | 'site' | 'links'
 
 export interface AdminSettings {
   site_name: string
@@ -422,6 +429,10 @@ export interface AdminSettings {
   announcement?: SiteAnnouncement
   footer?: SiteFooter
   html_inject?: HTMLInject
+  help_url?: string
+  upgrade_url?: string
+  register_notice?: LocaleField
+  share_branding?: ShareBranding
 }
 
 export interface GuestLimits {
@@ -443,6 +454,13 @@ export interface PublicConfig {
   html_inject?: HTMLInject
   /** OIDC SSO available */
   oidc_enabled?: boolean
+  /** Operator-configured help docs (optional; empty by default). */
+  help_url?: string
+  /** Operator-configured upgrade / self-host CTA (optional). */
+  upgrade_url?: string
+  /** Shown on register form when non-empty (string or {zh,en}). */
+  register_notice?: LocaleField
+  share_branding?: ShareBranding
 }
 
 export interface DiscoverAuthor {

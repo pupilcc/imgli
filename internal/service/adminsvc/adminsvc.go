@@ -15,9 +15,30 @@ import (
 	"github.com/yixian-huang/imgli/internal/service/settings"
 )
 
-type Service struct{ db *gorm.DB }
+type Service struct {
+	db *gorm.DB
+	st *settings.Service
+}
 
-func New(db *gorm.DB) *Service { return &Service{db: db} }
+// New 构造管理端服务。可选传入进程内共享的 settings.Service，
+// 使 PutSettings 的 Invalidate 能立刻作用于广场/游客上传等热路径缓存。
+func New(db *gorm.DB, shared ...*settings.Service) *Service {
+	var st *settings.Service
+	if len(shared) > 0 && shared[0] != nil {
+		st = shared[0]
+	} else {
+		st = settings.New(db)
+	}
+	return &Service{db: db, st: st}
+}
+
+// settings 返回进程内 settings 服务（与 Discover/upload 共享时 Invalidate 才有效）。
+func (s *Service) settings() *settings.Service {
+	if s.st != nil {
+		return s.st
+	}
+	return settings.New(s.db)
+}
 
 // DB 暴露底层连接（admin 设置读写等）。
 func (s *Service) DB() *gorm.DB { return s.db }
@@ -25,7 +46,7 @@ func (s *Service) DB() *gorm.DB { return s.db }
 // ModerationConfig 返回明文机审配置(服务端内部用,不经 GetSettings 打码路径)。
 func (s *Service) ModerationConfig() (moderation.Config, error) {
 	cfg := moderation.DefaultConfig()
-	if err := settings.New(s.db).Get(model.SettingModeration, &cfg); err != nil && !errors.Is(err, settings.ErrNotFound) {
+	if err := s.settings().Get(model.SettingModeration, &cfg); err != nil && !errors.Is(err, settings.ErrNotFound) {
 		return moderation.Config{}, err
 	}
 	return cfg, nil
@@ -202,7 +223,7 @@ func (s *Service) StatsWithOwnHost(ownHost string) (*Stats, error) {
 	// Hotlink allowlist for suspect flags
 	allow := map[string]bool{}
 	var hot statsHotlink
-	_ = settings.New(s.db).Get(model.SettingHotlink, &hot)
+	_ = s.settings().Get(model.SettingHotlink, &hot)
 	for _, d := range hot.AllowedDomains {
 		allow[strings.ToLower(strings.TrimSpace(d))] = true
 	}

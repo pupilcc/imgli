@@ -102,8 +102,7 @@ test('文字水印改变哈希:同字节先秒传、开水印后非秒传', asyn
   // 普通成功态 badge「已完成」(status=success)。
 
   // 1) 注册 d2proc → 传独特 PNG A
-  await page.goto('/')
-  await expect(page).toHaveURL(/\/login$/)
+  await page.goto('/login')
   await page.getByRole('button', { name: '注册' }).click()
   await page.getByLabel('用户名').fill(D2PROC.username)
   await page.getByLabel('邮箱').fill(D2PROC.email)

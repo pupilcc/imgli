@@ -162,8 +162,8 @@ func (s *Server) mountAPI() {
 	s.imgSvc = imgSvc // Run 中的回收站清理 goroutine 用
 	albH := &handler.AlbumHandlers{D: handler.AlbumDeps{Alb: albumsvc.New(s.opts.DB)}}
 
-	// 管理端（Task 1+）
-	adm := adminsvc.New(s.opts.DB)
+	// 管理端（Task 1+）：与广场/鉴权共用 settings，保证开关即时失效缓存
+	adm := adminsvc.New(s.opts.DB, st)
 	mailSvc := mail.New(s.opts.DB)
 	authSvc.Mailer = mailSvc
 	authSvc.BaseURL = s.opts.Cfg.BaseURL

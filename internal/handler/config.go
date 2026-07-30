@@ -88,6 +88,29 @@ func (h *ConfigHandler) Config(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	var helpURL, upgradeURL, shareBrand string
+	var regNotice adminsvc.LocaleString
+	if err := st.Get(model.SettingHelpURL, &helpURL); err != nil && !errors.Is(err, settings.ErrNotFound) {
+		Fail(w, http.StatusInternalServerError, CodeInternal, "服务器内部错误")
+		return
+	}
+	if err := st.Get(model.SettingUpgradeURL, &upgradeURL); err != nil && !errors.Is(err, settings.ErrNotFound) {
+		Fail(w, http.StatusInternalServerError, CodeInternal, "服务器内部错误")
+		return
+	}
+	if err := st.Get(model.SettingRegisterNotice, &regNotice); err != nil && !errors.Is(err, settings.ErrNotFound) {
+		Fail(w, http.StatusInternalServerError, CodeInternal, "服务器内部错误")
+		return
+	}
+	if err := st.Get(model.SettingShareBranding, &shareBrand); err != nil && !errors.Is(err, settings.ErrNotFound) {
+		Fail(w, http.StatusInternalServerError, CodeInternal, "服务器内部错误")
+		return
+	}
+	helpURL = adminsvc.NormalizeOptionalURL(helpURL)
+	upgradeURL = adminsvc.NormalizeOptionalURL(upgradeURL)
+	regNotice = regNotice.Normalize()
+	shareBrand = adminsvc.NormalizeShareBranding(shareBrand)
+
 	baseURL := strings.TrimRight(strings.TrimSpace(h.BaseURL), "/")
 
 	var oidcCfg auth.OIDCConfig
@@ -105,5 +128,9 @@ func (h *ConfigHandler) Config(w http.ResponseWriter, r *http.Request) {
 		"html_inject":          htmlInj,
 		"base_url":             baseURL,
 		"oidc_enabled":         oidcOn,
+		"help_url":             helpURL,
+		"upgrade_url":          upgradeURL,
+		"register_notice":      regNotice,
+		"share_branding":       shareBrand,
 	})
 }

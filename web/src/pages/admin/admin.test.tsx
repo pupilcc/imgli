@@ -93,7 +93,8 @@ it('前台 Nav 头像菜单:admin 见「管理后台」,非 admin 不见', async
   await screen.findByTestId('dropzone')
   await userEvent.click(screen.getByText('根')) // 头像首字
   expect(await screen.findByRole('link', { name: '管理后台' })).toHaveAttribute('href', '/admin')
-  await screen.findByText(/GB/)
+  // Nav quota meter(s); may appear more than once (STOR/BW)
+  expect(screen.getAllByText(/GB/).length).toBeGreaterThan(0)
 })
 
 it('非 admin 头像菜单无「管理后台」', async () => {
@@ -104,7 +105,7 @@ it('非 admin 头像菜单无「管理后台」', async () => {
   await userEvent.click(screen.getByText('根'))
   expect(await screen.findByText('退出登录')).toBeInTheDocument()
   expect(screen.queryByRole('link', { name: '管理后台' })).not.toBeInTheDocument()
-  await screen.findByText(/GB/)
+  expect(screen.getAllByText(/GB/).length).toBeGreaterThan(0)
 })
 
 it('设置页:admin 见「管理后台 →」入口行', async () => {

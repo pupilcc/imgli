@@ -1,9 +1,8 @@
 import { expect, test } from '@playwright/test'
 
 test('管理后台:首用户即管理员可达控制台;二号用户无入口且被重定向', async ({ page }) => {
-  // 注册首个用户(自动成为管理员)
-  await page.goto('/')
-  await expect(page).toHaveURL(/\/login$/)
+  // 注册首个用户(自动成为管理员)；guest 关闭时 / 不强制跳登录
+  await page.goto('/login')
   await page.getByRole('button', { name: '注册' }).click()
   await page.getByLabel('用户名').fill('boss')
   await page.getByLabel('邮箱').fill('boss@img.li')

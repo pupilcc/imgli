@@ -5,17 +5,29 @@ import (
 	"net/url"
 	"strings"
 	"time"
-	"unicode/utf8"
 
 	"github.com/yixian-huang/imgli/internal/apperr"
 )
 
 // 引流/站点插槽校验错误（PutSettings 映射 400）。
 var (
-	ErrAnnouncementInvalid = apperr.New("announcement 配置无效")
-	ErrFooterInvalid       = apperr.New("footer 配置无效")
-	ErrHTMLInjectInvalid   = apperr.New("html_inject 配置无效")
+	ErrAnnouncementInvalid   = apperr.New("announcement 配置无效")
+	ErrFooterInvalid         = apperr.New("footer 配置无效")
+	ErrHTMLInjectInvalid     = apperr.New("html_inject 配置无效")
+	ErrHelpURLInvalid        = apperr.New("help_url 无效")
+	ErrUpgradeURLInvalid     = apperr.New("upgrade_url 无效")
+	ErrRegisterNoticeInvalid = apperr.New("register_notice 无效")
+	ErrShareBrandingInvalid  = apperr.New("share_branding 仅支持 off|site|links")
 )
+
+// Share branding modes for public /s and /a footers.
+const (
+	ShareBrandingOff   = "off"
+	ShareBrandingSite  = "site"
+	ShareBrandingLinks = "links"
+)
+
+const maxRegisterNotice = 500
 
 const (
 	maxAnnouncementText  = 500
@@ -26,13 +38,13 @@ const (
 	maxFooterGroupTitle  = 80
 )
 
-// Announcement 顶栏公告插槽。
+// Announcement 顶栏公告插槽（text / link_label 为 zh|en locale map）。
 type Announcement struct {
-	Enabled     bool   `json:"enabled"`
-	Text        string `json:"text"`
-	LinkURL     string `json:"link_url"`
-	LinkLabel   string `json:"link_label"`
-	Dismissible bool   `json:"dismissible"`
+	Enabled     bool         `json:"enabled"`
+	Text        LocaleString `json:"text"`
+	LinkURL     string       `json:"link_url"`
+	LinkLabel   LocaleString `json:"link_label"`
+	Dismissible bool         `json:"dismissible"`
 	// StartsAt / EndsAt：RFC3339 或空；空表示无界。
 	StartsAt string `json:"starts_at"`
 	EndsAt   string `json:"ends_at"`
@@ -40,13 +52,13 @@ type Announcement struct {
 
 // FooterLink 页脚单链。
 type FooterLink struct {
-	Label string `json:"label"`
-	URL   string `json:"url"`
+	Label LocaleString `json:"label"`
+	URL   string       `json:"url"`
 }
 
 // FooterGroup 页脚链接组。
 type FooterGroup struct {
-	Title string       `json:"title"`
+	Title LocaleString `json:"title"`
 	Links []FooterLink `json:"links"`
 }
 
@@ -72,9 +84,9 @@ func DefaultHTMLInject() HTMLInject {
 
 // NormalizeAnnouncement trims fields; does not validate.
 func NormalizeAnnouncement(a Announcement) Announcement {
-	a.Text = strings.TrimSpace(a.Text)
+	a.Text = a.Text.Normalize()
 	a.LinkURL = strings.TrimSpace(a.LinkURL)
-	a.LinkLabel = strings.TrimSpace(a.LinkLabel)
+	a.LinkLabel = a.LinkLabel.Normalize()
 	a.StartsAt = strings.TrimSpace(a.StartsAt)
 	a.EndsAt = strings.TrimSpace(a.EndsAt)
 	return a
@@ -83,16 +95,17 @@ func NormalizeAnnouncement(a Announcement) Announcement {
 // ValidateAnnouncement 校验公告插槽。
 func ValidateAnnouncement(a Announcement) error {
 	a = NormalizeAnnouncement(a)
-	if utf8.RuneCountInString(a.Text) > maxAnnouncementText {
+	if a.Text.MaxRunes() > maxAnnouncementText {
 		return ErrAnnouncementInvalid
 	}
-	if utf8.RuneCountInString(a.LinkLabel) > maxLinkLabel {
+	if a.LinkLabel.MaxRunes() > maxLinkLabel {
 		return ErrAnnouncementInvalid
 	}
 	if err := validateSlotURL(a.LinkURL, true); err != nil {
 		return ErrAnnouncementInvalid
 	}
-	if a.LinkURL != "" && a.LinkLabel == "" {
+	// URL 有值时至少一种语言要有 link_label
+	if a.LinkURL != "" && a.LinkLabel.Any() == "" {
 		return ErrAnnouncementInvalid
 	}
 	if a.StartsAt != "" {
@@ -112,16 +125,16 @@ func ValidateAnnouncement(a Announcement) error {
 			return ErrAnnouncementInvalid
 		}
 	}
-	if a.Enabled && a.Text == "" {
+	if a.Enabled && a.Text.Any() == "" {
 		return ErrAnnouncementInvalid
 	}
 	return nil
 }
 
-// AnnouncementActive 公开面是否应展示该公告（enabled + 时间窗）。
+// AnnouncementActive 公开面是否应展示该公告（enabled + 任一语言有文案 + 时间窗）。
 func AnnouncementActive(a Announcement, now time.Time) bool {
 	a = NormalizeAnnouncement(a)
-	if !a.Enabled || a.Text == "" {
+	if !a.Enabled || a.Text.Any() == "" {
 		return false
 	}
 	if a.StartsAt != "" {
@@ -149,8 +162,8 @@ func ValidateFooter(f Footer) error {
 	}
 	for i := range f.Groups {
 		g := &f.Groups[i]
-		g.Title = strings.TrimSpace(g.Title)
-		if utf8.RuneCountInString(g.Title) > maxFooterGroupTitle {
+		g.Title = g.Title.Normalize()
+		if g.Title.MaxRunes() > maxFooterGroupTitle {
 			return ErrFooterInvalid
 		}
 		if len(g.Links) > maxFooterLinks {
@@ -158,12 +171,12 @@ func ValidateFooter(f Footer) error {
 		}
 		for j := range g.Links {
 			l := &g.Links[j]
-			l.Label = strings.TrimSpace(l.Label)
+			l.Label = l.Label.Normalize()
 			l.URL = strings.TrimSpace(l.URL)
-			if l.Label == "" || l.URL == "" {
+			if l.Label.Any() == "" || l.URL == "" {
 				return ErrFooterInvalid
 			}
-			if utf8.RuneCountInString(l.Label) > maxLinkLabel {
+			if l.Label.MaxRunes() > maxLinkLabel {
 				return ErrFooterInvalid
 			}
 			if err := validateSlotURL(l.URL, false); err != nil {
@@ -181,6 +194,48 @@ func ValidateHTMLInject(h HTMLInject) error {
 	}
 	if strings.ContainsRune(h.Head, 0) || strings.ContainsRune(h.BodyEnd, 0) {
 		return ErrHTMLInjectInvalid
+	}
+	return nil
+}
+
+// NormalizeOptionalURL trims; empty stays empty.
+func NormalizeOptionalURL(s string) string { return strings.TrimSpace(s) }
+
+// ValidateOptionalURL empty OK; else http(s) or site-relative path.
+func ValidateOptionalURL(raw string) error {
+	return validateSlotURL(strings.TrimSpace(raw), true)
+}
+
+// NormalizeShareBranding returns off|site|links; empty/unknown → site.
+func NormalizeShareBranding(s string) string {
+	switch strings.TrimSpace(strings.ToLower(s)) {
+	case ShareBrandingOff:
+		return ShareBrandingOff
+	case ShareBrandingLinks:
+		return ShareBrandingLinks
+	case ShareBrandingSite:
+		return ShareBrandingSite
+	default:
+		return ShareBrandingSite
+	}
+}
+
+// ValidateShareBranding rejects values outside off|site|links (after trim/lower).
+func ValidateShareBranding(s string) error {
+	v := strings.TrimSpace(strings.ToLower(s))
+	switch v {
+	case "", ShareBrandingOff, ShareBrandingSite, ShareBrandingLinks:
+		return nil
+	default:
+		return ErrShareBrandingInvalid
+	}
+}
+
+// ValidateRegisterNotice max length after trim (either locale).
+func ValidateRegisterNotice(n LocaleString) error {
+	n = n.Normalize()
+	if n.MaxRunes() > maxRegisterNotice {
+		return ErrRegisterNoticeInvalid
 	}
 	return nil
 }

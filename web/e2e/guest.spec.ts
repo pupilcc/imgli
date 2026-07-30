@@ -43,12 +43,14 @@ test('游客上传：开开关→匿名上传拿链接→关开关→匿名跳�
   await page.getByRole('button', { name: 'URL', exact: true }).click()
   await expect(page.getByText(/已复制 URL/)).toBeVisible()
 
-  // admin 关回开关(main.spec 依赖匿名 / 跳 /login)
+  // admin 关回开关
   await loginBoss(page)
   await setGuestSwitch(page, false)
 
-  // 匿名再访 / → 跳登录
+  // 匿名再访 / → 仍在上传落地页，展示登录门（非硬跳 /login）
   await page.context().clearCookies()
   await page.goto('/')
-  await expect(page).toHaveURL(/\/login$/)
+  await expect(page).toHaveURL(/\/$/)
+  await expect(page.getByTestId('login-gate')).toBeVisible()
+  await expect(page.getByRole('link', { name: /登录/ })).toBeVisible()
 })

@@ -18,8 +18,7 @@ test.describe.configure({ mode: 'serial' })
 
 test.describe('C-③ 设置：偏好 / 头像 / 注销', () => {
   test('偏好在上传页生效', async ({ page }) => {
-    await page.goto('/')
-    await expect(page).toHaveURL(/\/login$/)
+    await page.goto('/login')
     await page.getByRole('button', { name: '注册' }).click()
     await page.getByLabel('用户名').fill(PREF_USER.username)
     await page.getByLabel('邮箱').fill(PREF_USER.email)
@@ -65,8 +64,7 @@ test.describe('C-③ 设置：偏好 / 头像 / 注销', () => {
   })
 
   test('注销全流', async ({ page, request }) => {
-    await page.goto('/')
-    await expect(page).toHaveURL(/\/login$/)
+    await page.goto('/login')
     await page.getByRole('button', { name: '注册' }).click()
     await page.getByLabel('用户名').fill(DEL_USER.username)
     await page.getByLabel('邮箱').fill(DEL_USER.email)

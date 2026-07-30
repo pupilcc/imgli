@@ -191,6 +191,26 @@ export default {
 
   // Site slots (announcement / footer / HTML inject)
   slotsTab: 'Site slots',
+  slotsSubPublic: 'Public CTAs',
+  slotsSubAnnouncement: 'Announcement',
+  slotsSubFooter: 'Footer',
+  slotsSubHtml: 'HTML',
+  localeZh: '中文',
+  localeEn: 'English',
+  announcementSchedule: 'Schedule (optional)',
+  publicCopy: 'Public copy & CTAs',
+  publicCopyHint:
+    'Help/upgrade URLs and register notice are operator-owned (empty by default). Product credit “imgli” stays; use this for your docs and trial copy—do not strip open-source branding.',
+  helpUrl: 'Help / docs URL',
+  upgradeUrl: 'Self-host / upgrade URL',
+  registerNotice: 'Register notice (optional)',
+  registerNoticeHint: 'Shown on the register form only. Use for trial limits etc. Leave empty to hide.',
+  shareBranding: 'Share page site footer',
+  shareBrandingOff: 'OSS credit only',
+  shareBrandingSite: 'Credit + site name',
+  shareBrandingLinks: 'Credit + site + links',
+  shareBrandingHint:
+    'Open-source product credit (imgli) is always shown. “off” only hides this instance’s name/links; “links” shows help/upgrade when set.',
   announcement: 'Announcement bar',
   announcementHint:
     'When enabled, shown at the top of the public UI. Optional schedule and dismiss. Stored in DB for self-host branding/links.',

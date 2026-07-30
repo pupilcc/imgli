@@ -4,6 +4,7 @@ import { ApiError } from '../../api/client'
 import { useLogin, useRegister, useConfig } from '../../api/hooks'
 import { useT } from '../../i18n'
 import { errorText } from '../../i18n/errorText'
+import { pickLocale } from '../../lib/locale'
 import { STRONG_RE } from '../../lib/password'
 import { safeNext } from '../../lib/safeNext'
 import { useGlobal } from '../../store'
@@ -19,7 +20,7 @@ type Mode = 'login' | 'reg'
 const EMAIL_RE = /^\S+@\S+\.\S+$/
 
 export function AuthPage() {
-  const { t } = useT()
+  const { t, lang } = useT()
   const [mode, setMode] = useState<Mode>('login')
   const [username, setUsername] = useState('')
   const [account, setAccount] = useState('')
@@ -40,6 +41,10 @@ export function AuthPage() {
   const config = useConfig()
   const regClosed = config.data?.registration_mode === 'closed'
   const regInvite = config.data?.registration_mode === 'invite'
+  const siteName = (config.data?.site_name || 'imgli').trim() || 'imgli'
+  const registerNotice = pickLocale(config.data?.register_notice, lang)
+  const helpURL = (config.data?.help_url || '').trim()
+  const upgradeURL = (config.data?.upgrade_url || '').trim()
   // 注册关闭时强制回登录模式(含直接停在 reg 态的场景)
   useEffect(() => {
     if (regClosed && mode === 'reg') setMode('login')
@@ -118,7 +123,7 @@ export function AuthPage() {
           </div>
         </div>
         <div className={styles.copyright}>
-          {t('auth.copyright', { year: new Date().getFullYear() })}
+          {t('auth.copyright', { year: new Date().getFullYear(), site: siteName })}
         </div>
         <div className={styles.deco} />
       </aside>
@@ -133,6 +138,27 @@ export function AuthPage() {
         <div className={styles.formBox}>
           <div className={styles.kicker}>{isLogin ? t('auth.signInKicker') : t('auth.createAccountKicker')}</div>
           <h1 className={styles.heading}>{isLogin ? t('auth.welcomeBack') : t('auth.createAccount')}</h1>
+          {!isLogin && !regClosed && registerNotice && (
+            <p className={styles.trialNote} data-testid="reg-trial-note">
+              {registerNotice}
+              {(helpURL || upgradeURL) && (
+                <>
+                  {' '}
+                  {helpURL && (
+                    <a href={helpURL} rel="noopener noreferrer">
+                      {t('auth.helpLink')}
+                    </a>
+                  )}
+                  {helpURL && upgradeURL ? ' · ' : null}
+                  {upgradeURL && (
+                    <a href={upgradeURL} rel="noopener noreferrer">
+                      {t('auth.upgradeLink')}
+                    </a>
+                  )}
+                </>
+              )}
+            </p>
+          )}
 
           <div className={styles.switch}>
             {regClosed ? (

@@ -1,4 +1,10 @@
-import type { AdminSettings, FooterGroup, SiteAnnouncement } from '../../../api/types'
+import type { AdminSettings, ShareBranding, SiteAnnouncement } from '../../../api/types'
+import { toLocaleMap } from '../../../lib/locale'
+
+export type FormLocale = { zh: string; en: string }
+
+export type FormFooterLink = { label: FormLocale; url: string }
+export type FormFooterGroup = { title: FormLocale; links: FormFooterLink[] }
 
 export type ModProvider = 'webhook' | 'aliyun' | 'tencent' | 'openai' | 'nsfwjs'
 
@@ -17,11 +23,13 @@ export const SETTINGS_TABS: {
   { key: 'processing', labelKey: 'processing' },
 ]
 
+export const emptyLocale = (): FormLocale => ({ zh: '', en: '' })
+
 export const emptyAnn = (): SiteAnnouncement => ({
   enabled: false,
-  text: '',
+  text: emptyLocale(),
   link_url: '',
-  link_label: '',
+  link_label: emptyLocale(),
   dismissible: true,
   starts_at: '',
   ends_at: '',
@@ -66,9 +74,13 @@ export interface FormState {
   maxEdge: number
   stripExif: boolean
   ann: SiteAnnouncement
-  footerGroups: FooterGroup[]
+  footerGroups: FormFooterGroup[]
   htmlHead: string
   htmlBodyEnd: string
+  helpUrl: string
+  upgradeUrl: string
+  registerNotice: FormLocale
+  shareBranding: ShareBranding
 }
 
 export type FormSet = <K extends keyof FormState>(k: K, v: FormState[K]) => void
@@ -122,9 +134,9 @@ export function formOf(s: AdminSettings): FormState {
     ann: s.announcement
       ? {
           enabled: !!s.announcement.enabled,
-          text: s.announcement.text ?? '',
+          text: toLocaleMap(s.announcement.text),
           link_url: s.announcement.link_url ?? '',
-          link_label: s.announcement.link_label ?? '',
+          link_label: toLocaleMap(s.announcement.link_label),
           dismissible: s.announcement.dismissible !== false,
           starts_at: s.announcement.starts_at ?? '',
           ends_at: s.announcement.ends_at ?? '',
@@ -132,11 +144,21 @@ export function formOf(s: AdminSettings): FormState {
       : emptyAnn(),
     footerGroups: s.footer?.groups?.length
       ? s.footer.groups.map((g) => ({
-          title: g.title ?? '',
-          links: (g.links ?? []).map((l) => ({ label: l.label ?? '', url: l.url ?? '' })),
+          title: toLocaleMap(g.title),
+          links: (g.links ?? []).map((l) => ({
+            label: toLocaleMap(l.label),
+            url: l.url ?? '',
+          })),
         }))
       : [],
     htmlHead: s.html_inject?.head ?? '',
     htmlBodyEnd: s.html_inject?.body_end ?? '',
+    helpUrl: s.help_url ?? '',
+    upgradeUrl: s.upgrade_url ?? '',
+    registerNotice: toLocaleMap(s.register_notice),
+    shareBranding:
+      s.share_branding === 'off' || s.share_branding === 'links'
+        ? s.share_branding
+        : 'site',
   }
 }

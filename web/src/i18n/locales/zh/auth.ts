@@ -1,7 +1,8 @@
 export default {
   headlineLine1: '拖进来，粘贴走。',
   headlineLine2: '你的图片外链，就这么简单。',
-  copyright: '© {year} img.li · 图鲤 — 图片默认永久保存',
+  // 产品开源署名固定；{site} 为当前站点名（默认即 img.li）
+  copyright: '© {year} {site} · 图鲤 · 开源项目 imgli',
 
   signInKicker: 'SIGN IN',
   createAccountKicker: 'CREATE ACCOUNT',
@@ -10,6 +11,8 @@ export default {
   login: '登录',
   register: '注册',
   regClosed: '本站已关闭注册，如需账号请联系管理员',
+  helpLink: '帮助文档',
+  upgradeLink: '自托管 / 升级',
 
   username: '用户名',
   usernamePlaceholder: '你的昵称',

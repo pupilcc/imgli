@@ -10,9 +10,22 @@ separate version in `go.mod` or `web/package.json`.
 
 ## [Unreleased]
 
+### Fixed
+
+- **Detail modal scroll:** opening 访问控制 / 访问统计 no longer scrolls the page behind; body is fixed-locked and the right pane is a real overflow container.
+- **Plaza switch lag:** admin `PutSettings` now uses the process-shared `settings.Service`, so `plaza_enabled` cache invalidates immediately (fixes e2e 404 race and up-to-30s stale enable).
+- **CI unit/e2e:** default theme is `system` (store test); Nav quota `getAllByText(/GB/)`; e2e registers via `/login` and guest-off asserts login-gate on `/`.
+
 ### Added
 
+- **Detail modal density:** sticky header/actions; primary copy+QR first; access control & stats in collapsible `<details>`; body scroll lock + fixed modal height so pane scrolls (not the page behind).
+- **e2e:** guest-off landing stays on `/` with login-gate; specs register via `/login` instead of expecting hard redirect.
+- **Admin slots density:** sub-tabs (CTA / announcement / footer / HTML); zh|en side-by-side; schedule fields folded.
+- **Site slots UI polish:** announcement bar soft strip (NOTICE kicker, chip CTA, dismiss control) aligned with Nav/Quota; footer links use equal-width `auto-fit` columns (not left-packed `auto-fill`) + centered meta; no brand billboard.
+- **Locale-safe slots:** public config announcement/footer/`register_notice` accept `{zh,en}` maps (legacy string still OK); `pickLocale` in SPA. Regression tests in `SiteSlots.test.tsx` / `locale.test.ts`. Ops checklist: `docs/ops-deploy-checklist.md`.
+- **Operator-owned public copy:** settings `help_url`, `upgrade_url`, `register_notice`, `share_branding` (`off|site|links`) on admin + public `/config` for help/upgrade CTAs (defaults empty). **Product brand kept:** SPA meta/title `img.li · 图鲤`, auth copyright 开源 imgli, share footer always shows OSS credit (imgli · 图鲤); `share_branding` only toggles instance name/links (default `site`).
 - **Share UX:** detail modal lists share page URL first (public); upload success row copies share page; access password Generate + copy before save; clearer hint that existing  links become gated.
+- **Ops helpers:** `scripts/ops-set-public-slots.py` (slots + public copy for img.li), `scripts/ops-patch-imglicom-home.py` (+ JSON); `docs/community/post-drafts-zh.md` for launch posts.
 
 ## [0.3.0] - 2026-07-30
 

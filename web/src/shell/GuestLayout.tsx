@@ -16,7 +16,7 @@ export function GuestLayout() {
   const { data: config } = useConfig()
   const guestOn = !!config?.guest_upload_enabled
   return (
-    <>
+    <div className={styles.shell}>
       <header className={styles.nav}>
         <span className={styles.brand} aria-label="img.li">
           <BrandLockup badge={guestOn ? 'GUEST' : undefined} />
@@ -39,7 +39,7 @@ export function GuestLayout() {
       <main className={styles.main}>
         <Outlet />
       </main>
-      <SiteFooter footer={config?.footer} />
-    </>
+      <SiteFooter footer={config?.footer} siteName={config?.site_name} />
+    </div>
   )
 }

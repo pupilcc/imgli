@@ -68,6 +68,9 @@ export function TokensTab() {
           {t('settings.generateToken')}
         </Button>
       </div>
+      <p className={own.onboarding} data-testid="tokens-onboarding">
+        {t('settings.tokensOnboarding')}
+      </p>
 
       {fresh && (
         <div className={own.freshBox}>

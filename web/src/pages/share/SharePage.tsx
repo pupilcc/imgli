@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { useParams, Link } from 'react-router'
 import { ApiError } from '../../api/client'
-import { useShareImage, useUnlockShare } from '../../api/hooks'
+import { useConfig, useShareImage, useUnlockShare } from '../../api/hooks'
 import { useT } from '../../i18n'
 import { copyText } from '../../lib/copy'
 import { formatBytes } from '../../lib/format'
@@ -20,8 +20,14 @@ export function SharePage() {
   const toggleTheme = useGlobal((s) => s.toggleTheme)
   const q = useShareImage(key)
   const unlock = useUnlockShare()
+  const cfg = useConfig()
   const data = q.data
   const [pw, setPw] = useState('')
+  const siteName = (cfg.data?.site_name || 'imgli').trim() || 'imgli'
+  const branding = cfg.data?.share_branding || 'off'
+  const helpURL = (cfg.data?.help_url || '').trim()
+  const upgradeURL = (cfg.data?.upgrade_url || '').trim()
+  const showBrand = branding === 'site' || branding === 'links'
 
   const notFound = q.error instanceof ApiError && q.error.httpStatus === 404
   const needPw = !!(data?.password_required || (data?.has_access_password && !data?.links?.url))
@@ -173,6 +179,35 @@ export function SharePage() {
           </div>
         )}
       </main>
+      <footer className={styles.brandFoot} data-testid="share-brand-foot">
+        <span>{t('share.ossCredit')}</span>
+        {showBrand && (
+          <>
+            <span className={styles.brandSep}>·</span>
+            <span>{t('share.brandVia', { site: siteName })}</span>
+          </>
+        )}
+        {branding === 'links' && (helpURL || upgradeURL) && (
+          <>
+            {helpURL && (
+              <>
+                <span className={styles.brandSep}>·</span>
+                <a href={helpURL} rel="noopener noreferrer">
+                  {t('share.helpLink')}
+                </a>
+              </>
+            )}
+            {upgradeURL && (
+              <>
+                <span className={styles.brandSep}>·</span>
+                <a href={upgradeURL} rel="noopener noreferrer">
+                  {t('share.upgradeLink')}
+                </a>
+              </>
+            )}
+          </>
+        )}
+      </footer>
     </div>
   )
 }

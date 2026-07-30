@@ -12,14 +12,20 @@ export function AppLayout() {
   const quota = useQuota()
   if (!user) return null
   return (
-    <>
+    <div className={styles.shell}>
       <Nav user={user} />
-      {quota.data && <QuotaAlertBar used={quota.data.used} total={quota.data.total} />}
+      {quota.data && (
+        <QuotaAlertBar
+          used={quota.data.used}
+          total={quota.data.total}
+          upgradeUrl={config?.upgrade_url}
+        />
+      )}
       <main className={styles.main}>
         <Outlet />
       </main>
-      <SiteFooter footer={config?.footer} />
+      <SiteFooter footer={config?.footer} siteName={config?.site_name} />
       <TabBar />
-    </>
+    </div>
   )
 }

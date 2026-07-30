@@ -101,6 +101,7 @@ export default {
 
   // Tokens
   tokensKicker: 'API TOKENS — Key management',
+  tokensOnboarding: 'Three steps: create a token → copy the PicGo / CLI snippet below → configure your editor.',
   generateToken: '＋ New Token',
   freshTokenTitle: '⚠ New token created — shown in plain text only once; save it now',
   copy: 'Copy',

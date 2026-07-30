@@ -14,4 +14,8 @@ export default {
   retry: '重试',
   notFound: '页面不存在',
   notFoundDesc: '链接可能已失效或输入有误',
+  announcementAria: '站点公告',
+  announcementKicker: 'NOTICE',
+  /** 仅当站名未带 img.li/图鲤 时附在 © 行后，避免重复轰炸 */
+  footerOss: '开源 imgli',
 }

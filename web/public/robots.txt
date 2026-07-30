@@ -1,0 +1,17 @@
+# Public image host SPA. Prefer product/docs SEO on imgli.com / docs.imgli.com.
+User-agent: *
+Allow: /
+Allow: /s/
+Allow: /a/
+Disallow: /admin
+Disallow: /admin/
+Disallow: /settings
+Disallow: /settings/
+Disallow: /trash
+Disallow: /trash/
+Disallow: /api/
+Disallow: /i/
+Disallow: /t/
+
+# Share pages: allow crawl for previews; thin UGC not a ranking strategy.
+# Product SEO lives at https://imgli.com and https://docs.imgli.com

@@ -7,17 +7,26 @@ beforeEach(() => {
   document.body.dataset.theme = ''
 })
 
-it('initialTheme 优先 localStorage，其次系统偏好', () => {
-  expect(initialTheme()).toBe('light') // matchMedia stub matches:false
+it('initialTheme 优先 localStorage，缺省 system', () => {
+  expect(initialTheme()).toBe('system')
   localStorage.setItem('imgli-theme', 'dark')
   expect(initialTheme()).toBe('dark')
+  localStorage.setItem('imgli-theme', 'light')
+  expect(initialTheme()).toBe('light')
 })
 
-it('toggleTheme 持久化并写 body dataset', () => {
+it('toggleTheme 循环 light→dark→system 并写 body dataset', () => {
+  // beforeEach 把 store theme 置为 light
   act(() => useGlobal.getState().toggleTheme())
   expect(useGlobal.getState().theme).toBe('dark')
   expect(localStorage.getItem('imgli-theme')).toBe('dark')
   expect(document.body.dataset.theme).toBe('dark')
+
+  act(() => useGlobal.getState().toggleTheme())
+  expect(useGlobal.getState().theme).toBe('system')
+  expect(localStorage.getItem('imgli-theme')).toBe('system')
+  // resolveTheme(system) 走 matchMedia stub（matches:false）→ light
+  expect(document.body.dataset.theme).toBe('light')
 })
 
 it('pushToast 1.6s 后自动移除', () => {

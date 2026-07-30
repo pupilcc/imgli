@@ -12,6 +12,7 @@ import (
 	"github.com/yixian-huang/imgli/internal/handler"
 	"github.com/yixian-huang/imgli/internal/model"
 	"github.com/yixian-huang/imgli/internal/service/imagesvc"
+	"github.com/yixian-huang/imgli/internal/service/settings"
 	"github.com/yixian-huang/imgli/internal/service/storagesvc"
 )
 
@@ -129,23 +130,33 @@ func (s *Server) ogInject(r *http.Request) string {
 			return ""
 		}
 		title := html.EscapeString(row.Img.Name)
+		// UGC share pages: allow link previews but do not target search ranking.
+		robots := `<meta name="robots" content="noindex,follow"/>`
+		siteLabel := s.ogSiteLabel()
 		if strings.TrimSpace(row.Img.AccessPasswordHash) != "" {
 			return fmt.Sprintf(`
+%s
 <meta property="og:type" content="website"/>
 <meta property="og:title" content="%s"/>
 <meta name="twitter:card" content="summary"/>
-`, title)
+`, robots, title)
 		}
 		imgURL := html.EscapeString(base + "/i/" + row.Img.Key + "." + row.Img.Ext)
 		pageURL := html.EscapeString(base + "/s/" + row.Img.Key)
+		desc := html.EscapeString(fmt.Sprintf("%s · %s", row.Img.Name, siteLabel))
+		if row.File.Width > 0 && row.File.Height > 0 {
+			desc = html.EscapeString(fmt.Sprintf("%s · %d×%d · %s", row.Img.Name, row.File.Width, row.File.Height, siteLabel))
+		}
 		return fmt.Sprintf(`
+%s
 <meta property="og:type" content="website"/>
 <meta property="og:title" content="%s"/>
+<meta property="og:description" content="%s"/>
 <meta property="og:url" content="%s"/>
 <meta property="og:image" content="%s"/>
 <meta name="twitter:card" content="summary_large_image"/>
 <meta name="twitter:image" content="%s"/>
-`, title, pageURL, imgURL, imgURL)
+`, robots, title, desc, pageURL, imgURL, imgURL)
 	case strings.HasPrefix(p, "/a/"):
 		idStr := strings.TrimPrefix(p, "/a/")
 		idStr = strings.Split(idStr, "/")[0]
@@ -165,13 +176,35 @@ func (s *Server) ogInject(r *http.Request) string {
 <meta name="twitter:image" content="%s"/>
 `, iu, iu)
 		}
+		siteLabel := s.ogSiteLabel()
 		return fmt.Sprintf(`
+<meta name="robots" content="noindex,follow"/>
 <meta property="og:type" content="website"/>
 <meta property="og:title" content="%s"/>
+<meta property="og:description" content="%s"/>
 <meta property="og:url" content="%s"/>
 <meta name="twitter:card" content="summary_large_image"/>
-%s`, title, pageURL, imgMeta)
+%s`, title, html.EscapeString(alb.Name+" · "+siteLabel), pageURL, imgMeta)
 	default:
 		return ""
 	}
+}
+
+// ogSiteLabel prefers configured site_name; falls back to product brand img.li.
+func (s *Server) ogSiteLabel() string {
+	if s.opts.DB != nil {
+		var name string
+		if err := settings.New(s.opts.DB).Get(model.SettingSiteName, &name); err == nil {
+			name = strings.TrimSpace(name)
+			if name != "" {
+				return name
+			}
+		}
+	}
+	if s.opts.Cfg != nil {
+		if h := strings.TrimSpace(s.opts.Cfg.BaseURL); h != "" {
+			return strings.TrimRight(h, "/")
+		}
+	}
+	return "img.li"
 }

@@ -9,5 +9,6 @@ export default {
   quotaFull: '⛔ Storage full. Uploads disabled.',
   quotaWarn: '⚠ {pct}% storage used. Approaching quota limit.',
   manageQuota: 'Manage storage →',
+  upgradeCta: 'Self-host / upgrade →',
   confirmDelete: 'Confirm delete?',
 }

@@ -9,5 +9,6 @@ export default {
   quotaFull: '⛔ 容量已满，上传已禁用。',
   quotaWarn: '⚠ 容量已使用 {pct}%，接近配额上限。',
   manageQuota: '管理容量 →',
+  upgradeCta: '自托管 / 升级说明 →',
   confirmDelete: '确认删除？',
 }

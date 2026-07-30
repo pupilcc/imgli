@@ -28,6 +28,11 @@ const (
 	SettingAnnouncement = "announcement" // 顶栏公告 JSON
 	SettingFooter       = "footer"       // 页脚链接组 JSON
 	SettingHTMLInject   = "html_inject"  // 自定义 HTML 注入 JSON（head / body_end）
+	// 站长可配公开文案/CTA（默认空/关；运营站用 Admin 填，不硬编码作者域名）
+	SettingHelpURL         = "help_url"          // 帮助/文档链接（可选）
+	SettingUpgradeURL      = "upgrade_url"       // 满额/升级/自托管说明（可选）
+	SettingRegisterNotice  = "register_notice"   // 注册页短说明（可选）
+	SettingShareBranding   = "share_branding"    // off | site | links
 )
 
 // settingModerationDefaultJSON 是 moderation.DefaultConfig() 的 JSON 字面量，手写在此
@@ -50,8 +55,10 @@ const settingHotlinkDefaultJSON = `{"enabled":false,"allowed_domains":[],"allow_
 const settingProcessingDefaultJSON = `{"text_watermark":{"enabled":false,"text":"","position":"br","opacity":0.35,"size_ratio":0.04},"max_edge":0,"strip_exif":true}`
 
 // 插槽默认 JSON：与 adminsvc.DefaultAnnouncement/Footer/HTMLInject 一致。
-const settingAnnouncementDefaultJSON = `{"enabled":false,"text":"","link_url":"","link_label":"","dismissible":true,"starts_at":"","ends_at":""}`
+const settingAnnouncementDefaultJSON = `{"enabled":false,"text":{"zh":"","en":""},"link_url":"","link_label":{"zh":"","en":""},"dismissible":true,"starts_at":"","ends_at":""}`
 const settingFooterDefaultJSON = `{"groups":[]}`
+// register_notice 播种为 locale map；历史库可能是纯字符串，读侧 LocaleString 兼容。
+const settingRegisterNoticeDefaultJSON = `{"zh":"","en":""}`
 const settingHTMLInjectDefaultJSON = `{"head":"","body_end":""}`
 
 // Open 按配置打开数据库。sqlite 未配置 DSN 时落到 DataDir/imgli.db 并开 WAL。
@@ -212,6 +219,11 @@ func Seed(db *gorm.DB) error {
 			SettingAnnouncement:     settingAnnouncementDefaultJSON,
 			SettingFooter:           settingFooterDefaultJSON,
 			SettingHTMLInject:       settingHTMLInjectDefaultJSON,
+			SettingHelpURL:         `""`,
+			SettingUpgradeURL:      `""`,
+			SettingRegisterNotice:  settingRegisterNoticeDefaultJSON,
+			// 默认 site：展示站名；开源产品署名在前端始终保留
+			SettingShareBranding: `"site"`,
 		} {
 			if err := tx.Where("key = ?", k).
 				FirstOrCreate(&Setting{Key: k, Value: v}).Error; err != nil {

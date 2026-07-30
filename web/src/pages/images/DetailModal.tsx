@@ -59,7 +59,39 @@ export function DetailModal({ items, focusKey, onClose, onNavigate }: Props) {
       if (e.key === 'ArrowRight' && nextKey) onNavigate(nextKey)
     }
     document.addEventListener('keydown', onKey)
-    return () => document.removeEventListener('keydown', onKey)
+
+    // 锁住背后主页滚动：仅 overflow:hidden 不够（有的页面滚的是 html 或仍会链式穿透）
+    const scrollY = window.scrollY
+    const prev = {
+      htmlOverflow: document.documentElement.style.overflow,
+      bodyOverflow: document.body.style.overflow,
+      bodyPosition: document.body.style.position,
+      bodyTop: document.body.style.top,
+      bodyLeft: document.body.style.left,
+      bodyRight: document.body.style.right,
+      bodyWidth: document.body.style.width,
+    }
+    document.documentElement.style.overflow = 'hidden'
+    document.body.style.overflow = 'hidden'
+    document.body.style.position = 'fixed'
+    document.body.style.top = `-${scrollY}px`
+    document.body.style.left = '0'
+    document.body.style.right = '0'
+    document.body.style.width = '100%'
+
+    return () => {
+      document.removeEventListener('keydown', onKey)
+      document.documentElement.style.overflow = prev.htmlOverflow
+      document.body.style.overflow = prev.bodyOverflow
+      document.body.style.position = prev.bodyPosition
+      document.body.style.top = prev.bodyTop
+      document.body.style.left = prev.bodyLeft
+      document.body.style.right = prev.bodyRight
+      document.body.style.width = prev.bodyWidth
+      // 用 scrollTop 恢复，避免 jsdom 对 scrollTo 的 not-implemented 噪声
+      document.documentElement.scrollTop = scrollY
+      document.body.scrollTop = scrollY
+    }
   }, [prevKey, nextKey, onClose, onNavigate])
 
   // 切换图片时复位内联编辑
@@ -202,193 +234,245 @@ export function DetailModal({ items, focusKey, onClose, onNavigate }: Props) {
             <button type="button" className={styles.closeBtn} onClick={onClose}>×</button>
           </div>
 
-          <div className={styles.metaTable}>
-            <span className={styles.metaKey}>{t('images.dims')}</span><span className={styles.metaVal}>{base.width} × {base.height}</span>
-            <span className={styles.metaKey}>{t('images.size')}</span><span className={styles.metaVal}>{formatBytes(base.size)}</span>
-            <span className={styles.metaKey}>MIME</span><span className={styles.metaVal}>{d?.mime ?? '…'}</span>
-            <span className={styles.metaKey}>{t('images.uploadedAt')}</span><span className={styles.metaVal}>{formatDate(base.created_at)}</span>
-            <span className={styles.metaKey}>{t('images.uploadIp')}</span>
-            <span className={`${styles.metaVal} ${styles.metaMuted}`}>{d ? t('images.ipSelfOnly', { ip: d.upload_ip || '—' }) : '…'}</span>
-            <span className={styles.metaKey}>{t('images.album')}</span><span className={styles.metaVal}>{albumName}</span>
-            <span className={styles.metaKey}>{t('images.visibility')}</span>
-            <button
-              type="button"
-              className={styles.visToggle}
-              disabled={update.isPending}
-              onClick={() => update.mutate({ key: base.key, body: { visibility: base.visibility === 'public' ? 'private' : 'public' } })}
-            >
-              {visLabel} — {t('images.clickToToggle')}
-            </button>
-            <span className={styles.metaKey}>{t('images.slug')}</span>
-            <span className={styles.metaVal}>
-              <input
-                className={styles.renameInput}
-                defaultValue={base.slug ?? ''}
-                placeholder="my-photo"
-                onBlur={(e) => {
-                  const v = e.target.value.trim().toLowerCase()
-                  const cur = (base.slug ?? '').toLowerCase()
-                  if (v === cur) return
-                  update.mutate({ key: base.key, body: { slug: v } })
-                }}
-              />
-            </span>
-            <span className={styles.metaKey}>{t('images.expiry')}</span>
-            <span className={styles.metaVal}>{expiryDisplay}</span>
-          </div>
-
-          <div className={styles.expiryEdit}>
-            <Segmented<ExpiryKey>
-              mono
-              options={EXPIRY_PRESETS.map((p) => ({
-                value: p.key,
-                label: t(EXPIRY_LABEL_KEY[p.key]),
-              }))}
-              value={expiryKey}
-              onChange={(k) => {
-                setExpiryKey(k)
-                const p = EXPIRY_PRESETS.find((x) => x.key === k)
-                setExpiry(p?.sec ?? 0)
-              }}
-            />
-            {expiresAt && (
+          <div className={styles.paneScroll}>
+            <div className={styles.metaTable}>
+              <span className={styles.metaKey}>{t('images.dims')}</span>
+              <span className={styles.metaVal}>{base.width} × {base.height}</span>
+              <span className={styles.metaKey}>{t('images.size')}</span>
+              <span className={styles.metaVal}>{formatBytes(base.size)}</span>
+              <span className={styles.metaKey}>MIME</span>
+              <span className={styles.metaVal}>{d?.mime ?? '…'}</span>
+              <span className={styles.metaKey}>{t('images.uploadedAt')}</span>
+              <span className={styles.metaVal}>{formatDate(base.created_at)}</span>
+              <span className={styles.metaKey}>{t('images.album')}</span>
+              <span className={styles.metaVal}>{albumName}</span>
+              <span className={styles.metaKey}>{t('images.visibility')}</span>
               <button
                 type="button"
-                className={styles.removeExpiry}
+                className={styles.visToggle}
                 disabled={update.isPending}
-                onClick={() => {
-                  setExpiryKey('never')
-                  setExpiry(0)
-                }}
+                onClick={() =>
+                  update.mutate({
+                    key: base.key,
+                    body: { visibility: base.visibility === 'public' ? 'private' : 'public' },
+                  })
+                }
               >
-                {t('images.removeExpiry')}
+                {visLabel} — {t('images.clickToToggle')}
               </button>
-            )}
-            <div className={styles.expiryWarn}>{t('images.expiryWarn')}</div>
-          </div>
-
-          <div className={styles.metaTable}>
-            <span className={styles.metaKey}>{t('images.maxViews')}</span>
-            <span className={styles.metaVal}>
-              {maxViews > 0
-                ? t('images.maxViewsUsed', { used: viewsServed, max: maxViews })
-                : t('upload.maxViewsUnlimited')}
-            </span>
-          </div>
-          <div className={styles.expiryEdit}>
-            <Segmented<MaxViewsKey>
-              mono
-              options={MAX_VIEWS_PRESETS.map((p) => ({
-                value: p.key,
-                label: t(MAX_VIEWS_LABEL_KEY[p.key]),
-              }))}
-              value={maxViewsKey}
-              onChange={(k) => {
-                const p = MAX_VIEWS_PRESETS.find((x) => x.key === k)
-                setMaxViews(p?.n ?? 0)
-              }}
-            />
-            <div className={styles.expiryWarn}>{t('images.maxViewsHint')}</div>
-          </div>
-
-          <div className={styles.metaTable}>
-            <span className={styles.metaKey}>{t('images.accessPassword')}</span>
-            <span className={styles.metaVal}>
-              {hasAccessPassword ? t('images.accessPasswordSet') : t('images.accessPasswordNone')}
-            </span>
-          </div>
-          <div className={styles.expiryEdit}>
-            <input
-              className={styles.renameInput}
-              type="text"
-              value={accessPw}
-              placeholder={t('images.accessPasswordPlaceholder')}
-              onChange={(e) => setAccessPw(e.target.value)}
-              autoComplete="off"
-              spellCheck={false}
-            />
-            <div className={styles.renameRow}>
-              <button
-                type="button"
-                className={styles.removeExpiry}
-                disabled={update.isPending}
-                onClick={fillRandomPassword}
-              >
-                {t('images.accessPasswordGenerate')}
-              </button>
-              {accessPw.trim() ? (
-                <button
-                  type="button"
-                  className={styles.removeExpiry}
-                  onClick={() => copyText(accessPw.trim(), t('images.accessPassword'))}
-                >
-                  {t('images.accessPasswordCopy')}
-                </button>
-              ) : null}
-              <button
-                type="button"
-                className={styles.renameSave}
-                disabled={!accessPw.trim() || update.isPending}
-                onClick={() => setAccessPassword(accessPw.trim())}
-              >
-                {t('images.accessPasswordSave')}
-              </button>
-              {hasAccessPassword && (
-                <button
-                  type="button"
-                  className={styles.removeExpiry}
-                  disabled={update.isPending}
-                  onClick={() => setAccessPassword('')}
-                >
-                  {t('images.accessPasswordClear')}
-                </button>
-              )}
+              <span className={styles.metaKey}>{t('images.slug')}</span>
+              <span className={styles.metaVal}>
+                <input
+                  className={styles.renameInput}
+                  defaultValue={base.slug ?? ''}
+                  placeholder="my-photo"
+                  onBlur={(e) => {
+                    const v = e.target.value.trim().toLowerCase()
+                    const cur = (base.slug ?? '').toLowerCase()
+                    if (v === cur) return
+                    update.mutate({ key: base.key, body: { slug: v } })
+                  }}
+                />
+              </span>
+              <span className={styles.metaKey}>{t('images.uploadIp')}</span>
+              <span className={`${styles.metaVal} ${styles.metaMuted}`}>
+                {d ? t('images.ipSelfOnly', { ip: d.upload_ip || '—' }) : '…'}
+              </span>
             </div>
-            <div className={styles.expiryWarn}>{t('images.accessPasswordHint')}</div>
-          </div>
 
-          <div className={styles.copySection}>
-            <div className={styles.copyCol}>
-              <div className={styles.kicker}>COPY LINK</div>
-              {copyRows.map((r) => (
-                <div key={r.kind} className={styles.copyRow}>
-                  <span className={styles.copyKind}>{r.kind}</span>
-                  <span className={styles.copyText}>{r.text}</span>
-                  <button type="button" className={styles.copyBtn} onClick={() => copyText(r.text, t('images.linkLabel', { kind: r.kind }))}>
-                    {t('images.copy')}
-                  </button>
-                </div>
-              ))}
-            </div>
-            <div className={styles.qrCol}>
-              <div className={styles.kicker}>QR</div>
-              <div className={styles.qrBox} dangerouslySetInnerHTML={{ __html: qrSVG }} />
-            </div>
-          </div>
-
-          {stats.isError || !stats.data ? null : (
-            <div className={styles.accessSection}>
-              <div className={styles.kicker}>ACCESS — {t('images.accessLabel')}</div>
-              <div className={styles.accessTotal}>{t('images.totalViews', { count: stats.data.total })}</div>
-              {(() => {
-                const daily = stats.data.daily
-                const max = daily.reduce((m, day) => (day.views > m ? day.views : m), 0)
-                if (max === 0) return <div className={styles.accessEmpty}>{t('images.noAccess')}</div>
-                return (
-                  <div className={styles.accessBars} aria-label={t('images.last30Days')}>
-                    {daily.map((day) => (
-                      <div
-                        key={day.date}
-                        className={styles.accessBar}
-                        title={`${day.date}: ${day.views}`}
-                        style={{ height: day.views > 0 ? `${Math.max(4, Math.round((day.views / max) * 100))}%` : '0%' }}
-                      />
-                    ))}
+            <div className={styles.copySection}>
+              <div className={styles.copyCol}>
+                <div className={styles.kicker}>COPY LINK</div>
+                {copyRows.map((r) => (
+                  <div key={r.kind} className={styles.copyRow}>
+                    <span className={styles.copyKind}>{r.kind}</span>
+                    <span className={styles.copyText}>{r.text}</span>
+                    <button
+                      type="button"
+                      className={styles.copyBtn}
+                      onClick={() => copyText(r.text, t('images.linkLabel', { kind: r.kind }))}
+                    >
+                      {t('images.copy')}
+                    </button>
                   </div>
-                )
-              })()}
+                ))}
+              </div>
+              <div className={styles.qrCol}>
+                <div className={styles.kicker}>QR</div>
+                <div className={styles.qrBox} dangerouslySetInnerHTML={{ __html: qrSVG }} />
+              </div>
             </div>
-          )}
+
+            <details
+              className={styles.fold}
+              open={hasAccessPassword || maxViews > 0 || !!expiresAt}
+            >
+              <summary>
+                {t('images.accessControl')}
+                <span className={styles.foldSummaryHint}>{t('images.accessControlHint')}</span>
+              </summary>
+              <div className={styles.foldBody}>
+                <div className={styles.metaTable}>
+                  <span className={styles.metaKey}>{t('images.expiry')}</span>
+                  <span className={styles.metaVal}>{expiryDisplay}</span>
+                </div>
+                <div className={styles.expiryEdit}>
+                  <Segmented<ExpiryKey>
+                    mono
+                    options={EXPIRY_PRESETS.map((p) => ({
+                      value: p.key,
+                      label: t(EXPIRY_LABEL_KEY[p.key]),
+                    }))}
+                    value={expiryKey}
+                    onChange={(k) => {
+                      setExpiryKey(k)
+                      const p = EXPIRY_PRESETS.find((x) => x.key === k)
+                      setExpiry(p?.sec ?? 0)
+                    }}
+                  />
+                  {expiresAt && (
+                    <button
+                      type="button"
+                      className={styles.removeExpiry}
+                      disabled={update.isPending}
+                      onClick={() => {
+                        setExpiryKey('never')
+                        setExpiry(0)
+                      }}
+                    >
+                      {t('images.removeExpiry')}
+                    </button>
+                  )}
+                  <div className={styles.expiryWarn}>{t('images.expiryWarn')}</div>
+                </div>
+
+                <div className={styles.metaTable}>
+                  <span className={styles.metaKey}>{t('images.maxViews')}</span>
+                  <span className={styles.metaVal}>
+                    {maxViews > 0
+                      ? t('images.maxViewsUsed', { used: viewsServed, max: maxViews })
+                      : t('upload.maxViewsUnlimited')}
+                  </span>
+                </div>
+                <div className={styles.expiryEdit}>
+                  <Segmented<MaxViewsKey>
+                    mono
+                    options={MAX_VIEWS_PRESETS.map((p) => ({
+                      value: p.key,
+                      label: t(MAX_VIEWS_LABEL_KEY[p.key]),
+                    }))}
+                    value={maxViewsKey}
+                    onChange={(k) => {
+                      const p = MAX_VIEWS_PRESETS.find((x) => x.key === k)
+                      setMaxViews(p?.n ?? 0)
+                    }}
+                  />
+                  <div className={styles.expiryWarn}>{t('images.maxViewsHint')}</div>
+                </div>
+
+                <div className={styles.metaTable}>
+                  <span className={styles.metaKey}>{t('images.accessPassword')}</span>
+                  <span className={styles.metaVal}>
+                    {hasAccessPassword
+                      ? t('images.accessPasswordSet')
+                      : t('images.accessPasswordNone')}
+                  </span>
+                </div>
+                <div className={styles.expiryEdit}>
+                  <input
+                    className={styles.renameInput}
+                    type="text"
+                    value={accessPw}
+                    placeholder={t('images.accessPasswordPlaceholder')}
+                    onChange={(e) => setAccessPw(e.target.value)}
+                    autoComplete="off"
+                    spellCheck={false}
+                  />
+                  <div className={styles.renameRow}>
+                    <button
+                      type="button"
+                      className={styles.removeExpiry}
+                      disabled={update.isPending}
+                      onClick={fillRandomPassword}
+                    >
+                      {t('images.accessPasswordGenerate')}
+                    </button>
+                    {accessPw.trim() ? (
+                      <button
+                        type="button"
+                        className={styles.removeExpiry}
+                        onClick={() => copyText(accessPw.trim(), t('images.accessPassword'))}
+                      >
+                        {t('images.accessPasswordCopy')}
+                      </button>
+                    ) : null}
+                    <button
+                      type="button"
+                      className={styles.renameSave}
+                      disabled={!accessPw.trim() || update.isPending}
+                      onClick={() => setAccessPassword(accessPw.trim())}
+                    >
+                      {t('images.accessPasswordSave')}
+                    </button>
+                    {hasAccessPassword && (
+                      <button
+                        type="button"
+                        className={styles.removeExpiry}
+                        disabled={update.isPending}
+                        onClick={() => setAccessPassword('')}
+                      >
+                        {t('images.accessPasswordClear')}
+                      </button>
+                    )}
+                  </div>
+                  <div className={styles.expiryWarn}>{t('images.accessPasswordHint')}</div>
+                </div>
+              </div>
+            </details>
+
+            {stats.isError || !stats.data ? null : (
+              <details className={styles.fold}>
+                <summary>
+                  {t('images.accessStats')}
+                  <span className={styles.foldSummaryHint}>
+                    {t('images.totalViews', { count: stats.data.total })}
+                  </span>
+                </summary>
+                <div className={styles.foldBody}>
+                  <div className={styles.accessSection}>
+                    <div className={styles.kicker}>ACCESS — {t('images.accessLabel')}</div>
+                    <div className={styles.accessTotal}>
+                      {t('images.totalViews', { count: stats.data.total })}
+                    </div>
+                    {(() => {
+                      const daily = stats.data.daily
+                      const max = daily.reduce((m, day) => (day.views > m ? day.views : m), 0)
+                      if (max === 0) {
+                        return <div className={styles.accessEmpty}>{t('images.noAccess')}</div>
+                      }
+                      return (
+                        <div className={styles.accessBars} aria-label={t('images.last30Days')}>
+                          {daily.map((day) => (
+                            <div
+                              key={day.date}
+                              className={styles.accessBar}
+                              title={`${day.date}: ${day.views}`}
+                              style={{
+                                height:
+                                  day.views > 0
+                                    ? `${Math.max(4, Math.round((day.views / max) * 100))}%`
+                                    : '0%',
+                              }}
+                            />
+                          ))}
+                        </div>
+                      )
+                    })()}
+                  </div>
+                </div>
+              </details>
+            )}
+          </div>
 
           <div className={styles.footRow}>
             {moving ? (

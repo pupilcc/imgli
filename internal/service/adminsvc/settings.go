@@ -23,7 +23,7 @@ var smtpFromRe = regexp.MustCompile(`^[^@\s]+@[^@\s]+\.[^@\s]+$`)
 var hotlinkHostRe = regexp.MustCompile(`^[a-z0-9]([a-z0-9-]*[a-z0-9])?(\.[a-z0-9]([a-z0-9-]*[a-z0-9])?)*$`)
 
 var (
-	// ErrUnknownSetting PutSettings 只认 site_name/registration_mode/guest_upload_enabled/plaza_enabled/moderation/smtp/hotlink/processing/announcement/footer/html_inject 键。
+	// ErrUnknownSetting PutSettings 只认已登记 settings 键（含插槽与站长文案）。
 	ErrUnknownSetting = apperr.New("未知的设置键")
 	// ErrSiteNameInvalid site_name 需 1-64 个字符（TrimSpace 后）。
 	ErrSiteNameInvalid = apperr.New("site_name 需 1-64 个字符")
@@ -60,7 +60,7 @@ func MaskSecret(s string) string { return maskAPIKey(s) }
 // moderation.api_key / moderation.access_key_secret / smtp.password 按 maskAPIKey 打码——明文密钥永不通过本方法对外可见。
 // access_key_id 与 region 明文回显。
 func (s *Service) GetSettings() (map[string]any, error) {
-	st := settings.New(s.db)
+	st := s.settings()
 
 	var siteName string
 	if err := st.Get(model.SettingSiteName, &siteName); err != nil && !errors.Is(err, settings.ErrNotFound) {
@@ -112,6 +112,16 @@ func (s *Service) GetSettings() (map[string]any, error) {
 	if err := st.Get(model.SettingHTMLInject, &htmlInj); err != nil && !errors.Is(err, settings.ErrNotFound) {
 		return nil, err
 	}
+	var helpURL, upgradeURL, shareBrand string
+	var regNotice LocaleString
+	_ = st.Get(model.SettingHelpURL, &helpURL)
+	_ = st.Get(model.SettingUpgradeURL, &upgradeURL)
+	_ = st.Get(model.SettingRegisterNotice, &regNotice)
+	_ = st.Get(model.SettingShareBranding, &shareBrand)
+	helpURL = NormalizeOptionalURL(helpURL)
+	upgradeURL = NormalizeOptionalURL(upgradeURL)
+	regNotice = regNotice.Normalize()
+	shareBrand = NormalizeShareBranding(shareBrand)
 
 	return map[string]any{
 		"site_name":            siteName,
@@ -149,9 +159,13 @@ func (s *Service) GetSettings() (map[string]any, error) {
 		},
 		"hotlink":      hotCfg,
 		"processing":   procCfg,
-		"announcement": ann,
-		"footer":       foot,
-		"html_inject":  htmlInj,
+		"announcement":     ann,
+		"footer":           foot,
+		"html_inject":      htmlInj,
+		"help_url":         helpURL,
+		"upgrade_url":      upgradeURL,
+		"register_notice":  regNotice,
+		"share_branding":   shareBrand,
 	}, nil
 }
 
@@ -163,8 +177,8 @@ type settingWrite struct {
 	value any
 }
 
-// PutSettings 部分更新设置面。patch 只认 site_name/registration_mode/guest_upload_enabled/plaza_enabled/moderation/smtp/hotlink/processing/announcement/footer/html_inject
-// 键，未知键返回 ErrUnknownSetting。moderation 按整对象校验（moderation.ValidateConfig）；
+// PutSettings 部分更新设置面。patch 只认已登记 settings 键（含 help_url/upgrade_url/register_notice/share_branding），
+// 未知键返回 ErrUnknownSetting。moderation 按整对象校验（moderation.ValidateConfig）；
 // 其 api_key / access_key_secret 若以 "****" 开头，视为前端把打码后的展示值原样回传：
 // api_key 仅当 provider 与 endpoint 均未变才沿用库中明文；access_key_secret 仅当
 // provider/region/access_key_id 均未变才沿用——改指向即失效，返回 ErrModerationInvalid。
@@ -172,7 +186,8 @@ type settingWrite struct {
 // hotlink 经 normalizeHotlink 规整（小写/去重/域名形态校验）。
 // processing 经 upload.ValidateProcessing 校验（坏 JSON 与校验失败均返 upload.ErrProcessingInvalid）。
 func (s *Service) PutSettings(patch map[string]json.RawMessage) error {
-	st := settings.New(s.db)
+	// 必须用共享 settings 实例：Set 内 Invalidate 才能打掉 DiscoverHandler 的 plaza 缓存
+	st := s.settings()
 	writes := make([]settingWrite, 0, len(patch))
 
 	for key, raw := range patch {
@@ -338,6 +353,49 @@ func (s *Service) PutSettings(patch map[string]json.RawMessage) error {
 				return err
 			}
 			writes = append(writes, settingWrite{model.SettingHTMLInject, cfg})
+
+		case model.SettingHelpURL:
+			var u string
+			if err := json.Unmarshal(raw, &u); err != nil {
+				return ErrHelpURLInvalid
+			}
+			u = NormalizeOptionalURL(u)
+			if err := ValidateOptionalURL(u); err != nil {
+				return ErrHelpURLInvalid
+			}
+			writes = append(writes, settingWrite{model.SettingHelpURL, u})
+
+		case model.SettingUpgradeURL:
+			var u string
+			if err := json.Unmarshal(raw, &u); err != nil {
+				return ErrUpgradeURLInvalid
+			}
+			u = NormalizeOptionalURL(u)
+			if err := ValidateOptionalURL(u); err != nil {
+				return ErrUpgradeURLInvalid
+			}
+			writes = append(writes, settingWrite{model.SettingUpgradeURL, u})
+
+		case model.SettingRegisterNotice:
+			var n LocaleString
+			if err := json.Unmarshal(raw, &n); err != nil {
+				return ErrRegisterNoticeInvalid
+			}
+			n = n.Normalize()
+			if err := ValidateRegisterNotice(n); err != nil {
+				return err
+			}
+			writes = append(writes, settingWrite{model.SettingRegisterNotice, n})
+
+		case model.SettingShareBranding:
+			var mode string
+			if err := json.Unmarshal(raw, &mode); err != nil {
+				return ErrShareBrandingInvalid
+			}
+			if err := ValidateShareBranding(mode); err != nil {
+				return err
+			}
+			writes = append(writes, settingWrite{model.SettingShareBranding, NormalizeShareBranding(mode)})
 
 		default:
 			return ErrUnknownSetting

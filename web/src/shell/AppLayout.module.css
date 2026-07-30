@@ -1,5 +1,15 @@
-.main { width: 100%; box-sizing: border-box; padding: 0 24px 80px; }
+.shell {
+  min-height: 100dvh;
+  display: flex;
+  flex-direction: column;
+}
+.main {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 0 24px 48px;
+  flex: 1 0 auto;
+}
 
 @media (max-width: 768px) {
-  .main { padding-bottom: 140px; }
+  .main { padding-bottom: 100px; }
 }
