@@ -98,6 +98,8 @@ func (s *Server) mountAPI() {
 	st := settings.New(s.opts.DB)
 	authSvc := auth.New(s.opts.DB, st)
 	ah := &handler.AuthHandlers{Svc: authSvc, Secure: strings.HasPrefix(s.opts.Cfg.BaseURL, "https://")}
+	oidcSvc := auth.NewOIDC(s.opts.DB, authSvc, s.opts.Cfg.BaseURL)
+	oidcH := &handler.OIDCHandlers{OIDC: oidcSvc, Auth: authSvc, Secure: strings.HasPrefix(s.opts.Cfg.BaseURL, "https://")}
 	tokSvc := apitoken.New(s.opts.DB)
 	th := &handler.TokenHandlers{Svc: tokSvc}
 	res := authResolver{auth: authSvc, tokens: tokSvc}
@@ -187,6 +189,8 @@ func (s *Server) mountAPI() {
 		api.With(limiter.IPMiddleware("public_album", 120)).Get("/a/{id}/images", albH.PublicImages)
 		api.With(limiter.Middleware("auth", 20)).Post("/auth/register", ah.Register)
 		api.With(limiter.Middleware("auth", 20)).Post("/auth/login", ah.Login)
+		api.With(limiter.Middleware("auth", 10)).Get("/auth/oidc/start", oidcH.Start)
+		api.Get("/auth/oidc/callback", oidcH.Callback)
 		api.Post("/auth/logout", ah.Logout)
 		api.With(limiter.IPMiddleware("forgot", 5)).Post("/auth/forgot-password", ah.ForgotPassword)
 		api.With(limiter.Middleware("auth", 20)).Post("/auth/reset-password", ah.ResetPassword)
@@ -242,6 +246,8 @@ func (s *Server) mountAPI() {
 				ar.Get("/export/users.csv", admH.ExportUsersCSV)
 				ar.Get("/webhooks", admH.GetWebhooks)
 				ar.Put("/webhooks", admH.PutWebhooks)
+				ar.Get("/oidc", oidcH.GetOIDCAdmin)
+				ar.Put("/oidc", oidcH.PutOIDCAdmin)
 				ar.Patch("/users/{id}", admH.UpdateUser)
 				ar.Post("/users/{id}/reset-password", admH.ResetPassword)
 				ar.Get("/images", admH.Images)

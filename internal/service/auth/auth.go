@@ -206,18 +206,27 @@ func (s *Service) Login(account, password, ip, ua string) (string, *model.User, 
 	if u.Status == "banned" {
 		return "", nil, ErrUserBanned
 	}
-	raw, err := token.Random()
+	raw, err := s.CreateSession(&u, ip, ua)
 	if err != nil {
 		return "", nil, err
+	}
+	return raw, &u, nil
+}
+
+// CreateSession 为已验证用户签发 session 明文 token。
+func (s *Service) CreateSession(u *model.User, ip, ua string) (string, error) {
+	raw, err := token.Random()
+	if err != nil {
+		return "", err
 	}
 	sess := model.Session{
 		ID: token.Hash(raw), UserID: u.ID,
 		ExpiresAt: time.Now().Add(SessionTTL), IP: ip, UA: ua,
 	}
 	if err := s.db.Create(&sess).Error; err != nil {
-		return "", nil, err
+		return "", err
 	}
-	return raw, &u, nil
+	return raw, nil
 }
 
 func (s *Service) Logout(rawToken string) error {

@@ -12,6 +12,7 @@ separate version in `go.mod` or `web/package.json`.
 
 ### Added
 
+- **OIDC login (generic):** admin GET/PUT `/admin/oidc`; `/auth/oidc/start` + callback; auto-provision user by email; `oidc_enabled` on public config.
 - **Outbound webhooks:** admin GET/PUT `/admin/webhooks`; async `image.uploaded` / `image.moderated` with optional HMAC `X-Imgli-Signature`.
 - **Admin users ops:** filter by signup `channel`, sort by `bandwidth`, CSV export `/admin/export/users.csv`.
 - **Open Graph meta** on SPA `/s/{key}` and `/a/{id}` HTML shell for crawlers (passworded shares omit image).

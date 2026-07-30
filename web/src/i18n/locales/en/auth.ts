@@ -65,4 +65,6 @@ export default {
   verifyFailed: 'Verification failed',
   verifyFailHint: '(After signing in, resend from Settings → Profile)',
   verifyOkText: 'Your email has been verified.',
+
+  oidcLogin: 'Sign in with SSO / OIDC',
 }
