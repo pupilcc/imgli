@@ -14,6 +14,7 @@ import (
 	"strings"
 	"sync"
 	"testing"
+	"time"
 
 	"github.com/yixian-huang/imgli/internal/storage"
 )
@@ -39,6 +40,8 @@ type mockWebDAV struct {
 	forceStatus map[string]int
 	// ignoreRange: GET 无视 Range 恒返 200 全量
 	ignoreRange bool
+	// omitHeadCL: HEAD 成功但不带 Content-Length(触发 Open 缓冲降级)
+	omitHeadCL bool
 	// missingParentCode: 缺父集合 PUT 的返回码(0=默认 409;真 Apache mod_dav 返 403)
 	missingParentCode int
 }
@@ -150,7 +153,9 @@ func (m *mockWebDAV) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			http.NotFound(w, r)
 			return
 		}
-		w.Header().Set("Content-Length", strconv.Itoa(len(data)))
+		if !m.omitHeadCL {
+			w.Header().Set("Content-Length", strconv.Itoa(len(data)))
+		}
 		w.WriteHeader(http.StatusOK)
 
 	case http.MethodDelete:
@@ -349,7 +354,7 @@ func TestWebDAVRangeSeek(t *testing.T) {
 		t.Errorf("range content mismatch")
 	}
 
-	// forceGet200: offset>0 返 200 → Read 报错
+	// forceGet200: offset>0 返 200 → 整对象缓冲后从 offset 继续(兼容忽略 Range 的 Dav)
 	mock2 := newMockWebDAV()
 	mock2.ignoreRange = true
 	d2 := testDriver(t, mock2, nil)
@@ -364,9 +369,42 @@ func TestWebDAVRangeSeek(t *testing.T) {
 	if _, err := rsc2.Seek(10, io.SeekStart); err != nil {
 		t.Fatal(err)
 	}
-	buf := make([]byte, 10)
-	if _, err := rsc2.Read(buf); err == nil {
-		t.Error("offset>0 收 200 应报错(防读错字节),got nil")
+	got2, err := io.ReadAll(rsc2)
+	if err != nil {
+		t.Fatalf("ignoreRange fallback Read: %v", err)
+	}
+	if !bytes.Equal(got2, data[10:]) {
+		t.Errorf("ignoreRange fallback content mismatch len=%d", len(got2))
+	}
+}
+
+func TestWebDAVOpenHeadWithoutContentLength(t *testing.T) {
+	mock := newMockWebDAV()
+	mock.omitHeadCL = true
+	d := testDriver(t, mock, nil)
+	ctx := context.Background()
+	payload := []byte("no-cl-body")
+	if err := d.Put(ctx, "x/a.bin", bytes.NewReader(payload)); err != nil {
+		t.Fatal(err)
+	}
+	rsc, err := d.Open(ctx, "x/a.bin")
+	if err != nil {
+		t.Fatalf("Open should buffer when HEAD lacks CL: %v", err)
+	}
+	defer rsc.Close()
+	got, err := io.ReadAll(rsc)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !bytes.Equal(got, payload) {
+		t.Errorf("got %q", got)
+	}
+}
+
+func TestWebDAVStatusErrorAuth(t *testing.T) {
+	err := statusError("HEAD", 401, nil)
+	if err == nil || !strings.Contains(err.Error(), "认证") {
+		t.Fatalf("%v", err)
 	}
 }
 
@@ -509,5 +547,66 @@ func TestNewInvalidEndpoint(t *testing.T) {
 		if !strings.Contains(err.Error(), "endpoint 非法 URL") {
 			t.Errorf("endpoint %q: err=%v", ep, err)
 		}
+	}
+}
+
+// Live surface: IMGLI_TEST_WEBDAV_LIVE=1 + ENDPOINT (+ optional USER/PASS).
+// Prefer self-hosted Docker/OpenList — no SaaS signup required for a matrix row.
+func TestDriverSurfaceLive(t *testing.T) {
+	if os.Getenv("IMGLI_TEST_WEBDAV_LIVE") != "1" {
+		t.Skip("set IMGLI_TEST_WEBDAV_LIVE=1 for live WebDAV")
+	}
+	ep := strings.TrimSpace(os.Getenv("IMGLI_TEST_WEBDAV_ENDPOINT"))
+	if ep == "" {
+		t.Fatal("IMGLI_TEST_WEBDAV_ENDPOINT required")
+	}
+	d, err := New(map[string]string{
+		"endpoint": ep,
+		"username": os.Getenv("IMGLI_TEST_WEBDAV_USERNAME"),
+		"password": os.Getenv("IMGLI_TEST_WEBDAV_PASSWORD"),
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	ctx := context.Background()
+	key := fmt.Sprintf("imgli-live/%d.bin", time.Now().UnixNano())
+	payload := []byte("imgli-webdav-live-probe")
+	if err := d.Put(ctx, key, bytes.NewReader(payload)); err != nil {
+		t.Fatalf("Put: %v", err)
+	}
+	ok, err := d.Exists(ctx, key)
+	if err != nil || !ok {
+		t.Fatalf("Exists: %v %v", ok, err)
+	}
+	rsc, err := d.Open(ctx, key)
+	if err != nil {
+		t.Fatalf("Open: %v", err)
+	}
+	if n, err := rsc.Seek(0, io.SeekEnd); err != nil || n != int64(len(payload)) {
+		t.Fatalf("SeekEnd: %d %v", n, err)
+	}
+	if _, err := rsc.Seek(0, io.SeekStart); err != nil {
+		t.Fatal(err)
+	}
+	got, err := io.ReadAll(rsc)
+	rsc.Close()
+	if err != nil || !bytes.Equal(got, payload) {
+		t.Fatalf("Read: %v %q", err, got)
+	}
+	// Mid-file seek (Range or buffer fallback)
+	rsc2, err := d.Open(ctx, key)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := rsc2.Seek(6, io.SeekStart); err != nil {
+		t.Fatal(err)
+	}
+	rest, err := io.ReadAll(rsc2)
+	rsc2.Close()
+	if err != nil || !bytes.Equal(rest, payload[6:]) {
+		t.Fatalf("mid seek: %v %q", err, rest)
+	}
+	if err := d.Delete(ctx, key); err != nil {
+		t.Fatalf("Delete: %v", err)
 	}
 }

@@ -10,6 +10,11 @@ separate version in `go.mod` or `web/package.json`.
 
 ## [Unreleased]
 
+### Changed
+
+- **WebDAV:** Open falls back to full GET when HEAD lacks `Content-Length` or is unsupported; Range-ignored servers fall back to full-object buffer on mid-file read; clearer auth/status errors.
+- **Docs:** `docs/webdav-compatibility.md` + `scripts/webdav-vendor-matrix.sh` (self-hosted live probe; no SaaS signup required for a matrix row).
+
 ## [0.4.1] - 2026-07-30
 
 Theme: **FTP hot-path polish (compat)**

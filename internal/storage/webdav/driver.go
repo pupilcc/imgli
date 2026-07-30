@@ -2,6 +2,7 @@
 package webdav
 
 import (
+	"bytes"
 	"context"
 	"fmt"
 	"io"
@@ -190,28 +191,92 @@ func (d *Driver) Put(ctx context.Context, key string, r io.Reader) error {
 
 	if resp.StatusCode >= 300 {
 		snippet, _ := io.ReadAll(io.LimitReader(resp.Body, 512))
-		return fmt.Errorf("webdav: PUT %d: %s", resp.StatusCode, snippet)
+		return statusError("PUT", resp.StatusCode, snippet)
 	}
 	return nil
 }
 
+// statusError maps HTTP status to an operator-readable error (auth vs not found vs other).
+func statusError(op string, code int, snippet []byte) error {
+	msg := strings.TrimSpace(string(snippet))
+	switch code {
+	case http.StatusUnauthorized, http.StatusForbidden:
+		if msg == "" {
+			return fmt.Errorf("webdav: %s %d 认证或权限失败", op, code)
+		}
+		return fmt.Errorf("webdav: %s %d 认证或权限失败: %s", op, code, msg)
+	case http.StatusNotFound:
+		return storage.ErrNotFound
+	case http.StatusMethodNotAllowed, http.StatusNotImplemented:
+		return fmt.Errorf("webdav: %s %d 方法不被对端支持", op, code)
+	default:
+		if msg == "" {
+			return fmt.Errorf("webdav: %s %d", op, code)
+		}
+		return fmt.Errorf("webdav: %s %d: %s", op, code, msg)
+	}
+}
+
+// Open prefers HEAD+Range streaming (good TTFB). Falls back to full GET buffer when
+// HEAD is unsupported or Content-Length is missing; Range-ignore servers fall back
+// on first mid-file Read (see rangeReadSeekCloser).
 func (d *Driver) Open(ctx context.Context, key string) (io.ReadSeekCloser, error) {
-	resp, err := d.do(ctx, http.MethodHead, key, nil, -1)
+	size, ok, err := d.headSize(ctx, key)
 	if err != nil {
 		return nil, err
 	}
+	if !ok {
+		return d.openBuffered(ctx, key)
+	}
+	return &rangeReadSeekCloser{d: d, ctx: ctx, key: key, size: size, offset: 0}, nil
+}
+
+// headSize returns (size, true, nil) when HEAD provides a usable Content-Length.
+// (0, false, nil) means "caller should buffer"; non-nil err is hard failure.
+func (d *Driver) headSize(ctx context.Context, key string) (int64, bool, error) {
+	resp, err := d.do(ctx, http.MethodHead, key, nil, -1)
+	if err != nil {
+		return 0, false, err
+	}
 	resp.Body.Close()
+	switch {
+	case resp.StatusCode == http.StatusNotFound:
+		return 0, false, storage.ErrNotFound
+	case resp.StatusCode == http.StatusMethodNotAllowed || resp.StatusCode == http.StatusNotImplemented:
+		return 0, false, nil // buffer via GET
+	case resp.StatusCode < 200 || resp.StatusCode >= 300:
+		return 0, false, statusError("HEAD", resp.StatusCode, nil)
+	}
+	cl := strings.TrimSpace(resp.Header.Get("Content-Length"))
+	if cl == "" {
+		return 0, false, nil
+	}
+	size, err := strconv.ParseInt(cl, 10, 64)
+	if err != nil || size < 0 {
+		return 0, false, nil
+	}
+	return size, true, nil
+}
+
+// openBuffered downloads the whole object (fallback path).
+func (d *Driver) openBuffered(ctx context.Context, key string) (io.ReadSeekCloser, error) {
+	resp, err := d.do(ctx, http.MethodGet, key, nil, -1)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
 	if resp.StatusCode == http.StatusNotFound {
 		return nil, storage.ErrNotFound
 	}
 	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
-		return nil, fmt.Errorf("webdav: HEAD %d", resp.StatusCode)
+		snippet, _ := io.ReadAll(io.LimitReader(resp.Body, 512))
+		return nil, statusError("GET", resp.StatusCode, snippet)
 	}
-	size, err := strconv.ParseInt(resp.Header.Get("Content-Length"), 10, 64)
+	data, err := io.ReadAll(resp.Body)
 	if err != nil {
-		return nil, fmt.Errorf("webdav: Content-Length: %w", err)
+		return nil, err
 	}
-	return &rangeReadSeekCloser{d: d, ctx: ctx, key: key, size: size, offset: 0}, nil
+	return &memRSC{r: bytes.NewReader(data)}, nil
 }
 
 func (d *Driver) Delete(ctx context.Context, key string) error {
@@ -224,7 +289,7 @@ func (d *Driver) Delete(ctx context.Context, key string) error {
 		return nil
 	}
 	snippet, _ := io.ReadAll(io.LimitReader(resp.Body, 512))
-	return fmt.Errorf("webdav: DELETE %d: %s", resp.StatusCode, snippet)
+	return statusError("DELETE", resp.StatusCode, snippet)
 }
 
 func (d *Driver) Exists(ctx context.Context, key string) (bool, error) {
@@ -238,10 +303,33 @@ func (d *Driver) Exists(ctx context.Context, key string) (bool, error) {
 		return true, nil
 	case http.StatusNotFound:
 		return false, nil
+	case http.StatusMethodNotAllowed, http.StatusNotImplemented:
+		// Some servers disallow HEAD — treat as unknown, probe with GET size 0 range or Exists via Open.
+		// Light probe: GET with Range bytes=0-0
+		gr, gerr := d.getRange(ctx, key, 0)
+		if gerr != nil {
+			return false, gerr
+		}
+		defer gr.Body.Close()
+		if gr.StatusCode == http.StatusNotFound {
+			return false, nil
+		}
+		if gr.StatusCode == http.StatusOK || gr.StatusCode == http.StatusPartialContent {
+			return true, nil
+		}
+		return false, statusError("GET", gr.StatusCode, nil)
 	default:
-		return false, fmt.Errorf("webdav: HEAD %d", resp.StatusCode)
+		return false, statusError("HEAD", resp.StatusCode, nil)
 	}
 }
+
+type memRSC struct {
+	r *bytes.Reader
+}
+
+func (m *memRSC) Read(p []byte) (int, error)           { return m.r.Read(p) }
+func (m *memRSC) Seek(off int64, wh int) (int64, error) { return m.r.Seek(off, wh) }
+func (m *memRSC) Close() error                          { return nil }
 
 type rangeReadSeekCloser struct {
 	d      *Driver
@@ -250,9 +338,16 @@ type rangeReadSeekCloser struct {
 	size   int64
 	offset int64
 	body   io.ReadCloser
+	// buf is set when the server ignores Range; subsequent IO uses memory.
+	buf *bytes.Reader
 }
 
 func (r *rangeReadSeekCloser) Read(p []byte) (int, error) {
+	if r.buf != nil {
+		n, err := r.buf.Read(p)
+		r.offset += int64(n)
+		return n, err
+	}
 	if r.offset >= r.size {
 		return 0, io.EOF
 	}
@@ -262,14 +357,29 @@ func (r *rangeReadSeekCloser) Read(p []byte) (int, error) {
 		if err != nil {
 			return 0, err
 		}
-		// offset>0 却收 200(服务端忽略 Range)会从第 0 字节返回——必须拒
-		if startOffset > 0 && resp.StatusCode == 200 {
+		// offset>0 却收 200：对端忽略 Range → 整对象缓冲后从 offset 继续（兼容烂 Dav）。
+		if startOffset > 0 && resp.StatusCode == http.StatusOK {
+			data, rerr := io.ReadAll(resp.Body)
 			resp.Body.Close()
-			return 0, fmt.Errorf("webdav: 服务端忽略 Range(返回 200),offset=%d", startOffset)
+			if rerr != nil {
+				return 0, rerr
+			}
+			if int64(len(data)) > 0 {
+				r.size = int64(len(data))
+			}
+			r.buf = bytes.NewReader(data)
+			if _, err := r.buf.Seek(startOffset, io.SeekStart); err != nil {
+				return 0, err
+			}
+			r.offset = startOffset
+			n, err := r.buf.Read(p)
+			r.offset += int64(n)
+			return n, err
 		}
-		if resp.StatusCode != 200 && resp.StatusCode != 206 {
+		if resp.StatusCode != http.StatusOK && resp.StatusCode != http.StatusPartialContent {
+			snippet, _ := io.ReadAll(io.LimitReader(resp.Body, 256))
 			resp.Body.Close()
-			return 0, fmt.Errorf("webdav: GET range %d", resp.StatusCode)
+			return 0, statusError("GET", resp.StatusCode, snippet)
 		}
 		r.body = resp.Body
 	}
@@ -300,6 +410,11 @@ func (r *rangeReadSeekCloser) Seek(off int64, whence int) (int64, error) {
 	if abs < 0 {
 		return 0, fmt.Errorf("webdav: 负偏移")
 	}
+	if r.buf != nil {
+		n, err := r.buf.Seek(abs, io.SeekStart)
+		r.offset = n
+		return n, err
+	}
 	if abs != r.offset && r.body != nil {
 		r.body.Close()
 		r.body = nil
@@ -310,7 +425,9 @@ func (r *rangeReadSeekCloser) Seek(off int64, whence int) (int64, error) {
 
 func (r *rangeReadSeekCloser) Close() error {
 	if r.body != nil {
-		return r.body.Close()
+		err := r.body.Close()
+		r.body = nil
+		return err
 	}
 	return nil
 }

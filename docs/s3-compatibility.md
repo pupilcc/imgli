@@ -32,7 +32,7 @@ This page tracks **what we have verified** and how to contribute a report.
 | Tencent COS (S3 API) | `cos.*.myqcloud.com` | no | TBD | TBD | Bucket often `name-APPID` | Untested in-tree | — |
 | Qiniu Kodo (S3 API) | `s3.*.qiniucs.com` | no | TBD | TBD | Template in env example | Untested in-tree | — |
 | Upyun (S3 API) | vendor docs | TBD | TBD | TBD | Prefer S3 endpoint over FTP | Untested in-tree | — |
-| WebDAV | (separate driver) | n/a | yes | n/a | Not S3; listed for completeness. Good exit for OpenList/proxies | Unit-tested | ≥0.1 |
+| WebDAV | (separate driver) | n/a | yes | n/a | See [webdav-compatibility.md](webdav-compatibility.md) | Unit-tested (+ live script) | ≥0.1 |
 
 **Status legend:** Verified = live or production evidence; Untested in-tree = no
 automated report in this repo yet.

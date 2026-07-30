@@ -54,7 +54,8 @@
 ## 特性
 
 - **单二进制**:前端 `go:embed` 内嵌;默认 SQLite、支持 PostgreSQL,无 CGO 依赖。
-- **多存储**:本地盘、**S3 兼容**(MinIO/RustFS 已真机验证,附厂商验证工具包)、WebDAV;
+- **多存储**:本地盘、**S3 兼容**(MinIO/RustFS 已真机验证,附厂商验证工具包)、WebDAV
+  (OpenList/网盘出口;矩阵见 [docs/webdav-compatibility.md](docs/webdav-compatibility.md));
   可选 **FTP 兼容层**(功能受限;优先 OpenList/外置代理,见 [docs/storage-ftp.md](docs/storage-ftp.md));
   策略级 CDN 域 `302` 卸带宽,私密图预签名直连。
 - **内容安全**:可插拔机审链——NSFW 检测端点 + OCR 词表筛查
