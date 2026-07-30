@@ -1,5 +1,4 @@
 import type { ReactNode } from 'react'
-import type { UseQueryResult } from '@tanstack/react-query'
 import { Skeleton } from '../../../ui/Skeleton'
 import { AdminError } from './AdminError'
 
@@ -9,7 +8,11 @@ export function AdminQueryGate<T>({
   height = 220,
   children,
 }: {
-  query: Pick<UseQueryResult<T>, 'isError' | 'data' | 'refetch'>
+  query: {
+    isError: boolean
+    data: T | null | undefined
+    refetch: () => unknown
+  }
   height?: number
   children: (data: T) => ReactNode
 }) {

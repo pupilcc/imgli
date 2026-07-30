@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Link, useSearchParams } from 'react-router'
 import { defaultFilter, useDeleteImage, useImages, useUpdateImage, type ImagesFilter } from '../../api/hooks'
 import type { ImageItem } from '../../api/types'
@@ -109,27 +109,38 @@ export function ImagesPage() {
     return () => io.disconnect()
   }, [hasNextPage, isFetchingNextPage, fetchNextPage, items.length])
 
-  function toggleSelect(key: string) {
+  const toggleSelect = useCallback((key: string) => {
     setSelected((s) => {
       const n = new Set(s)
       if (n.has(key)) n.delete(key)
       else n.add(key)
       return n
     })
-  }
+  }, [])
   const allSelected = items.length > 0 && selected.size === items.length
-  const toggleAll = () => setSelected(allSelected ? new Set() : new Set(items.map((i) => i.key)))
+  const toggleAll = useCallback(
+    () => setSelected(allSelected ? new Set() : new Set(items.map((i) => i.key))),
+    [allSelected, items],
+  )
 
-  const quickVis = (item: ImageItem) =>
-    update.mutate({ key: item.key, body: { visibility: item.visibility === 'public' ? 'private' : 'public' } })
-  const quickDel = (key: string) =>
-    remove.mutate(key, {
-      onSuccess: () => setSelected((s) => {
-        const n = new Set(s)
-        n.delete(key)
-        return n
+  const quickVis = useCallback(
+    (item: ImageItem) =>
+      update.mutate({ key: item.key, body: { visibility: item.visibility === 'public' ? 'private' : 'public' } }),
+    [update],
+  )
+  const quickDel = useCallback(
+    (key: string) =>
+      remove.mutate(key, {
+        onSuccess: () =>
+          setSelected((s) => {
+            const n = new Set(s)
+            n.delete(key)
+            return n
+          }),
       }),
-    })
+    [remove],
+  )
+  const onOpen = useCallback((k: string) => setFocusKey(k), [])
 
   return (
     <div className={styles.page}>
@@ -191,7 +202,7 @@ export function ImagesPage() {
           sentinelRef={sentinelRef}
           loadingMore={isFetchingNextPage}
           onToggleSelect={toggleSelect}
-          onOpen={(k) => setFocusKey(k)}
+          onOpen={onOpen}
           onQuickVis={quickVis}
           onQuickDel={quickDel}
         />

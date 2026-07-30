@@ -15,6 +15,7 @@ import { Modal } from '../../../ui/Modal'
 import { Tag } from '../../../ui/Tag'
 import { AdminQueryGate } from '../ui/AdminQueryGate'
 import { Pager } from '../ui/Pager'
+import forms from '../ui/adminForms.module.css'
 import styles from './InvitesPage.module.css'
 
 export function InvitesPage() {
@@ -62,7 +63,7 @@ export function InvitesPage() {
         title={t('adminB.invitesTitle')}
         extra={
           <div className={styles.toolbar}>
-            <select value={status} onChange={(e) => setParam('status', e.target.value)} aria-label={t('adminB.filterStatusAria')} className={styles.select}>
+            <select value={status} onChange={(e) => setParam('status', e.target.value)} aria-label={t('adminB.filterStatusAria')} className={forms.select}>
               <option value="">{t('adminB.allStatuses')}</option>
               <option value="unused">{t('adminB.statusUnused')}</option>
               <option value="used">{t('adminB.statusUsed')}</option>

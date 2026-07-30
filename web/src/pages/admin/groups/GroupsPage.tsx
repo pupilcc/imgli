@@ -7,8 +7,8 @@ import { Button } from '../../../ui/Button'
 import { EmptyState } from '../../../ui/EmptyState'
 import { InlineConfirm } from '../../../ui/InlineConfirm'
 import { Input } from '../../../ui/Input'
-import { Skeleton } from '../../../ui/Skeleton'
-import { AdminError } from '../ui/AdminError'
+import { AdminQueryGate } from '../ui/AdminQueryGate'
+import forms from '../ui/adminForms.module.css'
 import styles from './GroupsPage.module.css'
 
 const GB = 1024 ** 3
@@ -87,8 +87,8 @@ function ExtInput({ exts, onChange }: { exts: string[]; onChange(v: string[]): v
     setDraft('')
   }
   return (
-    <div className={styles.field}>
-      <label className={styles.label} htmlFor={inputId}>{t('adminA.allowedExts')}</label>
+    <div className={forms.field}>
+      <label className={forms.label} htmlFor={inputId}>{t('adminA.allowedExts')}</label>
       <div className={styles.tags}>
         {exts.map((e) => (
           <span key={e} className={styles.tag}>
@@ -158,89 +158,133 @@ export function GroupsPage() {
         title={t('adminA.groupsTitle')}
         extra={<Button variant="primary" onClick={selectNew}>{t('adminA.newGroup')}</Button>}
       />
-      {groupsQ.isError ? (
-        <AdminError onRetry={() => groupsQ.refetch()} />
-      ) : !groupsQ.data ? (
-        <Skeleton height={220} />
-      ) : (
-        <div className={styles.split}>
-          <div className={styles.list}>
-            {groups.map((g) => (
-              <button
-                key={g.id}
-                type="button"
-                className={[styles.row, sel === g.id && styles.rowActive].filter(Boolean).join(' ')}
-                onClick={() => selectGroup(g)}
-              >
-                <span className={styles.rowName}>{g.name}</span>
-                {(g.is_default || g.is_guest) && <span className={styles.builtin}>{g.is_guest ? t('adminA.guest') : t('adminA.defaultGroup')}</span>}
-                <span className={styles.rowCount}>{t('adminA.memberCount', { count: g.user_count })}</span>
-              </button>
-            ))}
-          </div>
-          <div className={styles.detail}>
-            {sel === null ? (
-              <EmptyState title={t('adminA.selectOrCreate')} desc={t('adminA.selectOrCreateDesc')} />
-            ) : (
-              <div className={styles.form}>
-                <Input
-                  label={t('adminA.groupName')}
-                  value={form.name}
-                  disabled={builtin}
-                  extra={builtin ? <span className={styles.hint}>{t('adminA.builtinNameLocked')}</span> : undefined}
-                  onChange={(e) => set('name', e.target.value)}
-                />
-                <div className={styles.grid2}>
-                  <Input label={t('adminA.quotaGB')} type="number" min={0} value={form.quotaGB} onChange={(e) => set('quotaGB', e.target.value)} />
-                  <Input label={t('adminA.maxFileMB')} type="number" min={0} value={form.maxMB} onChange={(e) => set('maxMB', e.target.value)} />
-                </div>
-                <Input
-                  label={t('adminA.bandwidthQuotaGB')}
-                  type="number"
-                  min={0}
-                  value={form.bwGB}
-                  extra={<span className={styles.hint}>{t('adminA.bandwidthQuotaHint')}</span>}
-                  onChange={(e) => set('bwGB', e.target.value)}
-                />
-                <div className={styles.grid3}>
-                  <Input label={t('adminA.ratePerMin')} type="number" min={0} value={form.perMin} onChange={(e) => set('perMin', e.target.value)} />
-                  <Input label={t('adminA.ratePerHour')} type="number" min={0} value={form.perHour} onChange={(e) => set('perHour', e.target.value)} />
-                  <Input label={t('adminA.ratePerDay')} type="number" min={0} value={form.perDay} onChange={(e) => set('perDay', e.target.value)} />
-                </div>
-                <ExtInput exts={form.exts} onChange={(v) => set('exts', v)} />
-                <div className={styles.field}>
-                  <span className={styles.label}>{t('adminA.allowedPolicies')}</span>
-                  <div className={styles.policies}>
-                    {policiesQ.isError ? (
-                      <span className={styles.hint}>{t('adminA.policiesLoadFailed')}</span>
-                    ) : policies.length === 0 ? (
-                      <span className={styles.hint}>{t('adminA.noPolicies')}</span>
-                    ) : null}
-                    {policies.map((p) => (
-                      <label key={p.id} className={styles.check}>
-                        <input
-                          type="checkbox"
-                          checked={form.policyIds.includes(p.id)}
-                          onChange={(e) =>
-                            set('policyIds', e.target.checked ? [...form.policyIds, p.id] : form.policyIds.filter((x) => x !== p.id))
-                          }
-                        />
-                        {p.name}
-                      </label>
-                    ))}
+      <AdminQueryGate query={groupsQ}>
+        {() => (
+          <div className={styles.split}>
+            <div className={styles.list}>
+              {groups.map((g) => (
+                <button
+                  key={g.id}
+                  type="button"
+                  className={[styles.row, sel === g.id && styles.rowActive].filter(Boolean).join(' ')}
+                  onClick={() => selectGroup(g)}
+                >
+                  <span className={styles.rowName}>{g.name}</span>
+                  {(g.is_default || g.is_guest) && (
+                    <span className={styles.builtin}>{g.is_guest ? t('adminA.guest') : t('adminA.defaultGroup')}</span>
+                  )}
+                  <span className={styles.rowCount}>{t('adminA.memberCount', { count: g.user_count })}</span>
+                </button>
+              ))}
+            </div>
+            <div className={styles.detail}>
+              {sel === null ? (
+                <EmptyState title={t('adminA.selectOrCreate')} desc={t('adminA.selectOrCreateDesc')} />
+              ) : (
+                <div className={styles.form}>
+                  <Input
+                    label={t('adminA.groupName')}
+                    value={form.name}
+                    disabled={builtin}
+                    extra={builtin ? <span className={forms.hint}>{t('adminA.builtinNameLocked')}</span> : undefined}
+                    onChange={(e) => set('name', e.target.value)}
+                  />
+                  <div className={styles.grid2}>
+                    <Input
+                      label={t('adminA.quotaGB')}
+                      type="number"
+                      min={0}
+                      value={form.quotaGB}
+                      onChange={(e) => set('quotaGB', e.target.value)}
+                    />
+                    <Input
+                      label={t('adminA.maxFileMB')}
+                      type="number"
+                      min={0}
+                      value={form.maxMB}
+                      onChange={(e) => set('maxMB', e.target.value)}
+                    />
+                  </div>
+                  <Input
+                    label={t('adminA.bandwidthQuotaGB')}
+                    type="number"
+                    min={0}
+                    value={form.bwGB}
+                    extra={<span className={forms.hint}>{t('adminA.bandwidthQuotaHint')}</span>}
+                    onChange={(e) => set('bwGB', e.target.value)}
+                  />
+                  <div className={styles.grid3}>
+                    <Input
+                      label={t('adminA.ratePerMin')}
+                      type="number"
+                      min={0}
+                      value={form.perMin}
+                      onChange={(e) => set('perMin', e.target.value)}
+                    />
+                    <Input
+                      label={t('adminA.ratePerHour')}
+                      type="number"
+                      min={0}
+                      value={form.perHour}
+                      onChange={(e) => set('perHour', e.target.value)}
+                    />
+                    <Input
+                      label={t('adminA.ratePerDay')}
+                      type="number"
+                      min={0}
+                      value={form.perDay}
+                      onChange={(e) => set('perDay', e.target.value)}
+                    />
+                  </div>
+                  <ExtInput exts={form.exts} onChange={(v) => set('exts', v)} />
+                  <div className={forms.field}>
+                    <span className={forms.label}>{t('adminA.allowedPolicies')}</span>
+                    <div className={styles.policies}>
+                      {policiesQ.isError ? (
+                        <span className={forms.hint}>{t('adminA.policiesLoadFailed')}</span>
+                      ) : policies.length === 0 ? (
+                        <span className={forms.hint}>{t('adminA.noPolicies')}</span>
+                      ) : null}
+                      {policies.map((p) => (
+                        <label key={p.id} className={styles.check}>
+                          <input
+                            type="checkbox"
+                            checked={form.policyIds.includes(p.id)}
+                            onChange={(e) =>
+                              set(
+                                'policyIds',
+                                e.target.checked
+                                  ? [...form.policyIds, p.id]
+                                  : form.policyIds.filter((x) => x !== p.id),
+                              )
+                            }
+                          />
+                          {p.name}
+                        </label>
+                      ))}
+                    </div>
+                  </div>
+                  <div className={styles.actions}>
+                    <Button
+                      variant="primary"
+                      disabled={create.isPending || update.isPending || del.isPending}
+                      onClick={submit}
+                    >
+                      {t('common.save')}
+                    </Button>
+                    {current && !builtin && (
+                      <InlineConfirm
+                        label={t('common.delete')}
+                        onConfirm={() => del.mutate(current.id, { onSuccess: () => setSel(null) })}
+                      />
+                    )}
                   </div>
                 </div>
-                <div className={styles.actions}>
-                  <Button variant="primary" disabled={create.isPending || update.isPending || del.isPending} onClick={submit}>{t('common.save')}</Button>
-                  {current && !builtin && (
-                    <InlineConfirm label={t('common.delete')} onConfirm={() => del.mutate(current.id, { onSuccess: () => setSel(null) })} />
-                  )}
-                </div>
-              </div>
-            )}
+              )}
+            </div>
           </div>
-        </div>
-      )}
+        )}
+      </AdminQueryGate>
     </div>
   )
 }

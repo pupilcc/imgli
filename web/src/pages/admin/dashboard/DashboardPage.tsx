@@ -5,7 +5,7 @@ import { useT } from '../../../i18n'
 import { formatBytes, formatDate } from '../../../lib/format'
 import { PageHeader } from '../../../shell/PageHeader'
 import { Skeleton } from '../../../ui/Skeleton'
-import { AdminError } from '../ui/AdminError'
+import { AdminQueryGate } from '../ui/AdminQueryGate'
 import { ACTION_LABELS, dotColor } from '../ui/auditActions'
 import styles from './DashboardPage.module.css'
 import { TrendChart } from './TrendChart'
@@ -20,33 +20,30 @@ export function DashboardPage() {
   const [selectedHost, setSelectedHost] = useState<string | null>(null)
   const hostImages = useAdminRefererImages(selectedHost, refWindow)
 
-  const referers =
-    refWindow === 7
-      ? (stats.data?.top_referers ?? [])
-      : (stats.data?.top_referers_30d ?? stats.data?.top_referers ?? [])
-
   return (
     <div>
       <PageHeader kicker="DASHBOARD" title={t('adminA.dashTitle')} />
-      {stats.isError ? (
-        <AdminError onRetry={() => stats.refetch()} />
-      ) : !stats.data ? (
-        <Skeleton height={220} />
-      ) : (
+      <AdminQueryGate query={stats}>
+        {(data) => {
+          const referers =
+            refWindow === 7
+              ? (data.top_referers ?? [])
+              : (data.top_referers_30d ?? data.top_referers ?? [])
+          return (
         <>
           <div className={styles.sectionLabel}>{t('adminA.opsSection')}</div>
           <div className={styles.cards}>
             {[
-              { label: t('adminA.usersCount'), value: String(stats.data.users) },
+              { label: t('adminA.usersCount'), value: String(data.users) },
               {
                 label: t('adminA.signups30dTotal'),
-                value: String((stats.data.signups_30d ?? []).reduce((a, d) => a + d.count, 0)),
+                value: String((data.signups_30d ?? []).reduce((a, d) => a + d.count, 0)),
               },
               {
                 label: t('adminA.bandwidthMonth'),
-                value: formatBytes(stats.data.bandwidth_used_month ?? 0),
+                value: formatBytes(data.bandwidth_used_month ?? 0),
               },
-              { label: t('adminA.totalStorage'), value: formatBytes(stats.data.storage) },
+              { label: t('adminA.totalStorage'), value: formatBytes(data.storage) },
             ].map((c) => (
               <div key={c.label} className={styles.card}>
                 <div className={styles.cardLabel}>{c.label}</div>
@@ -54,10 +51,10 @@ export function DashboardPage() {
               </div>
             ))}
           </div>
-          {(stats.data.bandwidth_top_users?.length ?? 0) > 0 && (
+          {(data.bandwidth_top_users?.length ?? 0) > 0 && (
             <div className={styles.bwStrip}>
               <span className={styles.bwLabel}>{t('adminA.bandwidthTopUsers')}</span>
-              {stats.data.bandwidth_top_users!.map((u) => (
+              {data.bandwidth_top_users!.map((u) => (
                 <Link key={u.user_id} className={styles.bwChip} to={`/admin/users?q=${encodeURIComponent(u.username)}`}>
                   {u.username}
                   <span className={styles.bwAmt}>{formatBytes(u.used)}</span>
@@ -69,12 +66,12 @@ export function DashboardPage() {
           <div className={styles.sectionLabel}>{t('adminA.inventorySection')}</div>
           <div className={styles.cards}>
             {[
-              { label: t('adminA.imagesCount'), value: String(stats.data.images) },
-              { label: t('adminA.todayUploads'), value: String(stats.data.today_uploads) },
-              { label: t('adminA.pendingImages'), value: String(stats.data.pending_images ?? 0) },
-              { label: t('adminA.rejectedImages'), value: String(stats.data.rejected_images ?? 0) },
-              { label: t('adminA.tasksPending'), value: String(stats.data.tasks_pending ?? 0) },
-              { label: t('adminA.tasksRunning'), value: String(stats.data.tasks_running ?? 0) },
+              { label: t('adminA.imagesCount'), value: String(data.images) },
+              { label: t('adminA.todayUploads'), value: String(data.today_uploads) },
+              { label: t('adminA.pendingImages'), value: String(data.pending_images ?? 0) },
+              { label: t('adminA.rejectedImages'), value: String(data.rejected_images ?? 0) },
+              { label: t('adminA.tasksPending'), value: String(data.tasks_pending ?? 0) },
+              { label: t('adminA.tasksRunning'), value: String(data.tasks_running ?? 0) },
             ].map((c) => (
               <div key={c.label} className={styles.card}>
                 <div className={styles.cardLabel}>{c.label}</div>
@@ -89,13 +86,13 @@ export function DashboardPage() {
                 <span>{t('adminA.signupsTrend30d')}</span>
                 <span>{t('adminA.unitUsersPerDay')}</span>
               </div>
-              <TrendChart daily={stats.data.signups_30d ?? []} days={30} />
+              <TrendChart daily={data.signups_30d ?? []} days={30} />
             </div>
             <div className={styles.panel}>
               <div className={styles.panelHead}>
                 <span>{t('adminA.signupChannels')}</span>
               </div>
-              {(stats.data.signup_channels_30d ?? []).length === 0 ? (
+              {(data.signup_channels_30d ?? []).length === 0 ? (
                 <div className={styles.eventEmpty}>{t('adminA.noSignups')}</div>
               ) : (
                 <table className={styles.refTable}>
@@ -106,7 +103,7 @@ export function DashboardPage() {
                     </tr>
                   </thead>
                   <tbody>
-                    {(stats.data.signup_channels_30d ?? []).map((r) => (
+                    {(data.signup_channels_30d ?? []).map((r) => (
                       <tr key={r.channel}>
                         <td>{channelLabel(t, r.channel)}</td>
                         <td className={styles.refCount}>{r.count}</td>
@@ -124,7 +121,7 @@ export function DashboardPage() {
                 <span>{t('adminA.uploadTrend30d')}</span>
                 <span>{t('adminA.unitImagesPerDay')}</span>
               </div>
-              <TrendChart daily={stats.data.daily ?? []} />
+              <TrendChart daily={data.daily ?? []} />
             </div>
             <div className={styles.panel}>
               <div className={styles.panelHead}>
@@ -163,8 +160,8 @@ export function DashboardPage() {
               </div>
               <TrendChart
                 daily={(refWindow === 7
-                  ? (stats.data.traffic_7d ?? [])
-                  : (stats.data.traffic_30d ?? stats.data.traffic_7d ?? [])
+                  ? (data.traffic_7d ?? [])
+                  : (data.traffic_30d ?? data.traffic_7d ?? [])
                 ).map((d) => ({ date: d.date, count: d.views }))}
                 days={refWindow}
               />
@@ -250,7 +247,9 @@ export function DashboardPage() {
             </div>
           </div>
         </>
-      )}
+          )
+        }}
+      </AdminQueryGate>
     </div>
   )
 }

@@ -3,10 +3,11 @@ import { t } from '../i18n'
 import { errorText } from '../i18n/errorText'
 import { useGlobal } from '../store'
 import { api, ApiError, del, patch, post, put } from './client'
+import { queryKeys } from './queryKeys'
 import type { AdminGroup, AdminImageItem, AdminImagesPage, AdminInvitesPage, AdminLogsPage, AdminPolicy, AdminSettings, AdminStats, AdminUser, AdminUsersPage, RefererImageRow, ReviewBatchResult } from './types'
 
 export function useAdminStats() {
-  return useQuery({ queryKey: ['admin', 'stats'], queryFn: () => api<AdminStats>('/admin/stats') })
+  return useQuery({ queryKey: queryKeys.admin.stats, queryFn: () => api<AdminStats>('/admin/stats') })
 }
 
 export function useAdminRefererImages(host: string | null, days = 30) {
@@ -14,7 +15,7 @@ export function useAdminRefererImages(host: string | null, days = 30) {
   if (host) p.set('host', host)
   p.set('days', String(days))
   return useQuery({
-    queryKey: ['admin', 'referers', 'images', host, days],
+    queryKey: queryKeys.admin.refererImages(host, days),
     queryFn: () => api<{ host: string; items: RefererImageRow[] }>(`/admin/referers/images?${p}`),
     enabled: !!host,
   })
@@ -35,7 +36,7 @@ export function useAdminLogs(f: LogsFilter = {}) {
   if (f.limit) p.set('limit', String(f.limit))
   const qs = p.toString()
   return useQuery({
-    queryKey: ['admin', 'logs', f],
+    queryKey: queryKeys.admin.logs(f),
     queryFn: () => api<AdminLogsPage>(`/admin/logs${qs ? `?${qs}` : ''}`),
   })
 }
@@ -43,7 +44,7 @@ export function useAdminLogs(f: LogsFilter = {}) {
 /** 侧栏审核 badge:limit=1 只为取 total;审核 mutation(④c)须 invalidate ['admin','review-count']。 */
 export function useReviewCount() {
   return useQuery({
-    queryKey: ['admin', 'review-count'],
+    queryKey: queryKeys.admin.reviewCount,
     queryFn: () => api<{ total: number }>('/admin/review?limit=1'),
     staleTime: 30_000,
     select: (d) => d.total,
@@ -77,14 +78,14 @@ export function useAdminUsers(f: AdminUsersFilter = {}) {
   if (f.page && f.page > 1) p.set('page', String(f.page))
   const qs = p.toString()
   return useQuery({
-    queryKey: ['admin', 'users', f],
+    queryKey: queryKeys.admin.users(f),
     queryFn: () => api<AdminUsersPage>(`/admin/users${qs ? `?${qs}` : ''}`),
   })
 }
 
 export function useAdminGroups() {
   return useQuery({
-    queryKey: ['admin', 'groups'],
+    queryKey: queryKeys.admin.groups,
     queryFn: () => api<{ items: AdminGroup[] }>('/admin/groups'),
     staleTime: 60_000,
   })
@@ -96,8 +97,8 @@ export function useUpdateAdminUser() {
     mutationFn: ({ id, body }: { id: number; body: { group_id?: number; status?: string } }) =>
       patch<AdminUser>(`/admin/users/${id}`, body),
     onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ['admin', 'users'] })
-      qc.invalidateQueries({ queryKey: ['admin', 'groups'] })
+      qc.invalidateQueries({ queryKey: queryKeys.admin.usersRoot })
+      qc.invalidateQueries({ queryKey: queryKeys.admin.groups })
     },
     onError: toastApiError,
   })
@@ -125,14 +126,14 @@ export function useAdminImages(f: AdminImagesFilter = {}) {
   if (f.page && f.page > 1) p.set('page', String(f.page))
   const qs = p.toString()
   return useQuery({
-    queryKey: ['admin', 'images', f],
+    queryKey: queryKeys.admin.images(f),
     queryFn: () => api<AdminImagesPage>(`/admin/images${qs ? `?${qs}` : ''}`),
   })
 }
 
 export function useAdminPolicies() {
   return useQuery({
-    queryKey: ['admin', 'policies'],
+    queryKey: queryKeys.admin.policies,
     queryFn: () => api<{ items: AdminPolicy[] }>('/admin/policies'),
     staleTime: 60_000,
   })
@@ -144,8 +145,8 @@ export function useSetImageWhitelist() {
     mutationFn: ({ key, on }: { key: string; on: boolean }) =>
       patch<AdminImageItem>(`/admin/images/${key}`, { is_whitelisted: on }),
     onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ['admin', 'images'] })
-      qc.invalidateQueries({ queryKey: ['admin', 'review-count'] })
+      qc.invalidateQueries({ queryKey: queryKeys.admin.imagesRoot })
+      qc.invalidateQueries({ queryKey: queryKeys.admin.reviewCount })
     },
     onError: toastApiError,
   })
@@ -156,8 +157,8 @@ export function useDeleteAdminImage() {
   return useMutation({
     mutationFn: (key: string) => del(`/admin/images/${key}`),
     onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ['admin', 'images'] })
-      qc.invalidateQueries({ queryKey: ['admin', 'review-count'] })
+      qc.invalidateQueries({ queryKey: queryKeys.admin.imagesRoot })
+      qc.invalidateQueries({ queryKey: queryKeys.admin.reviewCount })
     },
     onError: toastApiError,
   })
@@ -170,16 +171,16 @@ export function useAdminReview(page = 1) {
   if (page > 1) p.set('page', String(page))
   const qs = p.toString()
   return useQuery({
-    queryKey: ['admin', 'review', page],
+    queryKey: queryKeys.admin.review(page),
     queryFn: () => api<AdminImagesPage>(`/admin/review${qs ? `?${qs}` : ''}`),
   })
 }
 
 // 裁决后:队列出队、侧栏 badge、图片管理列表(状态从 pending 变 normal/rejected)均须刷新。
 function invalidateReview(qc: ReturnType<typeof useQueryClient>) {
-  qc.invalidateQueries({ queryKey: ['admin', 'review'] })
-  qc.invalidateQueries({ queryKey: ['admin', 'review-count'] })
-  qc.invalidateQueries({ queryKey: ['admin', 'images'] })
+  qc.invalidateQueries({ queryKey: queryKeys.admin.reviewRoot })
+  qc.invalidateQueries({ queryKey: queryKeys.admin.reviewCount })
+  qc.invalidateQueries({ queryKey: queryKeys.admin.imagesRoot })
 }
 
 export function useReviewDecide() {
@@ -220,7 +221,7 @@ export function useCreateGroup() {
   const qc = useQueryClient()
   return useMutation({
     mutationFn: (body: GroupWriteBody) => post<AdminGroup>('/admin/groups', body),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['admin', 'groups'] }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: queryKeys.admin.groups }),
     onError: toastApiError,
   })
 }
@@ -230,7 +231,7 @@ export function useUpdateGroup() {
   return useMutation({
     mutationFn: ({ id, body }: { id: number; body: GroupWriteBody }) =>
       patch<AdminGroup>(`/admin/groups/${id}`, body),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['admin', 'groups'] }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: queryKeys.admin.groups }),
     onError: toastApiError,
   })
 }
@@ -239,7 +240,7 @@ export function useDeleteGroup() {
   const qc = useQueryClient()
   return useMutation({
     mutationFn: (id: number) => del(`/admin/groups/${id}`),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['admin', 'groups'] }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: queryKeys.admin.groups }),
     onError: toastApiError,
   })
 }
@@ -267,7 +268,7 @@ export function useCreatePolicy() {
   const qc = useQueryClient()
   return useMutation({
     mutationFn: (body: PolicyCreateBody) => post<AdminPolicy>('/admin/policies', body),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['admin', 'policies'] }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: queryKeys.admin.policies }),
     onError: toastApiError,
   })
 }
@@ -277,7 +278,7 @@ export function useUpdatePolicy() {
   return useMutation({
     mutationFn: ({ id, body }: { id: number; body: PolicyPatchBody }) =>
       patch<AdminPolicy>(`/admin/policies/${id}`, body),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['admin', 'policies'] }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: queryKeys.admin.policies }),
     onError: toastApiError,
   })
 }
@@ -286,7 +287,7 @@ export function useDeletePolicy() {
   const qc = useQueryClient()
   return useMutation({
     mutationFn: (id: number) => del(`/admin/policies/${id}`),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['admin', 'policies'] }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: queryKeys.admin.policies }),
     onError: toastApiError,
   })
 }
@@ -301,7 +302,7 @@ export function useTestPolicy() {
 /* ---------- 系统设置 ---------- */
 
 export function useAdminSettings() {
-  return useQuery({ queryKey: ['admin', 'settings'], queryFn: () => api<AdminSettings>('/admin/settings') })
+  return useQuery({ queryKey: queryKeys.admin.settings, queryFn: () => api<AdminSettings>('/admin/settings') })
 }
 
 export interface SettingsBody {
@@ -323,8 +324,8 @@ export function useUpdateSettings() {
   return useMutation({
     mutationFn: (body: SettingsBody) => put<AdminSettings>('/admin/settings', body),
     onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ['admin', 'settings'] })
-      qc.invalidateQueries({ queryKey: ['config'] })
+      qc.invalidateQueries({ queryKey: queryKeys.admin.settings })
+      qc.invalidateQueries({ queryKey: queryKeys.config })
     },
     onError: toastApiError,
   })
@@ -354,7 +355,7 @@ export function useAdminInvites(f: { status?: string; page?: number } = {}) {
   if (f.page) p.set('page', String(f.page))
   const qs = p.toString()
   return useQuery({
-    queryKey: ['admin', 'invites', f],
+    queryKey: queryKeys.admin.invites(f),
     queryFn: () => api<AdminInvitesPage>(`/admin/invites${qs ? `?${qs}` : ''}`),
   })
 }
@@ -364,7 +365,7 @@ export function useCreateInvites() {
   return useMutation({
     mutationFn: (body: { count: number; expires_in_days?: number }) =>
       post<{ codes: string[] }>('/admin/invites', body),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['admin', 'invites'] }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: queryKeys.admin.invitesRoot }),
     onError: toastApiError,
   })
 }
@@ -373,7 +374,7 @@ export function useRevokeInvite() {
   const qc = useQueryClient()
   return useMutation({
     mutationFn: (id: number) => del(`/admin/invites/${id}`),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['admin', 'invites'] }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: queryKeys.admin.invitesRoot }),
     onError: toastApiError,
   })
 }

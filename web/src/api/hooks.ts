@@ -1,6 +1,7 @@
 import { useMutation, useQuery, useQueryClient, useInfiniteQuery } from '@tanstack/react-query'
 import { api, post, del, patch } from './client'
 import { useGlobal } from '../store'
+import { queryKeys } from './queryKeys'
 import type {
   Album,
   Quota,
@@ -19,7 +20,7 @@ import type {
   ShareImage,
 } from './types'
 
-export const sessionKey = ['session'] as const
+export const sessionKey = queryKeys.session
 
 export function useSession() {
   return useQuery({
@@ -37,17 +38,17 @@ export function useSession() {
 }
 
 export function useQuota(enabled = true) {
-  return useQuery({ queryKey: ['quota'], queryFn: () => api<Quota>('/user/quota'), enabled })
+  return useQuery({ queryKey: queryKeys.quota, queryFn: () => api<Quota>('/user/quota'), enabled })
 }
 
 export function useAlbums(enabled = true) {
-  return useQuery({ queryKey: ['albums'], queryFn: () => api<{ items: Album[] }>('/albums'), enabled })
+  return useQuery({ queryKey: queryKeys.albums, queryFn: () => api<{ items: Album[] }>('/albums'), enabled })
 }
 
 /** 公开站点配置(无需登录)。游客模式路由与登录/注册页据此渲染。 */
 export function useConfig() {
   return useQuery({
-    queryKey: ['config'],
+    queryKey: queryKeys.config,
     queryFn: () => api<PublicConfig>('/config'),
     retry: false,
     staleTime: 5 * 60_000,
@@ -222,7 +223,7 @@ export function useUpdateImage() {
     onSuccess: (_d, v) => {
       qc.invalidateQueries({ queryKey: ['images'] })
       qc.invalidateQueries({ queryKey: ['image', v.key] })
-      qc.invalidateQueries({ queryKey: ['albums'] })
+      qc.invalidateQueries({ queryKey: queryKeys.albums })
     },
   })
 }
@@ -233,8 +234,8 @@ export function useDeleteImage() {
     mutationFn: (key: string) => del(`/images/${key}`),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['images'] })
-      qc.invalidateQueries({ queryKey: ['quota'] })
-      qc.invalidateQueries({ queryKey: ['albums'] })
+      qc.invalidateQueries({ queryKey: queryKeys.quota })
+      qc.invalidateQueries({ queryKey: queryKeys.albums })
     },
   })
 }
@@ -246,8 +247,8 @@ export function useBatchImages() {
       post<{ results: BatchResult[] }>('/images/batch', body),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['images'] })
-      qc.invalidateQueries({ queryKey: ['quota'] })
-      qc.invalidateQueries({ queryKey: ['albums'] })
+      qc.invalidateQueries({ queryKey: queryKeys.quota })
+      qc.invalidateQueries({ queryKey: queryKeys.albums })
     },
     // BatchBar 的 run() 自行 try/catch 并按分块结果 toast；hook 级存根让全局兜底识别并跳过，避免双 toast。
     onError: () => {},
@@ -259,7 +260,7 @@ export function useCreateAlbum() {
   return useMutation({
     mutationFn: (body: { name: string; visibility: string }) =>
       post<Pick<Album, 'id' | 'name' | 'visibility'>>('/albums', body),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['albums'] }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: queryKeys.albums }),
   })
 }
 
@@ -268,7 +269,7 @@ export function useUpdateAlbum() {
   return useMutation({
     mutationFn: ({ id, body }: { id: number; body: { name?: string; visibility?: string } }) =>
       patch(`/albums/${id}`, body),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['albums'] }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: queryKeys.albums }),
   })
 }
 
@@ -278,7 +279,7 @@ export function useDeleteAlbum() {
     mutationFn: ({ id, withImages }: { id: number; withImages: boolean }) =>
       del(`/albums/${id}?with_images=${withImages}`),
     onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ['albums'] })
+      qc.invalidateQueries({ queryKey: queryKeys.albums })
       qc.invalidateQueries({ queryKey: ['images'] })
       qc.invalidateQueries({ queryKey: ['trash'] })
     },
@@ -312,7 +313,7 @@ export function usePurgeImage() {
     mutationFn: (key: string) => del(`/trash/${key}`),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['trash'] })
-      qc.invalidateQueries({ queryKey: ['quota'] })
+      qc.invalidateQueries({ queryKey: queryKeys.quota })
     },
   })
 }
@@ -323,7 +324,7 @@ export function useEmptyTrash() {
     mutationFn: () => del<{ purged: number }>('/trash'),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['trash'] })
-      qc.invalidateQueries({ queryKey: ['quota'] })
+      qc.invalidateQueries({ queryKey: queryKeys.quota })
     },
   })
 }

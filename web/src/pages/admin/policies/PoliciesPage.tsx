@@ -8,9 +8,9 @@ import { EmptyState } from '../../../ui/EmptyState'
 import { InlineConfirm } from '../../../ui/InlineConfirm'
 import { Input } from '../../../ui/Input'
 import { Segmented } from '../../../ui/Segmented'
-import { Skeleton } from '../../../ui/Skeleton'
 import { Toggle } from '../../../ui/Toggle'
-import { AdminError } from '../ui/AdminError'
+import { AdminQueryGate } from '../ui/AdminQueryGate'
+import forms from '../ui/adminForms.module.css'
 import styles from './PoliciesPage.module.css'
 
 interface FormState {
@@ -205,11 +205,8 @@ export function PoliciesPage() {
         title={t('adminB.policiesTitle')}
         extra={<Button variant="primary" onClick={selectNew}>{t('adminB.newPolicy')}</Button>}
       />
-      {policiesQ.isError ? (
-        <AdminError onRetry={() => policiesQ.refetch()} />
-      ) : !policiesQ.data ? (
-        <Skeleton height={220} />
-      ) : (
+      <AdminQueryGate query={policiesQ}>
+        {() => (
         <div className={styles.split}>
           <div className={styles.list}>
             {policies.map((p) => (
@@ -231,8 +228,8 @@ export function PoliciesPage() {
             ) : (
               <div className={styles.form}>
                 <Input label={t('adminB.name')} value={form.name} onChange={(e) => set('name', e.target.value)} />
-                <div className={styles.field}>
-                  <span className={styles.label}>{t('adminB.driver')}</span>
+                <div className={forms.field}>
+                  <span className={forms.label}>{t('adminB.driver')}</span>
                   {sel === 'new' ? (
                     <Segmented<'local' | 's3' | 'webdav'>
                       options={[
@@ -266,7 +263,7 @@ export function PoliciesPage() {
                     <Input
                       label={t('adminB.password')}
                       value={form.davPassword}
-                      extra={<span className={styles.hint}>{t('adminB.secretMaskHint')}</span>}
+                      extra={<span className={forms.hint}>{t('adminB.secretMaskHint')}</span>}
                       onChange={(e) => set('davPassword', e.target.value)}
                       onFocus={(e) => e.target.select()}
                     />
@@ -290,12 +287,12 @@ export function PoliciesPage() {
                     <Input
                       label="AccessKey Secret"
                       value={form.s3Secret}
-                      extra={<span className={styles.hint}>{t('adminB.secretMaskHint')}</span>}
+                      extra={<span className={forms.hint}>{t('adminB.secretMaskHint')}</span>}
                       onChange={(e) => set('s3Secret', e.target.value)}
                       onFocus={(e) => e.target.select()}
                     />
-                    <div className={styles.field}>
-                      <span className={styles.label}>{t('adminB.pathStyle')}</span>
+                    <div className={forms.field}>
+                      <span className={forms.label}>{t('adminB.pathStyle')}</span>
                       <Segmented<'true' | 'false'>
                         options={[
                           { value: 'false', label: t('adminB.pathStyleVirtual') },
@@ -315,7 +312,7 @@ export function PoliciesPage() {
                       label={t('adminB.presignDomain')}
                       value={form.s3PresignDomain}
                       placeholder="https://s3.img.li"
-                      extra={<span className={styles.hint}>{t('adminB.presignDomainHint')}</span>}
+                      extra={<span className={forms.hint}>{t('adminB.presignDomainHint')}</span>}
                       onChange={(e) => set('s3PresignDomain', e.target.value)}
                     />
                   </>
@@ -328,7 +325,7 @@ export function PoliciesPage() {
                 />
                 <Input label={t('adminB.pathTemplate')} value={form.tpl} onChange={(e) => set('tpl', e.target.value)} />
                 <div className={styles.toggleRow}>
-                  <span className={styles.label}>{t('adminB.enabled')}</span>
+                  <span className={forms.label}>{t('adminB.enabled')}</span>
                   <Toggle checked={form.enabled} onChange={(v) => set('enabled', v)} />
                 </div>
                 <div className={styles.actions}>
@@ -345,7 +342,8 @@ export function PoliciesPage() {
             )}
           </div>
         </div>
-      )}
+        )}
+      </AdminQueryGate>
     </div>
   )
 }

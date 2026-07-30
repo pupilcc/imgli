@@ -1,4 +1,4 @@
-import type { RefObject } from 'react'
+import { memo, type RefObject } from 'react'
 import type { ImageItem } from '../../api/types'
 import { useT } from '../../i18n'
 import { copyText } from '../../lib/copy'
@@ -86,7 +86,12 @@ function HoverActions({ item, onQuickVis, onQuickDel }: { item: ImageItem } & Pi
   )
 }
 
-function Card({ item, view, selected, ...a }: { item: ImageItem; view: View; selected: boolean } & CardActions) {
+const Card = memo(function Card({
+  item,
+  view,
+  selected,
+  ...a
+}: { item: ImageItem; view: View; selected: boolean } & CardActions) {
   const { t } = useT()
   return (
     <div
@@ -110,9 +115,13 @@ function Card({ item, view, selected, ...a }: { item: ImageItem; view: View; sel
       </div>
     </div>
   )
-}
+})
 
-function ListRow({ item, selected, ...a }: { item: ImageItem; selected: boolean } & CardActions) {
+const ListRow = memo(function ListRow({
+  item,
+  selected,
+  ...a
+}: { item: ImageItem; selected: boolean } & CardActions) {
   const { t } = useT()
   return (
     <div className={styles.row} onClick={() => a.onOpen(item.key)}>
@@ -142,7 +151,7 @@ function ListRow({ item, selected, ...a }: { item: ImageItem; selected: boolean 
       </div>
     </div>
   )
-}
+})
 
 export function ImageGrid({ items, view, selected, sentinelRef, loadingMore, ...a }: Props) {
   const { t } = useT()

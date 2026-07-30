@@ -1,14 +1,13 @@
-import { useSearchParams } from 'react-router'
 import { useAdminReview, useReviewBatch, useReviewDecide } from '../../../api/adminHooks'
 import { useT } from '../../../i18n'
 import { formatBytes } from '../../../lib/format'
+import { useAdminSearchParam } from '../../../lib/useAdminSearchParam'
 import { PageHeader } from '../../../shell/PageHeader'
 import { useGlobal } from '../../../store'
 import { Button } from '../../../ui/Button'
 import { EmptyState } from '../../../ui/EmptyState'
-import { Skeleton } from '../../../ui/Skeleton'
 import { Tag } from '../../../ui/Tag'
-import { AdminError } from '../ui/AdminError'
+import { AdminQueryGate } from '../ui/AdminQueryGate'
 import { Pager } from '../ui/Pager'
 import styles from './ReviewPage.module.css'
 
@@ -21,21 +20,14 @@ function nsfwVariant(score: number | null): 'ok' | 'warn' | 'err' | 'muted' {
 
 export function ReviewPage() {
   const { t } = useT()
-  const [params, setParams] = useSearchParams()
+  const { params, setParam } = useAdminSearchParam()
   const page = Number(params.get('page')) || 1
   const q = useAdminReview(page)
   const decide = useReviewDecide()
   const batch = useReviewBatch()
 
-  const setPage = (p: number) =>
-    setParams((prev) => {
-      const n = new URLSearchParams(prev)
-      if (p > 1) n.set('page', String(p))
-      else n.delete('page')
-      return n
-    })
+  const setPage = (p: number) => setParam('page', p > 1 ? String(p) : '')
 
-  const items = q.data?.items ?? []
   const busy = decide.isPending || batch.isPending
 
   return (
@@ -44,13 +36,13 @@ export function ReviewPage() {
         kicker="REVIEW QUEUE"
         title={t('adminA.reviewTitle')}
         extra={
-          items.length > 0 ? (
+          (q.data?.items.length ?? 0) > 0 ? (
             <Button
               variant="primary"
               disabled={busy}
               onClick={() =>
                 batch.mutate(
-                  { keys: items.map((i) => i.key), action: 'approve' },
+                  { keys: (q.data?.items ?? []).map((i) => i.key), action: 'approve' },
                   {
                     onSuccess: (data) => {
                       const ok = data.results.filter((r) => r.ok).length
@@ -61,24 +53,23 @@ export function ReviewPage() {
                 )
               }
             >
-              {t('adminA.approveAll', { count: items.length })}
+              {t('adminA.approveAll', { count: q.data?.items.length ?? 0 })}
             </Button>
           ) : undefined
         }
       />
-      {q.isError ? (
-        <AdminError onRetry={() => q.refetch()} />
-      ) : !q.data ? (
-        <Skeleton height={220} />
-      ) : items.length === 0 ? (
-        q.data.total > 0 ? (
-          <EmptyState badge="✓" title={t('adminA.pageCleared')} desc={t('adminA.pageClearedReviewDesc')}>
-            <Button variant="secondary" onClick={() => setPage(1)}>{t('adminA.backToPage1')}</Button>
-          </EmptyState>
-        ) : (
-          <EmptyState badge="✓" title="ALL CLEAR" desc={t('adminA.allClearDesc')} />
-        )
-      ) : (
+      <AdminQueryGate query={q}>
+        {(data) => {
+          const items = data.items
+          return items.length === 0 ? (
+            data.total > 0 ? (
+              <EmptyState badge="✓" title={t('adminA.pageCleared')} desc={t('adminA.pageClearedReviewDesc')}>
+                <Button variant="secondary" onClick={() => setPage(1)}>{t('adminA.backToPage1')}</Button>
+              </EmptyState>
+            ) : (
+              <EmptyState badge="✓" title="ALL CLEAR" desc={t('adminA.allClearDesc')} />
+            )
+          ) : (
         <>
           <div className={styles.stream}>
             {items.map((it) => (
@@ -120,10 +111,12 @@ export function ReviewPage() {
               </div>
             ))}
           </div>
-          <p className={styles.stat}>{t('adminA.pendingTotal', { total: q.data.total })}</p>
-          <Pager page={page} limit={q.data.limit} total={q.data.total} onPage={setPage} />
+          <p className={styles.stat}>{t('adminA.pendingTotal', { total: data.total })}</p>
+          <Pager page={page} limit={data.limit} total={data.total} onPage={setPage} />
         </>
-      )}
+          )
+        }}
+      </AdminQueryGate>
     </div>
   )
 }

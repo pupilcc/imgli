@@ -15,6 +15,7 @@ import { InlineConfirm } from '../../../ui/InlineConfirm'
 import { Modal } from '../../../ui/Modal'
 import { AdminQueryGate } from '../ui/AdminQueryGate'
 import { Pager } from '../ui/Pager'
+import forms from '../ui/adminForms.module.css'
 import styles from './UsersPage.module.css'
 
 export function UsersPage() {
@@ -82,7 +83,7 @@ export function UsersPage() {
         kicker="USERS"
         title={t('adminA.usersTitle')}
         extra={
-          <div className={styles.filters}>
+          <div className={forms.filters}>
             <div className={styles.search}>
               <span className={styles.searchGlyph}>⌕</span>
               <input
@@ -91,7 +92,7 @@ export function UsersPage() {
                 placeholder={t('adminA.searchUsersPlaceholder')}
               />
             </div>
-            <select value={group ?? ''} onChange={(e) => setParam('group', e.target.value)} className={styles.select} aria-label={t('adminA.filterGroupAria')}>
+            <select value={group ?? ''} onChange={(e) => setParam('group', e.target.value)} className={forms.select} aria-label={t('adminA.filterGroupAria')}>
               <option value="">{t('adminA.allGroups')}</option>
               {groups.map((g) => (
                 <option key={g.id} value={g.id}>
@@ -99,24 +100,24 @@ export function UsersPage() {
                 </option>
               ))}
             </select>
-            <select value={status} onChange={(e) => setParam('status', e.target.value)} className={styles.select} aria-label={t('adminA.filterStatusAria')}>
+            <select value={status} onChange={(e) => setParam('status', e.target.value)} className={forms.select} aria-label={t('adminA.filterStatusAria')}>
               <option value="">{t('adminA.allStatuses')}</option>
               <option value="active">{t('adminA.activeUsers')}</option>
               <option value="banned">{t('adminA.bannedUsers')}</option>
             </select>
-            <select value={channel} onChange={(e) => setParam('channel', e.target.value)} className={styles.select} aria-label="channel">
+            <select value={channel} onChange={(e) => setParam('channel', e.target.value)} className={forms.select} aria-label="channel">
               <option value="">all channels</option>
               <option value="direct">direct</option>
               <option value="invite">invite</option>
               <option value="utm">utm</option>
               <option value="referer">referer</option>
             </select>
-            <select value={sort} onChange={(e) => setParam('sort', e.target.value)} className={styles.select} aria-label="sort">
+            <select value={sort} onChange={(e) => setParam('sort', e.target.value)} className={forms.select} aria-label="sort">
               <option value="">sort: id</option>
               <option value="bandwidth">sort: bandwidth</option>
             </select>
             <a
-              className={styles.select}
+              className={forms.select}
               style={{ display: 'inline-flex', alignItems: 'center', textDecoration: 'none', color: 'inherit', padding: '0 10px' }}
               href={`/api/v1/admin/export/users.csv?${new URLSearchParams({
                 ...(q ? { q } : {}),

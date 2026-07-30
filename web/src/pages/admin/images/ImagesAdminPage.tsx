@@ -11,6 +11,7 @@ import { EmptyState } from '../../../ui/EmptyState'
 import { AdminQueryGate } from '../ui/AdminQueryGate'
 import { Pager } from '../ui/Pager'
 import { AdminImageDetail } from './AdminImageDetail'
+import forms from '../ui/adminForms.module.css'
 import styles from './ImagesAdminPage.module.css'
 
 export function ImagesAdminPage() {
@@ -33,7 +34,7 @@ export function ImagesAdminPage() {
         kicker="ALL IMAGES"
         title={t('adminA.imagesTitle')}
         extra={
-          <div className={styles.filters}>
+          <div className={forms.filters}>
             {user && (
               <span className={styles.chip}>
                 {t('adminA.userFilterChip', { user })}
@@ -42,13 +43,13 @@ export function ImagesAdminPage() {
                 </button>
               </span>
             )}
-            <select value={status} onChange={(e) => setParam('status', e.target.value)} className={styles.select} aria-label={t('adminA.filterStatusAria')}>
+            <select value={status} onChange={(e) => setParam('status', e.target.value)} className={forms.select} aria-label={t('adminA.filterStatusAria')}>
               <option value="">{t('adminA.allStatuses')}</option>
               <option value="normal">{t('adminA.statusNormal')}</option>
               <option value="pending">{t('adminA.statusPending')}</option>
               <option value="rejected">{t('adminA.statusRejected')}</option>
             </select>
-            <select value={policy ?? ''} onChange={(e) => setParam('policy', e.target.value)} className={styles.select} aria-label={t('adminA.filterPolicyAria')}>
+            <select value={policy ?? ''} onChange={(e) => setParam('policy', e.target.value)} className={forms.select} aria-label={t('adminA.filterPolicyAria')}>
               <option value="">{t('adminA.allPolicies')}</option>
               {(policiesQ.data?.items ?? []).map((p) => (
                 <option key={p.id} value={p.id}>

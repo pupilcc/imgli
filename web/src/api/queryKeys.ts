@@ -1,0 +1,31 @@
+/** Central query key factory — keep invalidation and hooks in sync. */
+
+export const queryKeys = {
+  session: ['session'] as const,
+  quota: ['quota'] as const,
+  albums: ['albums'] as const,
+  config: ['config'] as const,
+  images: (f: unknown) => ['images', f] as const,
+  image: (key: string) => ['image', key] as const,
+  trash: ['trash'] as const,
+  admin: {
+    stats: ['admin', 'stats'] as const,
+    /** Prefix keys for invalidateQueries (matches all filtered variants). */
+    logsRoot: ['admin', 'logs'] as const,
+    logs: (f: unknown) => ['admin', 'logs', f] as const,
+    usersRoot: ['admin', 'users'] as const,
+    users: (f: unknown) => ['admin', 'users', f] as const,
+    groups: ['admin', 'groups'] as const,
+    policies: ['admin', 'policies'] as const,
+    imagesRoot: ['admin', 'images'] as const,
+    images: (f: unknown) => ['admin', 'images', f] as const,
+    reviewRoot: ['admin', 'review'] as const,
+    review: (page: number) => ['admin', 'review', page] as const,
+    reviewCount: ['admin', 'review-count'] as const,
+    settings: ['admin', 'settings'] as const,
+    invitesRoot: ['admin', 'invites'] as const,
+    invites: (f: unknown) => ['admin', 'invites', f] as const,
+    refererImages: (host: string | null, days: number) =>
+      ['admin', 'referers', 'images', host, days] as const,
+  },
+} as const

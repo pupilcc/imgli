@@ -9,6 +9,7 @@ import { EmptyState } from '../../../ui/EmptyState'
 import { AdminQueryGate } from '../ui/AdminQueryGate'
 import { Pager } from '../ui/Pager'
 import { actionLabel, actionOptions, actorTypeLabel, ACTOR_TYPE_LABELS, dotColor } from '../ui/auditActions'
+import forms from '../ui/adminForms.module.css'
 import styles from './LogsPage.module.css'
 
 function prettyDetail(detail: string, emptyLabel: string): string {
@@ -42,8 +43,8 @@ export function LogsPage() {
         kicker="AUDIT LOG"
         title={t('adminB.logsTitle')}
         extra={
-          <div className={styles.filters}>
-            <select value={action} onChange={(e) => setParam('action', e.target.value)} aria-label={t('adminB.filterActionAria')} className={styles.select}>
+          <div className={forms.filters}>
+            <select value={action} onChange={(e) => setParam('action', e.target.value)} aria-label={t('adminB.filterActionAria')} className={forms.select}>
               <option value="">{t('adminB.allActions')}</option>
               {options.map((o) => (
                 <option key={o.value} value={o.value}>
@@ -51,7 +52,7 @@ export function LogsPage() {
                 </option>
               ))}
             </select>
-            <select value={actorType} onChange={(e) => setParam('actor_type', e.target.value)} aria-label={t('adminB.filterActorAria')} className={styles.select}>
+            <select value={actorType} onChange={(e) => setParam('actor_type', e.target.value)} aria-label={t('adminB.filterActorAria')} className={forms.select}>
               <option value="">{t('adminB.allActors')}</option>
               {Object.keys(ACTOR_TYPE_LABELS).map((value) => (
                 <option key={value} value={value}>
