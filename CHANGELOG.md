@@ -12,6 +12,7 @@ separate version in `go.mod` or `web/package.json`.
 
 ### Added
 
+- **Public album visitor page:** `GET /api/v1/a/{id}` + `/a/{id}/images` and SPA `/a/:id` (public+normal images only).
 - **Controlled thumbnail width query:** `GET /t/{name}?w=200|400|800` with disk cache keys under `.thumbs/w{N}/` (isolated from content-hash); invalid `w` → 400.
 - **Access password for images:** optional password gate on `/i`/`/t` and share page; argon2 hash at rest; unlock via `POST /api/v1/s/{key}/unlock` cookie or `X-Image-Password`; no public CDN when set; detail UI to set/clear.
 

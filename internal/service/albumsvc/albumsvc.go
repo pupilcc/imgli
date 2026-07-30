@@ -3,7 +3,9 @@ package albumsvc
 
 import (
 	"errors"
+	"fmt"
 	"strings"
+	"time"
 
 	"gorm.io/gorm"
 
@@ -102,6 +104,127 @@ func (s *Service) Get(userID, id uint64) (*AlbumView, error) {
 	}
 	return &v, nil
 }
+
+// GetPublic 公开相册访客：仅 visibility=public；否则 ErrNotFound（不区分存在性）。
+func (s *Service) GetPublic(id uint64) (*AlbumView, error) {
+	var alb model.Album
+	err := s.db.Where("id = ?", id).First(&alb).Error
+	if errors.Is(err, gorm.ErrRecordNotFound) {
+		return nil, ErrNotFound
+	}
+	if err != nil {
+		return nil, err
+	}
+	if alb.Visibility != "public" {
+		return nil, ErrNotFound
+	}
+	v, err := s.viewPublic(alb)
+	if err != nil {
+		return nil, err
+	}
+	return &v, nil
+}
+
+// viewPublic 统计/封面仅 public+normal+未过期+非口令图（口令图不出现在访客封面网格）。
+func (s *Service) viewPublic(alb model.Album) (AlbumView, error) {
+	q := s.db.Model(&model.Image{}).
+		Where("album_id = ? AND user_id = ? AND deleted_at IS NULL AND visibility = ? AND status = ?",
+			alb.ID, alb.UserID, "public", "normal").
+		Where("expires_at IS NULL OR expires_at > NOW()").
+		Where("access_password_hash = '' OR access_password_hash IS NULL")
+	// SQLite 兼容：NOW() 在 SQLite 可能不行 — 用 gorm 表达式 time.Now()
+	// 改用 Where 与 imagesvc 一致
+	_ = q
+	var count int64
+	nowQ := s.db.Model(&model.Image{}).
+		Where("album_id = ? AND user_id = ? AND deleted_at IS NULL AND visibility = ? AND status = ?",
+			alb.ID, alb.UserID, "public", "normal").
+		Where("(expires_at IS NULL OR expires_at > ?)", timeNow()).
+		Where("(access_password_hash = '' OR access_password_hash IS NULL)")
+	if err := nowQ.Count(&count).Error; err != nil {
+		return AlbumView{}, err
+	}
+	var cover model.Image
+	coverKey := ""
+	err := s.db.Where("album_id = ? AND user_id = ? AND deleted_at IS NULL AND visibility = ? AND status = ?",
+		alb.ID, alb.UserID, "public", "normal").
+		Where("(expires_at IS NULL OR expires_at > ?)", timeNow()).
+		Where("(access_password_hash = '' OR access_password_hash IS NULL)").
+		Order("created_at DESC, id DESC").First(&cover).Error
+	if err == nil {
+		coverKey = cover.Key
+	} else if !errors.Is(err, gorm.ErrRecordNotFound) {
+		return AlbumView{}, err
+	}
+	return AlbumView{Album: alb, Count: count, CoverKey: coverKey}, nil
+}
+
+// PublicImage 访客网格行。
+type PublicImage struct {
+	Key    string
+	Name   string
+	Ext    string
+	Width  int
+	Height int
+	Size   int64
+}
+
+// ListPublicImages 公开相册内可展示图（cursor=id 降序）。
+func (s *Service) ListPublicImages(albumID uint64, cursor string, limit int) ([]PublicImage, string, error) {
+	if limit <= 0 {
+		limit = 24
+	}
+	if limit > 100 {
+		limit = 100
+	}
+	var alb model.Album
+	if err := s.db.Where("id = ? AND visibility = ?", albumID, "public").First(&alb).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, "", ErrNotFound
+		}
+		return nil, "", err
+	}
+	q := s.db.Model(&model.Image{}).
+		Select("images.key, images.name, images.ext, files.width, files.height, files.size, images.id").
+		Joins("JOIN files ON files.id = images.file_id").
+		Where("images.album_id = ? AND images.user_id = ? AND images.deleted_at IS NULL", alb.ID, alb.UserID).
+		Where("images.visibility = ? AND images.status = ?", "public", "normal").
+		Where("(images.expires_at IS NULL OR images.expires_at > ?)", timeNow()).
+		Where("(images.access_password_hash = '' OR images.access_password_hash IS NULL)").
+		Order("images.id DESC")
+	if cursor != "" {
+		var cid uint64
+		if _, err := fmt.Sscanf(cursor, "%d", &cid); err == nil && cid > 0 {
+			q = q.Where("images.id < ?", cid)
+		}
+	}
+	type row struct {
+		Key    string
+		Name   string
+		Ext    string
+		Width  int
+		Height int
+		Size   int64
+		ID     uint64
+	}
+	var rows []row
+	if err := q.Limit(limit + 1).Scan(&rows).Error; err != nil {
+		return nil, "", err
+	}
+	next := ""
+	if len(rows) > limit {
+		next = fmt.Sprintf("%d", rows[limit-1].ID)
+		rows = rows[:limit]
+	}
+	out := make([]PublicImage, 0, len(rows))
+	for _, r := range rows {
+		out = append(out, PublicImage{Key: r.Key, Name: r.Name, Ext: r.Ext, Width: r.Width, Height: r.Height, Size: r.Size})
+	}
+	return out, next, nil
+}
+
+// timeNow 可测；生产为 time.Now。
+var timeNow = func() time.Time { return time.Now() }
 
 func (s *Service) Update(userID, id uint64, name, visibility *string) (*model.Album, error) {
 	var alb model.Album

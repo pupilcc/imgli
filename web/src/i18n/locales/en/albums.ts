@@ -42,4 +42,9 @@ export default {
   detailEmptyTitle: 'This album is empty',
   detailEmptyDesc: 'Pick this album when uploading, or move images from My images in bulk',
   goUpload: 'Go upload →',
+
+  publicNotFound: 'Public album not found or not public',
+  publicEmpty: 'No images to show in this album',
+  publicCount: '{count} public images',
+  publicLink: 'Visitor link',
 }

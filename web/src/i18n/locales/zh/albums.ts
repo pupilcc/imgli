@@ -42,4 +42,9 @@ export default {
   detailEmptyTitle: '相册还是空的',
   detailEmptyDesc: '上传时选择此相册，或从「我的图片」批量移入',
   goUpload: '去上传 →',
+
+  publicNotFound: '公开相册不存在或未公开',
+  publicEmpty: '相册里还没有可展示的图片',
+  publicCount: '{count} 张公开图片',
+  publicLink: '访客链接',
 }

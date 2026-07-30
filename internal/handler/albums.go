@@ -82,6 +82,59 @@ func (h *AlbumHandlers) Detail(w http.ResponseWriter, r *http.Request) {
 	OK(w, albumViewDTO(v))
 }
 
+// PublicGet GET /api/v1/a/{id} —— 公开相册元数据（无需登录）。
+func (h *AlbumHandlers) PublicGet(w http.ResponseWriter, r *http.Request) {
+	id, ok := albumIDParam(r)
+	if !ok {
+		Fail(w, http.StatusBadRequest, CodeInvalidRequest, "相册 id 无效")
+		return
+	}
+	v, err := h.D.Alb.GetPublic(id)
+	if errors.Is(err, albumsvc.ErrNotFound) {
+		Fail(w, http.StatusNotFound, CodeNotFound, "相册不存在")
+		return
+	}
+	if err != nil {
+		Fail(w, http.StatusInternalServerError, CodeInternal, "服务器内部错误")
+		return
+	}
+	OK(w, albumViewDTO(v))
+}
+
+// PublicImages GET /api/v1/a/{id}/images
+func (h *AlbumHandlers) PublicImages(w http.ResponseWriter, r *http.Request) {
+	id, ok := albumIDParam(r)
+	if !ok {
+		Fail(w, http.StatusBadRequest, CodeInvalidRequest, "相册 id 无效")
+		return
+	}
+	limit := 24
+	if v := r.URL.Query().Get("limit"); v != "" {
+		if n, err := strconv.Atoi(v); err == nil && n > 0 {
+			limit = n
+		}
+	}
+	items, next, err := h.D.Alb.ListPublicImages(id, r.URL.Query().Get("cursor"), limit)
+	if errors.Is(err, albumsvc.ErrNotFound) {
+		Fail(w, http.StatusNotFound, CodeNotFound, "相册不存在")
+		return
+	}
+	if err != nil {
+		Fail(w, http.StatusInternalServerError, CodeInternal, "服务器内部错误")
+		return
+	}
+	out := make([]map[string]any, 0, len(items))
+	for _, it := range items {
+		out = append(out, map[string]any{
+			"key": it.Key, "name": it.Name, "ext": it.Ext,
+			"width": it.Width, "height": it.Height, "size": it.Size,
+			"thumbnail_url": "/t/" + it.Key + ".jpg",
+			"url":           "/i/" + it.Key + "." + it.Ext,
+		})
+	}
+	OK(w, map[string]any{"items": out, "next_cursor": next})
+}
+
 func (h *AlbumHandlers) Update(w http.ResponseWriter, r *http.Request) {
 	id, ok := albumIDParam(r)
 	if !ok {

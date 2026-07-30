@@ -123,6 +123,16 @@ export function AlbumDetailPage() {
           )}
         </div>
         <div className={styles.headRight}>
+          {album?.visibility === 'public' && (
+            <Button
+              onClick={() => {
+                const url = `${window.location.origin}/a/${album.id}`
+                void navigator.clipboard?.writeText(url)
+              }}
+            >
+              {t('albums.publicLink')}
+            </Button>
+          )}
           <Button onClick={togglePrivacy} disabled={updateAlbum.isPending}>
             {album?.visibility === 'public' ? t('albums.setPrivate') : t('albums.setPublic')}
           </Button>
