@@ -1,5 +1,8 @@
 # WebDAV storage matrix
 
+> SSOT: this file is the **engineering** matrix. Product docs should **link**
+> here rather than duplicate the table. See [documentation-ssot.md](documentation-ssot.md).
+
 imgli’s **WebDAV** driver (`tier=supported`) speaks standard HTTP WebDAV
 operations used by the image host: `PUT`, `GET`/`HEAD`, `DELETE`, and `MKCOL`
 for parent collections. It is **not** S3-equivalent (no presign, CDN not

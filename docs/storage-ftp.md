@@ -1,5 +1,9 @@
 # FTP storage (compatibility tier)
 
+> SSOT: this file is the **engineering** source for FTP. Product-site summary:
+> maintainers’ KB `docs-imgli/ftp` (link here for depth). See
+> [documentation-ssot.md](documentation-ssot.md).
+
 imgli can store objects on **FTP/FTPS** as a **compatibility** driver. This is
 **not** equivalent to S3 (no private presign, CDN offload not recommended, not
 for hot traffic).

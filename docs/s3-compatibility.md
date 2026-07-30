@@ -1,5 +1,8 @@
 # S3-compatible storage matrix
 
+> SSOT: engineering matrix lives **in this repo**. Product-site summary:
+> `docs-imgli/s3`. See [documentation-ssot.md](documentation-ssot.md).
+
 imgli talks to object storage through the S3 API (path-style or virtual-host).
 This page tracks **what we have verified** and how to contribute a report.
 

@@ -41,6 +41,16 @@ the source of truth). The default build is pure Go (CGO-free, SQLite included);
 `make build-vips` enables libvips-backed WebP thumbnails if you have vips dev
 headers installed.
 
+## Documentation
+
+See **[docs/documentation-ssot.md](docs/documentation-ssot.md)** for where docs live:
+
+- **This repo `docs/`** — engineering SSOT (matrices, scripts, design drafts).
+- **Product site (`docs-imgli/` in the maintainers’ KB → docs.imgli.com)** — end-user how-tos; update after user-facing releases (short pages + links to GitHub for long matrices).
+- **Internal KB (`imgli/*`, hub)** — roadmap/ops only; not for public full copies.
+
+Behavior change in a PR → update repo docs in the **same PR**. Do not maintain a second full matrix only in the KB.
+
 ## Guidelines
 
 - Keep PRs focused; include tests for behavior changes. CI must pass
