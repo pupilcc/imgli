@@ -62,7 +62,16 @@ export function UsersPage() {
   }
 
   const { data: me } = useSession()
-  const users = useAdminUsers({ q: q || undefined, group, status: status || undefined, page })
+  const channel = params.get('channel') ?? ''
+  const sort = params.get('sort') ?? ''
+  const users = useAdminUsers({
+    q: q || undefined,
+    group,
+    status: status || undefined,
+    channel: channel || undefined,
+    sort: sort || undefined,
+    page,
+  })
   const groupsQ = useAdminGroups()
   const update = useUpdateAdminUser()
   const reset = useResetAdminPassword()
@@ -105,6 +114,30 @@ export function UsersPage() {
               <option value="active">{t('adminA.activeUsers')}</option>
               <option value="banned">{t('adminA.bannedUsers')}</option>
             </select>
+            <select value={channel} onChange={(e) => setParam('channel', e.target.value)} className={styles.select} aria-label="channel">
+              <option value="">all channels</option>
+              <option value="direct">direct</option>
+              <option value="invite">invite</option>
+              <option value="utm">utm</option>
+              <option value="referer">referer</option>
+            </select>
+            <select value={sort} onChange={(e) => setParam('sort', e.target.value)} className={styles.select} aria-label="sort">
+              <option value="">sort: id</option>
+              <option value="bandwidth">sort: bandwidth</option>
+            </select>
+            <a
+              className={styles.select}
+              style={{ display: 'inline-flex', alignItems: 'center', textDecoration: 'none', color: 'inherit', padding: '0 10px' }}
+              href={`/api/v1/admin/export/users.csv?${new URLSearchParams({
+                ...(q ? { q } : {}),
+                ...(group ? { group: String(group) } : {}),
+                ...(status ? { status } : {}),
+                ...(channel ? { channel } : {}),
+                ...(sort ? { sort } : {}),
+              }).toString()}`}
+            >
+              CSV
+            </a>
           </div>
         }
       />

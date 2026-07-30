@@ -31,6 +31,7 @@ import (
 	"github.com/yixian-huang/imgli/internal/service/stats"
 	"github.com/yixian-huang/imgli/internal/service/storagesvc"
 	"github.com/yixian-huang/imgli/internal/service/upload"
+	"github.com/yixian-huang/imgli/internal/service/webhook"
 	"github.com/yixian-huang/imgli/internal/task"
 	"github.com/yixian-huang/imgli/web"
 )
@@ -131,6 +132,7 @@ func (s *Server) mountAPI() {
 			slog.Warn("reject notify mail failed", "key", img.Key, "err", err)
 		}
 	}
+	hooks := webhook.New(s.opts.DB)
 	fetchAllow := parseFetchAllow(s.opts.Cfg.FetchAllow)
 	uploadH := &handler.UploadHandlers{D: handler.UploadDeps{
 		Svc:         upSvc,
@@ -138,6 +140,7 @@ func (s *Server) mountAPI() {
 		MaxBytes:    64 << 20,
 		FetchAllow:  fetchAllow,
 		FetchClient: handler.NewFetchClient(fetchAllow),
+		Hooks:       hooks,
 	}}
 
 	// 图片管理（Task 1+）
@@ -153,7 +156,7 @@ func (s *Server) mountAPI() {
 	authSvc.Mailer = mailSvc
 	authSvc.BaseURL = s.opts.Cfg.BaseURL
 	admH := &handler.AdminHandlers{D: handler.AdminDeps{
-		Adm: adm, Res: storageRes, Mail: mailSvc, Stats: s.stats, Mod: modSvc,
+		Adm: adm, Res: storageRes, Mail: mailSvc, Stats: s.stats, Mod: modSvc, Hooks: hooks,
 		OwnHost: baseHost(s.opts.Cfg.BaseURL),
 	}}
 
@@ -236,6 +239,9 @@ func (s *Server) mountAPI() {
 				ar.Get("/stats", admH.Stats)
 				ar.Get("/referers/images", admH.RefererImages)
 				ar.Get("/users", admH.Users)
+				ar.Get("/export/users.csv", admH.ExportUsersCSV)
+				ar.Get("/webhooks", admH.GetWebhooks)
+				ar.Put("/webhooks", admH.PutWebhooks)
 				ar.Patch("/users/{id}", admH.UpdateUser)
 				ar.Post("/users/{id}/reset-password", admH.ResetPassword)
 				ar.Get("/images", admH.Images)

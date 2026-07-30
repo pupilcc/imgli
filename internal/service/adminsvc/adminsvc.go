@@ -19,6 +19,9 @@ type Service struct{ db *gorm.DB }
 
 func New(db *gorm.DB) *Service { return &Service{db: db} }
 
+// DB 暴露底层连接（admin 设置读写等）。
+func (s *Service) DB() *gorm.DB { return s.db }
+
 // ModerationConfig 返回明文机审配置(服务端内部用,不经 GetSettings 打码路径)。
 func (s *Service) ModerationConfig() (moderation.Config, error) {
 	cfg := moderation.DefaultConfig()

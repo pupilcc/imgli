@@ -28,6 +28,9 @@ type UploadDeps struct {
 	MaxBytes    int64        // 硬上限（防超大 body），实际按用户组上限精确拦截
 	FetchAllow  []*net.IPNet // URL 抓取运维内网允许清单（默认空=严格）
 	FetchClient *http.Client // 抓取远程图片专用客户端（拨号期 SSRF 校验，按 FetchAllow 构造）
+	Hooks       interface {
+		Emit(eventType string, data map[string]any)
+	}
 }
 
 type UploadHandlers struct{ D UploadDeps }
@@ -184,6 +187,11 @@ func (h *UploadHandlers) Upload(w http.ResponseWriter, r *http.Request) {
 		failUpload(w, err)
 		return
 	}
+	if h.D.Hooks != nil && res != nil && res.Image != nil {
+		h.D.Hooks.Emit("image.uploaded", map[string]any{
+			"key": res.Image.Key, "name": res.Image.Name, "status": res.Image.Status,
+		})
+	}
 	OK(w, uploadResultDTO(res, h.D.Res))
 }
 
@@ -310,6 +318,11 @@ func (h *UploadHandlers) UploadURL(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		failUpload(w, err)
 		return
+	}
+	if h.D.Hooks != nil && res != nil && res.Image != nil {
+		h.D.Hooks.Emit("image.uploaded", map[string]any{
+			"key": res.Image.Key, "name": res.Image.Name, "status": res.Image.Status,
+		})
 	}
 	OK(w, uploadResultDTO(res, h.D.Res))
 }

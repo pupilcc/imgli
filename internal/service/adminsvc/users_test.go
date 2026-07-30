@@ -97,7 +97,7 @@ func TestListUsersFilterAndPaginate(t *testing.T) {
 	db.Delete(deleted) // 软删，不应计入 image_count
 
 	// q 搜索 username
-	rows, total, err := svc.ListUsers("ali", 0, "", 1, 50)
+	rows, total, err := svc.ListUsers("ali", 0, "", "", "", 1, 50)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -109,7 +109,7 @@ func TestListUsersFilterAndPaginate(t *testing.T) {
 	}
 
 	// q 搜索 email
-	_, total, err = svc.ListUsers("vip.li", 0, "", 1, 50)
+	_, total, err = svc.ListUsers("vip.li", 0, "", "", "", 1, 50)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -118,7 +118,7 @@ func TestListUsersFilterAndPaginate(t *testing.T) {
 	}
 
 	// group 筛选
-	rows, total, err = svc.ListUsers("", vip.ID, "", 1, 50)
+	rows, total, err = svc.ListUsers("", vip.ID, "", "", "", 1, 50)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -127,7 +127,7 @@ func TestListUsersFilterAndPaginate(t *testing.T) {
 	}
 
 	// status 筛选
-	rows, total, err = svc.ListUsers("", 0, "banned", 1, 50)
+	rows, total, err = svc.ListUsers("", 0, "banned", "", "", 1, 50)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -136,14 +136,14 @@ func TestListUsersFilterAndPaginate(t *testing.T) {
 	}
 
 	// 分页
-	rows, total, err = svc.ListUsers("", 0, "", 1, 2)
+	rows, total, err = svc.ListUsers("", 0, "", "", "", 1, 2)
 	if err != nil {
 		t.Fatal(err)
 	}
 	if total != 3 || len(rows) != 2 {
 		t.Errorf("page1 limit2: total=%d len=%d", total, len(rows))
 	}
-	rows, total, err = svc.ListUsers("", 0, "", 2, 2)
+	rows, total, err = svc.ListUsers("", 0, "", "", "", 2, 2)
 	if err != nil {
 		t.Fatal(err)
 	}
