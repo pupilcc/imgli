@@ -58,7 +58,9 @@ verify upstream docs before migrating.
 - **Single binary** — frontend embedded via `go:embed`; SQLite by default,
   PostgreSQL supported. No CGO required.
 - **Storage backends** — local disk, **S3-compatible** (verified against
-  MinIO/RustFS; vendor test toolkit included), WebDAV. Per-policy CDN domain
+  MinIO/RustFS; vendor test toolkit included), WebDAV, optional **FTP
+  compatibility** tier (prefer OpenList/proxy; see [docs/storage-ftp.md](docs/storage-ftp.md)).
+  Per-policy CDN domain
   with `302` offloading, presigned-URL direct serving for private images.
 - **Content safety** — pluggable moderation pipeline: NSFW detection endpoint
   + OCR keyword screening (self-hosted sidecar in `deploy/ocr-paddle/`),

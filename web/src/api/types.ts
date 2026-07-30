@@ -310,6 +310,32 @@ export interface AdminGroup {
   user_count: number
 }
 
+export interface StorageCaps {
+  tier: 'first_class' | 'supported' | 'compat' | 'migrate_only' | string
+  summary_key: string
+  transport_tls_preferred: boolean
+  allows_insecure: boolean
+  range_get: boolean
+  list_prefix: boolean
+  multipart_upload: boolean
+  public_cdn_offload_recommended: boolean
+  private_presign_capable: boolean
+  hot_path_ok: boolean
+  feature_loss_keys: string[] | null
+}
+
+export interface StorageEffective {
+  transport_is_tls: boolean
+  public_cdn_redirect_configured: boolean
+  private_presign_ready: boolean
+}
+
+export interface PolicyWarning {
+  code: string
+  message_key: string
+  severity: 'warning' | 'info' | string
+}
+
 export interface AdminPolicy {
   id: number
   name: string
@@ -321,6 +347,10 @@ export interface AdminPolicy {
   created_at: string
   file_count: number
   used_bytes: number
+  tier?: string
+  caps?: StorageCaps
+  effective?: StorageEffective
+  warnings?: PolicyWarning[] | null
 }
 
 export interface AdminOCRKeywords {

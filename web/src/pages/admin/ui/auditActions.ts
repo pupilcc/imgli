@@ -16,6 +16,7 @@ const ACTION_I18N: Record<string, string> = {
   policy_update: 'adminB.actPolicyUpdate',
   policy_delete: 'adminB.actPolicyDelete',
   policy_test: 'adminB.actPolicyTest',
+  policy_enable_compat: 'adminB.actPolicyEnableCompat',
   settings_update: 'adminB.actSettingsUpdate',
   smtp_test: 'adminB.actSmtpTest',
   moderation_flag: 'adminB.actModerationFlag',

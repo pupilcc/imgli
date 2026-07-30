@@ -18,6 +18,8 @@ import (
 	"gorm.io/gorm"
 
 	"github.com/yixian-huang/imgli/internal/model"
+	"github.com/yixian-huang/imgli/internal/storage"
+	"github.com/yixian-huang/imgli/internal/storage/ftp"
 	"github.com/yixian-huang/imgli/internal/storage/s3"
 	"github.com/yixian-huang/imgli/internal/storage/webdav"
 )
@@ -25,8 +27,8 @@ import (
 var (
 	// ErrPolicyNameInvalid 策略名需 1-64 个字符（TrimSpace 后）。
 	ErrPolicyNameInvalid = errors.New("策略名需 1-64 个字符")
-	// ErrDriverUnsupported driver 仅支持 local|s3|webdav。
-	ErrDriverUnsupported = errors.New("driver 仅支持 local|s3|webdav")
+	// ErrDriverUnsupported driver 仅支持 local|s3|webdav|ftp。
+	ErrDriverUnsupported = errors.New("driver 仅支持 local|s3|webdav|ftp")
 	// ErrBadConfig 驱动 config 校验失败（local 缺 root / s3 缺必填字段等）。
 	ErrBadConfig = errors.New("config 缺少非空 root")
 	// ErrPolicyInUse 仍被 files 引用的策略不可删除（改用 enabled=false 下线）。
@@ -128,6 +130,51 @@ func validateWebDAVConfig(cfg map[string]string) error {
 	return nil
 }
 
+// validateFTPConfig 校验 ftp 兼容驱动：host（或 endpoint）必填；allow_insecure 仅 true/false/空。
+func validateFTPConfig(cfg map[string]string) error {
+	host := strings.TrimSpace(cfg["host"])
+	if host == "" {
+		ep := strings.TrimSpace(cfg["endpoint"])
+		if ep == "" {
+			return ErrBadConfig
+		}
+	}
+	switch strings.ToLower(strings.TrimSpace(cfg["allow_insecure"])) {
+	case "", "true", "false":
+	default:
+		return ErrBadConfig
+	}
+	if p := strings.TrimSpace(cfg["port"]); p != "" {
+		// 粗校验：1–65535
+		n := 0
+		for i := 0; i < len(p); i++ {
+			if p[i] < '0' || p[i] > '9' {
+				return ErrBadConfig
+			}
+			n = n*10 + int(p[i]-'0')
+			if n > 65535 {
+				return ErrBadConfig
+			}
+		}
+		if n == 0 {
+			return ErrBadConfig
+		}
+	}
+	// 试构造确保 New 可解析（不拨号）
+	if _, err := ftp.New(cfg); err != nil {
+		return ErrBadConfig
+	}
+	return nil
+}
+
+// validateCDNDomain wraps storage.ValidateCDNDomain as ErrBadConfig.
+func validateCDNDomain(raw string) error {
+	if err := storage.ValidateCDNDomain(raw); err != nil {
+		return ErrBadConfig
+	}
+	return nil
+}
+
 // validateDriverConfig 按驱动类型校验 config。
 func validateDriverConfig(driver string, cfg map[string]string) error {
 	switch driver {
@@ -137,9 +184,37 @@ func validateDriverConfig(driver string, cfg map[string]string) error {
 		return validateS3Config(cfg)
 	case "webdav":
 		return validateWebDAVConfig(cfg)
+	case "ftp":
+		return validateFTPConfig(cfg)
 	default:
 		return ErrDriverUnsupported
 	}
+}
+
+// PolicyCapsBundle is attached to admin policy DTOs.
+type PolicyCapsBundle struct {
+	Tier      storage.Tier
+	Caps      storage.Caps
+	Effective storage.Effective
+	Warnings  []storage.PolicyWarning
+}
+
+// CapsBundleFor builds tier/caps/effective/warnings for a storage policy.
+func CapsBundleFor(p *model.StoragePolicy) (PolicyCapsBundle, error) {
+	caps, err := storage.CapsForDriver(p.Driver)
+	if err != nil {
+		return PolicyCapsBundle{}, err
+	}
+	eff, err := storage.EffectiveFor(p.Driver, p.Config, p.CDNDomain)
+	if err != nil {
+		return PolicyCapsBundle{}, err
+	}
+	return PolicyCapsBundle{
+		Tier:      caps.Tier,
+		Caps:      caps,
+		Effective: eff,
+		Warnings:  storage.WarningsFor(p.Driver, p.Config, p.CDNDomain, p.Enabled, caps, eff),
+	}, nil
 }
 
 // parseDriverConfig 把 PATCH 传入的 JSON 字符串解析为 map 并按驱动校验。
@@ -190,7 +265,7 @@ func (s *Service) PolicyByID(id uint64) (*model.StoragePolicy, error) {
 	return &p, nil
 }
 
-// CreatePolicy 创建存储策略。校验：Name 非空且 ≤64；Driver 仅 local|s3|webdav；
+// CreatePolicy 创建存储策略。校验：Name 非空且 ≤64；Driver 仅 local|s3|webdav|ftp；
 // 各驱动 Config 按 validateDriverConfig 校验；PathTemplate 留空时套用②b 默认模板。
 func (s *Service) CreatePolicy(p *model.StoragePolicy) error {
 	name, err := validateName(p.Name)
@@ -198,6 +273,9 @@ func (s *Service) CreatePolicy(p *model.StoragePolicy) error {
 		return err
 	}
 	if err := validateDriverConfig(p.Driver, p.Config); err != nil {
+		return err
+	}
+	if err := validateCDNDomain(p.CDNDomain); err != nil {
 		return err
 	}
 	p.Name = name
@@ -278,10 +356,22 @@ func (s *Service) UpdatePolicy(id uint64, patch PolicyPatch) (*model.StoragePoli
 			}
 			cfg["password"] = old["password"]
 		}
+		// ftp 同 webdav 掩码语义：改 host/port/username 必须重交 password。
+		if p.Driver == "ftp" && strings.HasPrefix(cfg["password"], "****") {
+			old := p.Config
+			if cfg["host"] != old["host"] || cfg["endpoint"] != old["endpoint"] ||
+				cfg["port"] != old["port"] || cfg["username"] != old["username"] {
+				return nil, ErrBadConfig
+			}
+			cfg["password"] = old["password"]
+		}
 		p.Config = cfg
 		cols = append(cols, "config")
 	}
 	if patch.CDNDomain != nil {
+		if err := validateCDNDomain(*patch.CDNDomain); err != nil {
+			return nil, err
+		}
 		p.CDNDomain = *patch.CDNDomain
 		cols = append(cols, "cdn_domain")
 	}
@@ -355,7 +445,7 @@ func (s *Service) DeletePolicy(id uint64) error {
 	return nil
 }
 
-// TestPolicy 对策略做写/读/删探针：local 直接测目录可写；s3/webdav 走驱动 Put/Open/Delete。
+// TestPolicy 对策略做写/读/删探针：local 直接测目录可写；s3/webdav/ftp 走驱动 Put/Open/Delete。
 // 返回耗时(ms)。失败时返回描述性 error。
 func (s *Service) TestPolicy(id uint64) (int64, error) {
 	var p model.StoragePolicy
@@ -395,13 +485,26 @@ func (s *Service) TestPolicy(id uint64) (int64, error) {
 			return 0, fmt.Errorf("删除探针文件失败: %w", err)
 		}
 		return time.Since(start).Milliseconds(), nil
-	case "s3":
-		d, err := s3.New(p.Config)
+	case "s3", "webdav", "ftp":
+		var d interface {
+			Put(context.Context, string, io.Reader) error
+			Open(context.Context, string) (io.ReadSeekCloser, error)
+			Delete(context.Context, string) error
+		}
+		var err error
+		switch p.Driver {
+		case "s3":
+			d, err = s3.New(p.Config)
+		case "webdav":
+			d, err = webdav.New(p.Config)
+		case "ftp":
+			d, err = ftp.New(p.Config)
+		}
 		if err != nil {
 			return 0, err
 		}
 		start := time.Now()
-		ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
+		ctx, cancel := context.WithTimeout(context.Background(), 20*time.Second)
 		defer cancel()
 		probeKey := ".imgli-probe-" + randSuffix(8)
 		content := []byte(randSuffix(16))
@@ -410,41 +513,13 @@ func (s *Service) TestPolicy(id uint64) (int64, error) {
 		}
 		rc, err := d.Open(ctx, probeKey)
 		if err != nil {
-			d.Delete(ctx, probeKey)
+			_ = d.Delete(ctx, probeKey)
 			return 0, fmt.Errorf("读回探针对象失败: %w", err)
 		}
 		got, _ := io.ReadAll(rc)
 		rc.Close()
 		if !bytes.Equal(got, content) {
-			d.Delete(ctx, probeKey)
-			return 0, errors.New("探针对象内容比对不一致")
-		}
-		if err := d.Delete(ctx, probeKey); err != nil {
-			return 0, fmt.Errorf("删除探针对象失败: %w", err)
-		}
-		return time.Since(start).Milliseconds(), nil
-	case "webdav":
-		d, err := webdav.New(p.Config)
-		if err != nil {
-			return 0, err
-		}
-		start := time.Now()
-		ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
-		defer cancel()
-		probeKey := ".imgli-probe-" + randSuffix(8)
-		content := []byte(randSuffix(16))
-		if err := d.Put(ctx, probeKey, bytes.NewReader(content)); err != nil {
-			return 0, fmt.Errorf("写入探针对象失败: %w", err)
-		}
-		rc, err := d.Open(ctx, probeKey)
-		if err != nil {
-			d.Delete(ctx, probeKey)
-			return 0, fmt.Errorf("读回探针对象失败: %w", err)
-		}
-		got, _ := io.ReadAll(rc)
-		rc.Close()
-		if !bytes.Equal(got, content) {
-			d.Delete(ctx, probeKey)
+			_ = d.Delete(ctx, probeKey)
 			return 0, errors.New("探针对象内容比对不一致")
 		}
 		if err := d.Delete(ctx, probeKey); err != nil {

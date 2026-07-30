@@ -838,7 +838,7 @@ func TestAdminPoliciesCRUDFlow(t *testing.T) {
 
 	// PATCH 改名 + cdn_domain + enabled=false
 	rec, e = doJSON(t, s, "PATCH", "/api/v1/admin/policies/"+itoa(created.ID),
-		`{"name":"renamed","cdn_domain":"cdn.example.com","enabled":false}`, []*http.Cookie{admin})
+		`{"name":"renamed","cdn_domain":"https://cdn.example.com","enabled":false}`, []*http.Cookie{admin})
 	if rec.Code != http.StatusOK {
 		t.Fatalf("patch = %d: %s", rec.Code, rec.Body.String())
 	}
@@ -848,7 +848,7 @@ func TestAdminPoliciesCRUDFlow(t *testing.T) {
 		Enabled   bool   `json:"enabled"`
 	}
 	json.Unmarshal(e.Data, &patched)
-	if patched.Name != "renamed" || patched.CDNDomain != "cdn.example.com" || patched.Enabled {
+	if patched.Name != "renamed" || patched.CDNDomain != "https://cdn.example.com" || patched.Enabled {
 		t.Errorf("patched = %+v", patched)
 	}
 

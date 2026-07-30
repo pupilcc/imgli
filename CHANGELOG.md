@@ -10,6 +10,14 @@ separate version in `go.mod` or `web/package.json`.
 
 ## [Unreleased]
 
+### Added
+
+- **Storage Caps:** each storage policy exposes `tier` / `caps` / `effective` / `warnings` on admin API; policy UI shows capability panel and CDN/compat warnings (advisory; serve path unchanged).
+- **FTP compatibility driver:** optional `ftp` backend (FTPS preferred, `allow_insecure` for plain FTP); no serve special-cases. Prefer OpenList/proxy — see `docs/storage-ftp.md` and dual-track notes in `docs/s3-compatibility.md`.
+- **CDN domain validation:** `cdn_domain` must be http(s) origin/path prefix without userinfo/query/fragment.
+- **Doctor:** storage caps / CDN-vs-cap / insecure transport / compat-only checks.
+- **Design:** `docs/design/storage-caps-draft.md` + implementation checklist.
+
 ### Fixed
 
 - **Detail modal scroll:** opening 访问控制 / 访问统计 no longer scrolls the page behind; body is fixed-locked and the right pane is a real overflow container.

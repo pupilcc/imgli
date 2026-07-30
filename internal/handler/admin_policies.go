@@ -14,7 +14,7 @@ import (
 )
 
 // adminPolicyDTO 存储策略字段。config 为 JSON 编码字符串；s3 的 secret_access_key、
-// webdav 的 password 已打码。
+// webdav/ftp 的 password 已打码。附带 tier/caps/effective/warnings。
 func adminPolicyDTO(p *model.StoragePolicy) map[string]any {
 	cfg := p.Config
 	if p.Driver == "s3" && cfg["secret_access_key"] != "" {
@@ -25,7 +25,7 @@ func adminPolicyDTO(p *model.StoragePolicy) map[string]any {
 		masked["secret_access_key"] = adminsvc.MaskSecret(cfg["secret_access_key"])
 		cfg = masked
 	}
-	if p.Driver == "webdav" && cfg["password"] != "" {
+	if (p.Driver == "webdav" || p.Driver == "ftp") && cfg["password"] != "" {
 		masked := make(map[string]string, len(cfg))
 		for k, v := range cfg {
 			masked[k] = v
@@ -37,12 +37,19 @@ func adminPolicyDTO(p *model.StoragePolicy) map[string]any {
 	if err != nil {
 		cfgJSON = []byte("{}")
 	}
-	return map[string]any{
+	m := map[string]any{
 		"id": p.ID, "name": p.Name, "driver": p.Driver,
 		"config": string(cfgJSON), "cdn_domain": p.CDNDomain,
 		"path_template": p.PathTemplate, "enabled": p.Enabled,
 		"created_at": p.CreatedAt.Format(time.RFC3339),
 	}
+	if b, err := adminsvc.CapsBundleFor(p); err == nil {
+		m["tier"] = b.Tier
+		m["caps"] = b.Caps
+		m["effective"] = b.Effective
+		m["warnings"] = b.Warnings
+	}
+	return m
 }
 
 func policyRowDTO(row *adminsvc.PolicyRow) map[string]any {
@@ -104,6 +111,10 @@ func (h *AdminHandlers) CreatePolicy(w http.ResponseWriter, r *http.Request) {
 		actor := PrincipalFrom(r).User
 		h.D.Adm.Audit(&actor.ID, "admin", "policy_create",
 			map[string]any{"name": p.Name, "driver": p.Driver}, ClientIP(r))
+		if b, err := adminsvc.CapsBundleFor(p); err == nil && b.Tier == "compat" && p.Enabled {
+			h.D.Adm.Audit(&actor.ID, "admin", "policy_enable_compat",
+				map[string]any{"id": p.ID, "driver": p.Driver, "name": p.Name}, ClientIP(r))
+		}
 		OK(w, adminPolicyDTO(p))
 	case errors.Is(err, adminsvc.ErrDriverUnsupported), errors.Is(err, adminsvc.ErrBadConfig), errors.Is(err, adminsvc.ErrPolicyNameInvalid):
 		Fail(w, http.StatusBadRequest, CodeInvalidRequest, err.Error())
@@ -134,6 +145,11 @@ func (h *AdminHandlers) UpdatePolicy(w http.ResponseWriter, r *http.Request) {
 		Fail(w, http.StatusBadRequest, CodeInvalidRequest, "请求体无效")
 		return
 	}
+	// 启用 compat 前记录旧 enabled，便于 policy_enable_compat 审计。
+	var wasEnabled bool
+	if prev, e := h.D.Adm.PolicyByID(id); e == nil && prev != nil {
+		wasEnabled = prev.Enabled
+	}
 	patch := adminsvc.PolicyPatch{
 		Name: req.Name, Config: req.Config, CDNDomain: req.CDNDomain,
 		PathTemplate: req.PathTemplate, Enabled: req.Enabled,
@@ -159,6 +175,10 @@ func (h *AdminHandlers) UpdatePolicy(w http.ResponseWriter, r *http.Request) {
 		}
 		actor := PrincipalFrom(r).User
 		h.D.Adm.Audit(&actor.ID, "admin", "policy_update", map[string]any{"id": id, "fields": fields}, ClientIP(r))
+		if b, e := adminsvc.CapsBundleFor(p); e == nil && b.Tier == "compat" && p.Enabled && !wasEnabled {
+			h.D.Adm.Audit(&actor.ID, "admin", "policy_enable_compat",
+				map[string]any{"id": p.ID, "driver": p.Driver, "name": p.Name}, ClientIP(r))
+		}
 		OK(w, adminPolicyDTO(p))
 	case errors.Is(err, adminsvc.ErrPolicyNotFound):
 		Fail(w, http.StatusNotFound, CodeNotFound, err.Error())

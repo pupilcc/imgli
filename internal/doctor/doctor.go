@@ -16,6 +16,7 @@ import (
 	"github.com/yixian-huang/imgli/internal/config"
 	"github.com/yixian-huang/imgli/internal/model"
 	"github.com/yixian-huang/imgli/internal/service/storagesvc"
+	"github.com/yixian-huang/imgli/internal/storage"
 )
 
 // Level is the severity of a check result.
@@ -73,7 +74,51 @@ func Run(cfg *config.Config) Report {
 	checkDatabase(db, cfg, &r)
 	checkLocalPolicies(cfg, db, &r)
 	checkCDNMetering(db, &r)
+	checkStorageCaps(db, &r)
 	return r
+}
+
+// checkStorageCaps reports driver tier/caps and warns on CDN vs capability, insecure
+// remote transport, and site-wide compat-only storage.
+func checkStorageCaps(db *gorm.DB, r *Report) {
+	var policies []model.StoragePolicy
+	if err := db.Where("enabled = ?", true).Find(&policies).Error; err != nil {
+		r.add("storage_caps", Warn, fmt.Sprintf("列举存储策略失败: %v", err))
+		return
+	}
+	if len(policies) == 0 {
+		r.add("storage_caps", OK, "无启用存储策略")
+		return
+	}
+	compatOnly := true
+	var lines []string
+	for _, p := range policies {
+		caps, err := storage.CapsForDriver(p.Driver)
+		if err != nil {
+			r.add("storage_caps", Warn, fmt.Sprintf("策略 %q 未知驱动 %s", p.Name, p.Driver))
+			compatOnly = false
+			continue
+		}
+		eff, _ := storage.EffectiveFor(p.Driver, p.Config, p.CDNDomain)
+		lines = append(lines, fmt.Sprintf("%s driver=%s tier=%s presign_capable=%v cdn_recommended=%v",
+			p.Name, p.Driver, caps.Tier, caps.PrivatePresignCapable, caps.PublicCDNOffloadRecommended))
+		if strings.TrimSpace(p.CDNDomain) != "" && !caps.PublicCDNOffloadRecommended {
+			r.add("cdn_vs_caps", Warn, fmt.Sprintf("策略 %q 配置了 CDN 但驱动不推荐作为对象 CDN 回源（原图 /i 仍可能 302）", p.Name))
+		}
+		if p.Driver != "local" && !eff.TransportIsTLS {
+			r.add("insecure_transport", Warn, fmt.Sprintf("策略 %q 远程传输可能未使用 TLS", p.Name))
+		}
+		if caps.PrivatePresignCapable && !eff.PrivatePresignReady {
+			r.add("presign_unconfigured", OK, fmt.Sprintf("策略 %q 未配置 presign_domain：私密图经服务端流式", p.Name))
+		}
+		if caps.Tier != storage.TierCompat {
+			compatOnly = false
+		}
+	}
+	r.add("storage_caps", OK, strings.Join(lines, "; "))
+	if compatOnly {
+		r.add("compat_only", Warn, "全部启用策略均为兼容层（compat）；高流量建议增加本地或 S3")
+	}
 }
 
 // checkCDNMetering warns when any enabled policy has cdn_domain set: admin
