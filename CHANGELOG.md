@@ -10,10 +10,18 @@ separate version in `go.mod` or `web/package.json`.
 
 ## [Unreleased]
 
+## [0.4.1] - 2026-07-30
+
+Theme: **FTP hot-path polish (compat)**
+
 ### Changed
 
 - **FTP driver:** in-package control connection pool + remembered TLS mode (no dual-dial per request); still compat-tier, no serve changes.
 - **FTP Open streaming:** use `SIZE` + lazy `RETR`/`REST` for better TTFB; full-buffer fallback when `SIZE` unsupported.
+
+### Fixed
+
+- **e2e:** policies admin assert `本地磁盘` with `exact: true` (Caps summary collision).
 
 ## [0.4.0] - 2026-07-30
 
