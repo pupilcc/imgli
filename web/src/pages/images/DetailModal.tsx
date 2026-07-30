@@ -6,6 +6,7 @@ import type { ImageItem } from '../../api/types'
 import { useT } from '../../i18n'
 import { copyText } from '../../lib/copy'
 import { formatBytes, formatDate } from '../../lib/format'
+import { generateAccessPassword } from '../../lib/password'
 import { useGlobal } from '../../store'
 import { InlineConfirm } from '../../ui/InlineConfirm'
 import { Segmented } from '../../ui/Segmented'
@@ -65,6 +66,7 @@ export function DetailModal({ items, focusKey, onClose, onNavigate }: Props) {
   const [renameVal, setRenameVal] = useState('')
   const [moving, setMoving] = useState(false)
   const [expiryKey, setExpiryKey] = useState<ExpiryKey>('never')
+  const [accessPw, setAccessPw] = useState('')
 
   const prevKey = idx > 0 ? items[idx - 1].key : null
   const nextKey = idx >= 0 && idx < items.length - 1 ? items[idx + 1].key : null
@@ -90,9 +92,18 @@ export function DetailModal({ items, focusKey, onClose, onNavigate }: Props) {
     setRenaming(false)
     setMoving(false)
     setExpiryKey('never')
+    setAccessPw('')
   }, [focusKey])
 
-  const qrUrl = base?.links.url ?? ''
+  const sharePageUrl = (() => {
+    if (!base || base.visibility !== 'public') return null
+    if (base.links.share_url) return base.links.share_url
+    if (typeof window === 'undefined') return null
+    return `${window.location.origin}/s/${base.key}`
+  })()
+
+  // QR 优先指向分享页（公开图），便于扫码打开预览页
+  const qrUrl = sharePageUrl || base?.links.url || ''
   const qrSVG = useMemo(() => (qrUrl ? renderSVG(qrUrl) : ''), [qrUrl])
 
   if (!base) return null
@@ -132,15 +143,27 @@ export function DetailModal({ items, focusKey, onClose, onNavigate }: Props) {
   }
 
   const hasAccessPassword = !!(d?.has_access_password ?? base.has_access_password)
-  const [accessPw, setAccessPw] = useState('')
   const setAccessPassword = (password: string) => {
     update.mutate(
       { key: base.key, body: { access_password: password } },
-      { onSuccess: () => setAccessPw('') },
+      {
+        onSuccess: () => {
+          setAccessPw('')
+          pushToast(
+            password
+              ? t('images.accessPasswordSet')
+              : t('images.accessPasswordNone'),
+          )
+        },
+      },
     )
+  }
+  const fillRandomPassword = () => {
+    setAccessPw(generateAccessPassword(10))
   }
 
   const copyRows = [
+    ...(sharePageUrl ? [{ kind: t('images.sharePage'), text: sharePageUrl }] : []),
     { kind: 'URL', text: base.links.url },
     { kind: 'MD', text: base.links.markdown },
     { kind: 'HTML', text: base.links.html },
@@ -302,13 +325,31 @@ export function DetailModal({ items, focusKey, onClose, onNavigate }: Props) {
           <div className={styles.expiryEdit}>
             <input
               className={styles.renameInput}
-              type="password"
+              type="text"
               value={accessPw}
               placeholder={t('images.accessPasswordPlaceholder')}
               onChange={(e) => setAccessPw(e.target.value)}
-              autoComplete="new-password"
+              autoComplete="off"
+              spellCheck={false}
             />
             <div className={styles.renameRow}>
+              <button
+                type="button"
+                className={styles.removeExpiry}
+                disabled={update.isPending}
+                onClick={fillRandomPassword}
+              >
+                {t('images.accessPasswordGenerate')}
+              </button>
+              {accessPw.trim() ? (
+                <button
+                  type="button"
+                  className={styles.removeExpiry}
+                  onClick={() => copyText(accessPw.trim(), t('images.accessPassword'))}
+                >
+                  {t('images.accessPasswordCopy')}
+                </button>
+              ) : null}
               <button
                 type="button"
                 className={styles.renameSave}

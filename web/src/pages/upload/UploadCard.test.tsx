@@ -55,12 +55,17 @@ it('success 主链输入框 + 复制 URL / 多格式 / 分享页', async () => {
   )
   const primary = screen.getByDisplayValue(LINKS.url)
   expect(primary).toBeInTheDocument()
-  await user.click(screen.getByRole('button', { name: '复制链接' }))
+  await user.click(screen.getByRole('button', { name: '复制直链' }))
   expect(writeText).toHaveBeenCalledWith(LINKS.url)
+  await user.click(screen.getByRole('button', { name: '复制分享页' }))
+  expect(writeText).toHaveBeenCalledWith(LINKS.share_url)
+  expect(screen.getByDisplayValue(LINKS.share_url)).toBeInTheDocument()
   await user.click(screen.getByRole('button', { name: 'MD' }))
   expect(writeText).toHaveBeenCalledWith(LINKS.markdown)
   await user.click(screen.getByRole('button', { name: '复制全部' }))
-  expect(writeText).toHaveBeenCalledWith([LINKS.url, LINKS.markdown, LINKS.html, LINKS.bbcode].join('\n'))
+  expect(writeText).toHaveBeenCalledWith(
+    [LINKS.url, LINKS.markdown, LINKS.html, LINKS.bbcode, LINKS.share_url].join('\n'),
+  )
   const share = screen.getByRole('link', { name: /打开分享页/ })
   expect(share).toHaveAttribute('href', LINKS.share_url)
   expect(useGlobal.getState().toasts.length).toBeGreaterThan(0)
@@ -79,6 +84,7 @@ it('private 成功不显示分享页', () => {
   )
   expect(screen.getByDisplayValue(LINKS.url)).toBeInTheDocument()
   expect(screen.queryByRole('link', { name: /打开分享页/ })).not.toBeInTheDocument()
+  expect(screen.queryByRole('button', { name: '复制分享页' })).not.toBeInTheDocument()
 })
 
 it('failed 显示原因，retryable 才有重试按钮', () => {

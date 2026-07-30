@@ -98,10 +98,14 @@ export default {
   accessPassword: 'Access password',
   accessPasswordSet: 'Set',
   accessPasswordNone: 'None',
-  accessPasswordPlaceholder: 'New password; clear with button',
+  accessPasswordPlaceholder: 'Type or generate a password',
   accessPasswordSave: 'Set password',
   accessPasswordClear: 'Clear password',
-  accessPasswordHint: 'Non-owners need the password for /i and the share page; no public CDN.',
+  accessPasswordGenerate: 'Generate',
+  accessPasswordCopy: 'Copy password',
+  accessPasswordHint:
+    'Non-owners need this for /i, /t, and the share page (existing direct links are gated too); no public CDN. Share the password separately.',
+  sharePage: 'Share page',
   maxViewsHint:
     'Counts successful /i serves for non-owners only. Limited images never use public CDN 302. Multi-instance relies on atomic DB counters.',
   expiryWarn: 'Permanently deleted on expiry, not recoverable',
