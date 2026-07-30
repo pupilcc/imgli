@@ -14,7 +14,6 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/yixian-huang/imgli/internal/linkbuilder"
 	"github.com/yixian-huang/imgli/internal/model"
 	"github.com/yixian-huang/imgli/internal/service/imagesvc"
 	"github.com/yixian-huang/imgli/internal/service/storagesvc"
@@ -37,12 +36,7 @@ type UploadHandlers struct{ D UploadDeps }
 
 func uploadResultDTO(res *upload.Result, res2 *storagesvc.Resolver) map[string]any {
 	base := res2.LinkBase(res.Policy)
-	ref := res.Image.Key
-	if res.Image.Slug != nil && *res.Image.Slug != "" {
-		ref = *res.Image.Slug
-	}
-	links := linkbuilder.Build(base, ref, res.Image.Ext, res.Image.Name)
-	links.ThumbnailURL = base + "/t/" + res.Image.Key + ".jpg"
+	links := imageLinksFrom(base, res.Image)
 	var expires any
 	if res.Image.ExpiresAt != nil {
 		expires = res.Image.ExpiresAt.UTC().Format(time.RFC3339)

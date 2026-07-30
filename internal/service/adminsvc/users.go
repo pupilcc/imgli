@@ -67,15 +67,43 @@ func (s *Service) ListUsers(q string, groupID uint64, status, channel, sort stri
 	if err := tx.Order(order).Offset((page - 1) * limit).Limit(limit).Find(&users).Error; err != nil {
 		return nil, 0, err
 	}
+	counts, err := s.imageCountsByUser(users)
+	if err != nil {
+		return nil, 0, err
+	}
 	rows := make([]UserRow, 0, len(users))
 	for i := range users {
-		var n int64
-		if err := s.db.Model(&model.Image{}).Where("user_id = ?", users[i].ID).Count(&n).Error; err != nil {
-			return nil, 0, err
-		}
-		rows = append(rows, UserRow{User: users[i], ImageCount: n})
+		rows = append(rows, UserRow{User: users[i], ImageCount: counts[users[i].ID]})
 	}
 	return rows, total, nil
+}
+
+// imageCountsByUser 一次 GROUP BY 取本页用户的图片数（软删不计）；无用户返回空 map。
+func (s *Service) imageCountsByUser(users []model.User) (map[uint64]int64, error) {
+	out := make(map[uint64]int64, len(users))
+	if len(users) == 0 {
+		return out, nil
+	}
+	ids := make([]uint64, len(users))
+	for i := range users {
+		ids[i] = users[i].ID
+	}
+	var agg []struct {
+		UserID uint64
+		N      int64
+	}
+	err := s.db.Model(&model.Image{}).
+		Select("user_id, count(*) as n").
+		Where("user_id IN ?", ids).
+		Group("user_id").
+		Scan(&agg).Error
+	if err != nil {
+		return nil, err
+	}
+	for _, a := range agg {
+		out[a.UserID] = a.N
+	}
+	return out, nil
 }
 
 // UpdateUser 改组/改状态。禁止对自己置 banned；校验 status 取值、目标用户与目标组存在。

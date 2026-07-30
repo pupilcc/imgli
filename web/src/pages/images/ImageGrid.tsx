@@ -1,9 +1,10 @@
-import { useEffect, useState, type RefObject } from 'react'
+import type { RefObject } from 'react'
 import type { ImageItem } from '../../api/types'
 import { useT } from '../../i18n'
 import { copyText } from '../../lib/copy'
 import { formatBytes, formatDate } from '../../lib/format'
 import type { View } from '../../store'
+import { ArmedButton } from '../../ui/ArmedButton'
 import styles from './ImageGrid.module.css'
 
 interface CardActions {
@@ -24,27 +25,16 @@ interface Props extends CardActions {
 /** 卡内删除钮：第一击转红「确认删除」，2.5s 未确认还原。 */
 function QuickDel({ onConfirm }: { onConfirm(): void }) {
   const { t } = useT()
-  const [armed, setArmed] = useState(false)
-  useEffect(() => {
-    if (!armed) return
-    const timer = setTimeout(() => setArmed(false), 2500)
-    return () => clearTimeout(timer)
-  }, [armed])
   return (
-    <button
-      type="button"
-      title={armed ? t('images.confirmDelete') : t('images.delete')}
-      className={[styles.quickBtn, styles.quickDel, armed && styles.quickDelArmed].filter(Boolean).join(' ')}
-      onClick={(e) => {
-        e.stopPropagation()
-        if (armed) {
-          setArmed(false)
-          onConfirm()
-        } else setArmed(true)
-      }}
+    <ArmedButton
+      title={t('images.delete')}
+      armedTitle={t('images.confirmDelete')}
+      className={[styles.quickBtn, styles.quickDel].join(' ')}
+      armedClassName={styles.quickDelArmed}
+      onConfirm={onConfirm}
     >
       ×
-    </button>
+    </ArmedButton>
   )
 }
 

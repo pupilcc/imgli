@@ -4,6 +4,14 @@ import { useQueryClient } from '@tanstack/react-query'
 import { useAlbums, useConfig, useQuota, useSession, useUserPolicies } from '../../api/hooks'
 import { useT } from '../../i18n'
 import { formatBytes } from '../../lib/format'
+import {
+  EXPIRY_LABEL_KEY,
+  EXPIRY_PRESETS,
+  MAX_VIEWS_LABEL_KEY,
+  MAX_VIEWS_PRESETS,
+  type ExpiryKey,
+  type MaxViewsKey,
+} from '../../lib/imageAccessPresets'
 import { loginHref } from '../../lib/safeNext'
 import { useGlobal } from '../../store'
 import { extLabel, useUploadQueue, type QueueOpts } from '../../upload/queue'
@@ -17,39 +25,8 @@ import styles from './UploadPage.module.css'
 
 const URL_RE = /^https?:\/\/\S+$/
 
-/** value=expires_in 秒;0=永久 */
-export const EXPIRY_PRESETS = [
-  { key: 'never', sec: 0 },
-  { key: '1h', sec: 3600 },
-  { key: '1d', sec: 86400 },
-  { key: '7d', sec: 604800 },
-  { key: '30d', sec: 2592000 },
-] as const
-
-type ExpiryKey = (typeof EXPIRY_PRESETS)[number]['key']
-
-const EXPIRY_LABEL_KEY: Record<ExpiryKey, string> = {
-  never: 'upload.expiryNever',
-  '1h': 'upload.expiry1h',
-  '1d': 'upload.expiry1d',
-  '7d': 'upload.expiry7d',
-  '30d': 'upload.expiry30d',
-}
-
-/** max_views presets; 0 = unlimited */
-const MAX_VIEWS_PRESETS = [
-  { key: 'unlimited', n: 0 },
-  { key: '1', n: 1 },
-  { key: '3', n: 3 },
-  { key: '10', n: 10 },
-] as const
-type MaxViewsKey = (typeof MAX_VIEWS_PRESETS)[number]['key']
-const MAX_VIEWS_LABEL_KEY: Record<MaxViewsKey, string> = {
-  unlimited: 'upload.maxViewsUnlimited',
-  '1': 'upload.maxViews1',
-  '3': 'upload.maxViews3',
-  '10': 'upload.maxViews10',
-}
+/** Re-export for tests / callers that imported presets from this page. */
+export { EXPIRY_PRESETS }
 
 export function UploadPage() {
   const { t } = useT()
@@ -159,22 +136,25 @@ export function UploadPage() {
       .catch(() => pushToast(t('upload.toastAutoCopyFailed')))
   }, [items, copyFmt, pushToast, t])
 
-  // Ctrl+V 粘贴（页面生命周期内的 window 监听）
+  // Ctrl+V 粘贴：监听只挂一次；闸门/选项经 ref 读最新值，避免 opts 每渲染新对象导致重绑。
+  const pasteCtx = useRef({ needLogin, full, bwFull, limits, opts, addFiles, pushToast, t })
+  pasteCtx.current = { needLogin, full, bwFull, limits, opts, addFiles, pushToast, t }
   useEffect(() => {
     const onPaste = (e: ClipboardEvent) => {
+      const ctx = pasteCtx.current
       const imgs = [...(e.clipboardData?.items ?? [])]
         .filter((i) => i.type.startsWith('image/'))
         .map((i) => i.getAsFile())
         .filter((f): f is File => !!f)
       if (!imgs.length) return
-      if (needLogin) return pushToast(t('upload.toastLoginRequired'))
-      if (full) return pushToast(t('upload.toastQuotaFull'))
-      if (bwFull) return pushToast(t('upload.toastBandwidthFull'))
-      if (limits) addFiles(imgs, opts, limits)
+      if (ctx.needLogin) return ctx.pushToast(ctx.t('upload.toastLoginRequired'))
+      if (ctx.full) return ctx.pushToast(ctx.t('upload.toastQuotaFull'))
+      if (ctx.bwFull) return ctx.pushToast(ctx.t('upload.toastBandwidthFull'))
+      if (ctx.limits) ctx.addFiles(imgs, ctx.opts, ctx.limits)
     }
     window.addEventListener('paste', onPaste)
     return () => window.removeEventListener('paste', onPaste)
-  })
+  }, [])
 
   function acceptFiles(list: FileList | File[]) {
     if (needLogin) return pushToast(t('upload.toastLoginRequired'))

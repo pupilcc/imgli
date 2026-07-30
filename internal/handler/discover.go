@@ -15,12 +15,30 @@ import (
 
 // DiscoverHandler 公开发现面（广场 + 用户公开主页），无需鉴权。
 // 总开关 SettingPlazaEnabled；关闭时统一 404 防探测。
-type DiscoverHandler struct{ DB *gorm.DB }
+type DiscoverHandler struct {
+	DB *gorm.DB
+	St *settings.Service // 可选；nil 时按 DB 构造
+	Svc *discoversvc.Service // 可选；nil 时按 DB 构造（避免每请求 New）
+}
+
+func (h *DiscoverHandler) settings() *settings.Service {
+	if h.St != nil {
+		return h.St
+	}
+	return settings.New(h.DB)
+}
+
+func (h *DiscoverHandler) discover() *discoversvc.Service {
+	if h.Svc != nil {
+		return h.Svc
+	}
+	return discoversvc.New(h.DB)
+}
 
 // enabled 读 plaza_enabled 开关；键缺失视为 false；其它错误返回给调用方当 500。
 func (h *DiscoverHandler) enabled() (bool, error) {
 	var on bool
-	err := settings.New(h.DB).Get(model.SettingPlazaEnabled, &on)
+	err := h.settings().Get(model.SettingPlazaEnabled, &on)
 	if err != nil && !errors.Is(err, settings.ErrNotFound) {
 		return false, err
 	}
@@ -64,7 +82,7 @@ func (h *DiscoverHandler) Plaza(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	rows, next, err := discoversvc.New(h.DB).PlazaFeed(parseSort(r), r.URL.Query().Get("cursor"), parseLimit(r))
+	rows, next, err := h.discover().PlazaFeed(parseSort(r), r.URL.Query().Get("cursor"), parseLimit(r))
 	if errors.Is(err, discoversvc.ErrBadCursor) {
 		Fail(w, http.StatusBadRequest, CodeInvalidRequest, "游标格式错误")
 		return
@@ -90,7 +108,7 @@ func (h *DiscoverHandler) UserProfile(w http.ResponseWriter, r *http.Request) {
 	}
 
 	username := chi.URLParam(r, "username")
-	p, err := discoversvc.New(h.DB).UserPublic(username)
+	p, err := h.discover().UserPublic(username)
 	if errors.Is(err, discoversvc.ErrNotFound) {
 		Fail(w, http.StatusNotFound, CodeNotFound, "主页不存在或未公开")
 		return
@@ -115,7 +133,7 @@ func (h *DiscoverHandler) UserImages(w http.ResponseWriter, r *http.Request) {
 	}
 
 	username := chi.URLParam(r, "username")
-	svc := discoversvc.New(h.DB)
+	svc := h.discover()
 	// 先判主页可公开，保证与 UserProfile 同一 404 文案（防枚举）
 	if _, err := svc.UserPublic(username); errors.Is(err, discoversvc.ErrNotFound) {
 		Fail(w, http.StatusNotFound, CodeNotFound, "主页不存在或未公开")

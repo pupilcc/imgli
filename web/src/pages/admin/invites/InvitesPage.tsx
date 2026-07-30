@@ -1,10 +1,10 @@
 import { useState } from 'react'
-import { useSearchParams } from 'react-router'
 import { useAdminInvites, useCreateInvites, useRevokeInvite } from '../../../api/adminHooks'
 import type { AdminInvite } from '../../../api/types'
 import { useT } from '../../../i18n'
 import { copyText } from '../../../lib/copy'
 import { formatDate } from '../../../lib/format'
+import { useAdminSearchParam } from '../../../lib/useAdminSearchParam'
 import { PageHeader } from '../../../shell/PageHeader'
 import { useGlobal } from '../../../store'
 import { Button } from '../../../ui/Button'
@@ -12,15 +12,14 @@ import { EmptyState } from '../../../ui/EmptyState'
 import { InlineConfirm } from '../../../ui/InlineConfirm'
 import { Input } from '../../../ui/Input'
 import { Modal } from '../../../ui/Modal'
-import { Skeleton } from '../../../ui/Skeleton'
 import { Tag } from '../../../ui/Tag'
-import { AdminError } from '../ui/AdminError'
+import { AdminQueryGate } from '../ui/AdminQueryGate'
 import { Pager } from '../ui/Pager'
 import styles from './InvitesPage.module.css'
 
 export function InvitesPage() {
   const { t } = useT()
-  const [params, setParams] = useSearchParams()
+  const { params, setParam } = useAdminSearchParam()
   const status = params.get('status') ?? ''
   const page = Number(params.get('page')) || 1
   const [modalOpen, setModalOpen] = useState(false)
@@ -32,16 +31,6 @@ export function InvitesPage() {
     if (s === 'unused') return { label: t('adminB.statusUnused'), variant: 'ok' }
     if (s === 'used') return { label: t('adminB.statusUsed'), variant: 'muted' }
     return { label: t('adminB.statusExpired'), variant: 'warn' }
-  }
-
-  const setParam = (key: string, value: string) => {
-    setParams((p) => {
-      const n = new URLSearchParams(p)
-      if (value) n.set(key, value)
-      else n.delete(key)
-      if (key !== 'page') n.delete('page')
-      return n
-    })
   }
 
   const invites = useAdminInvites({ status: status || undefined, page })
@@ -91,55 +80,64 @@ export function InvitesPage() {
           </div>
         }
       />
-      {invites.isError ? (
-        <AdminError onRetry={() => invites.refetch()} />
-      ) : !invites.data ? (
-        <Skeleton height={220} />
-      ) : invites.data.items.length === 0 ? (
-        invites.data.total > 0 ? (
-          <EmptyState badge="✓" title={t('adminB.pageCleared')} desc={t('adminB.pageClearedInvitesDesc')}>
-            <Button variant="secondary" onClick={() => setParam('page', '')}>
-              {t('adminB.backToPage1')}
-            </Button>
-          </EmptyState>
-        ) : (
-          <EmptyState title={t('adminB.noInvites')} desc={t('adminB.noInvitesDesc')} />
-        )
-      ) : (
-        <>
-          <div className={styles.table}>
-            <div className={`${styles.head} ${styles.row}`}>
-              <span>{t('adminB.colCode')}</span>
-              <span>{t('adminB.colStatus')}</span>
-              <span>{t('adminB.colUsedBy')}</span>
-              <span>{t('adminB.colCreatedExpires')}</span>
-              <span />
-            </div>
-            {invites.data.items.map((ic) => {
-              const tag = statusTag(ic.status)
-              return (
-                <div key={ic.id} className={styles.row}>
-                  <span className={styles.code}>{ic.code}</span>
-                  <span>
-                    <Tag variant={tag.variant}>{tag.label}</Tag>
-                  </span>
-                  <span className={styles.by}>{ic.used_by_name || '—'}</span>
-                  <span className={styles.time}>
-                    {formatDate(ic.created_at)}
-                    {ic.expires_at ? ` / ${formatDate(ic.expires_at)}` : ` / ${t('adminB.permanent')}`}
-                  </span>
-                  <span className={styles.ops}>
-                    {ic.status !== 'used' && (
-                      <InlineConfirm label={t('adminB.revoke')} confirmLabel={t('adminB.confirmRevoke')} onConfirm={() => revoke.mutate(ic.id)} />
-                    )}
-                  </span>
+      <AdminQueryGate query={invites}>
+        {(data) =>
+          data.items.length === 0 ? (
+            data.total > 0 ? (
+              <EmptyState badge="✓" title={t('adminB.pageCleared')} desc={t('adminB.pageClearedInvitesDesc')}>
+                <Button variant="secondary" onClick={() => setParam('page', '')}>
+                  {t('adminB.backToPage1')}
+                </Button>
+              </EmptyState>
+            ) : (
+              <EmptyState title={t('adminB.noInvites')} desc={t('adminB.noInvitesDesc')} />
+            )
+          ) : (
+            <>
+              <div className={styles.table}>
+                <div className={`${styles.head} ${styles.row}`}>
+                  <span>{t('adminB.colCode')}</span>
+                  <span>{t('adminB.colStatus')}</span>
+                  <span>{t('adminB.colUsedBy')}</span>
+                  <span>{t('adminB.colCreatedExpires')}</span>
+                  <span />
                 </div>
-              )
-            })}
-          </div>
-          <Pager page={page} limit={invites.data.limit} total={invites.data.total} onPage={(p) => setParam('page', p > 1 ? String(p) : '')} />
-        </>
-      )}
+                {data.items.map((ic) => {
+                  const tag = statusTag(ic.status)
+                  return (
+                    <div key={ic.id} className={styles.row}>
+                      <span className={styles.code}>{ic.code}</span>
+                      <span>
+                        <Tag variant={tag.variant}>{tag.label}</Tag>
+                      </span>
+                      <span className={styles.by}>{ic.used_by_name || '—'}</span>
+                      <span className={styles.time}>
+                        {formatDate(ic.created_at)}
+                        {ic.expires_at ? ` / ${formatDate(ic.expires_at)}` : ` / ${t('adminB.permanent')}`}
+                      </span>
+                      <span className={styles.ops}>
+                        {ic.status !== 'used' && (
+                          <InlineConfirm
+                            label={t('adminB.revoke')}
+                            confirmLabel={t('adminB.confirmRevoke')}
+                            onConfirm={() => revoke.mutate(ic.id)}
+                          />
+                        )}
+                      </span>
+                    </div>
+                  )
+                })}
+              </div>
+              <Pager
+                page={page}
+                limit={data.limit}
+                total={data.total}
+                onPage={(p) => setParam('page', p > 1 ? String(p) : '')}
+              />
+            </>
+          )
+        }
+      </AdminQueryGate>
 
       <Modal open={modalOpen} onClose={closeModal}>
         {madeCodes ? (

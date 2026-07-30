@@ -6,44 +6,19 @@ import type { ImageItem } from '../../api/types'
 import { useT } from '../../i18n'
 import { copyText } from '../../lib/copy'
 import { formatBytes, formatDate } from '../../lib/format'
+import {
+  EXPIRY_LABEL_KEY,
+  EXPIRY_PRESETS,
+  MAX_VIEWS_LABEL_KEY,
+  MAX_VIEWS_PRESETS,
+  type ExpiryKey,
+  type MaxViewsKey,
+} from '../../lib/imageAccessPresets'
 import { generateAccessPassword } from '../../lib/password'
 import { useGlobal } from '../../store'
 import { InlineConfirm } from '../../ui/InlineConfirm'
 import { Segmented } from '../../ui/Segmented'
 import styles from './DetailModal.module.css'
-
-/** value=expires_in 秒;0=永久 */
-const EXPIRY_PRESETS = [
-  { key: 'never', sec: 0 },
-  { key: '1h', sec: 3600 },
-  { key: '1d', sec: 86400 },
-  { key: '7d', sec: 604800 },
-  { key: '30d', sec: 2592000 },
-] as const
-
-type ExpiryKey = (typeof EXPIRY_PRESETS)[number]['key']
-
-const EXPIRY_LABEL_KEY: Record<ExpiryKey, string> = {
-  never: 'upload.expiryNever',
-  '1h': 'upload.expiry1h',
-  '1d': 'upload.expiry1d',
-  '7d': 'upload.expiry7d',
-  '30d': 'upload.expiry30d',
-}
-
-const MAX_VIEWS_PRESETS = [
-  { key: 'unlimited', n: 0 },
-  { key: '1', n: 1 },
-  { key: '3', n: 3 },
-  { key: '10', n: 10 },
-] as const
-type MaxViewsKey = (typeof MAX_VIEWS_PRESETS)[number]['key']
-const MAX_VIEWS_LABEL_KEY: Record<MaxViewsKey, string> = {
-  unlimited: 'upload.maxViewsUnlimited',
-  '1': 'upload.maxViews1',
-  '3': 'upload.maxViews3',
-  '10': 'upload.maxViews10',
-}
 
 interface Props {
   items: ImageItem[]

@@ -25,6 +25,7 @@ import (
 	"github.com/yixian-huang/imgli/internal/service/albumsvc"
 	"github.com/yixian-huang/imgli/internal/service/apitoken"
 	"github.com/yixian-huang/imgli/internal/service/auth"
+	"github.com/yixian-huang/imgli/internal/service/discoversvc"
 	"github.com/yixian-huang/imgli/internal/service/imagesvc"
 	"github.com/yixian-huang/imgli/internal/service/moderation"
 	"github.com/yixian-huang/imgli/internal/service/settings"
@@ -45,11 +46,14 @@ type Options struct {
 }
 
 type Server struct {
-	opts   Options
-	mux    *chi.Mux
-	runner *task.Runner
-	imgSvc *imagesvc.Service
-	stats  *stats.Service
+	opts       Options
+	mux        *chi.Mux
+	runner     *task.Runner
+	imgSvc     *imagesvc.Service
+	stats      *stats.Service
+	storageRes *storagesvc.Resolver // mountAPI/mountServe 共享，单 driver 缓存
+	authRes    authResolver         // API 与 /i /t 共用会话/Token 解析
+	imgProc    imaging.Processor
 }
 
 func New(opts Options) *Server {
@@ -104,11 +108,16 @@ func (s *Server) mountAPI() {
 	th := &handler.TokenHandlers{Svc: tokSvc}
 	res := authResolver{auth: authSvc, tokens: tokSvc}
 
-	// 上传与任务系统
+	// 上传与任务系统（storage/auth 实例挂到 Server，供 mountServe 复用）
 	storageRes := storagesvc.New(s.opts.Cfg, s.opts.DB)
+	s.storageRes = storageRes
+	s.authRes = res
+	if s.imgProc == nil {
+		s.imgProc = imaging.New()
+	}
 	runner := task.New(s.opts.DB, runtime.NumCPU())
 	s.runner = runner
-	upSvc := upload.New(s.opts.DB, storageRes, imaging.New(), runner)
+	upSvc := upload.New(s.opts.DB, storageRes, s.imgProc, runner)
 	upSvc.WatermarkDir = filepath.Join(s.opts.Cfg.DataDir, "watermarks")
 	runner.Register("delete_file", upSvc.DeleteFileTask)
 	modSvc := moderation.New(s.opts.DB, st, storageRes)
@@ -179,7 +188,9 @@ func (s *Server) mountAPI() {
 		api.Use(handler.Auth(res))
 		api.With(limiter.Middleware("config", 60)).Get("/config", cfgH.Config)
 		// 公开发现面（广场 + 用户公开主页 + 分享页）：无需鉴权，按 IP 限速
-		dh := &handler.DiscoverHandler{DB: s.opts.DB}
+		dh := &handler.DiscoverHandler{
+			DB: s.opts.DB, St: st, Svc: discoversvc.New(s.opts.DB),
+		}
 		api.With(limiter.IPMiddleware("plaza", 120)).Get("/plaza", dh.Plaza)
 		api.With(limiter.IPMiddleware("plaza", 120)).Get("/u/{username}", dh.UserProfile)
 		api.With(limiter.IPMiddleware("plaza", 120)).Get("/u/{username}/images", dh.UserImages)
@@ -291,18 +302,15 @@ func (s *Server) mountAPI() {
 
 // mountServe 挂载 /i、/t 直链与缩略图路由（不在 /api/v1 下）。直链也过 Auth
 // 以便私密图属主可见（匿名放行，由 handler 判定 401/404/410）。
+// 复用 mountAPI 已装配的 storageRes / authRes / imgProc，避免双 driver 缓存与双 auth 实例。
 func (s *Server) mountServe() {
-	res := storagesvc.New(s.opts.Cfg, s.opts.DB)
 	sh := &handler.ServeHandlers{D: handler.ServeDeps{
-		DB: s.opts.DB, Res: res,
+		DB: s.opts.DB, Res: s.storageRes,
 		Stats: s.stats, OwnHost: baseHost(s.opts.Cfg.BaseURL),
+		Proc: s.imgProc,
 	}}
-	authRes := authResolver{
-		auth:   auth.New(s.opts.DB, settings.New(s.opts.DB)),
-		tokens: apitoken.New(s.opts.DB),
-	}
 	s.mux.Group(func(g chi.Router) {
-		g.Use(handler.Auth(authRes))
+		g.Use(handler.Auth(s.authRes))
 		g.Get("/i/{name}", sh.Original)
 		g.Get("/t/{name}", sh.Thumbnail)
 		g.Get("/avatar/{id}", handler.ServeAvatar(filepath.Join(s.opts.Cfg.DataDir, "avatars")))

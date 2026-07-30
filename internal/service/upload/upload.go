@@ -73,13 +73,14 @@ type Service struct {
 	res  *storagesvc.Resolver
 	proc imaging.Processor
 	run  *task.Runner
+	st   *settings.Service // 与 New 同生命周期，避免每次 GuestEnabled/burn 新建
 
 	// WatermarkDir 用户水印图目录 <data_dir>/watermarks(D-② 烧录管线;空=用户水印不可用)。
 	WatermarkDir string
 }
 
 func New(db *gorm.DB, res *storagesvc.Resolver, proc imaging.Processor, run *task.Runner) *Service {
-	return &Service{db: db, res: res, proc: proc, run: run}
+	return &Service{db: db, res: res, proc: proc, run: run, st: settings.New(db)}
 }
 
 // GuestEnabled 返回 guest_upload_enabled 开关当前值；键缺失或读取异常一律按 false
@@ -88,7 +89,7 @@ func New(db *gorm.DB, res *storagesvc.Resolver, proc imaging.Processor, run *tas
 // （handler 侧提前挡掉匿名请求、避免关闭时还去抓取/落盘再拒绝，见 upload.go）。
 func (s *Service) GuestEnabled() bool {
 	var enabled bool
-	if err := settings.New(s.db).Get(model.SettingGuestUpload, &enabled); err != nil && !errors.Is(err, settings.ErrNotFound) {
+	if err := s.st.Get(model.SettingGuestUpload, &enabled); err != nil && !errors.Is(err, settings.ErrNotFound) {
 		slog.Warn("读取 guest_upload_enabled 失败", "err", err)
 	}
 	return enabled
@@ -319,7 +320,7 @@ func (s *Service) burn(tmpPath, ext string, u *model.User) (bool, error) {
 		return false, nil
 	}
 	var proc Processing
-	if err := settings.New(s.db).Get(model.SettingProcessing, &proc); err != nil {
+	if err := s.st.Get(model.SettingProcessing, &proc); err != nil {
 		if !errors.Is(err, settings.ErrNotFound) {
 			return false, err
 		}
@@ -419,7 +420,7 @@ func (s *Service) enqueueModerate(imageID uint64) {
 	var img model.Image
 	if err := s.db.Select("id", "key", "user_id").First(&img, imageID).Error; err == nil {
 		cfg := moderation.DefaultConfig()
-		if err := settings.New(s.db).Get(model.SettingModeration, &cfg); err != nil && !errors.Is(err, settings.ErrNotFound) {
+		if err := s.st.Get(model.SettingModeration, &cfg); err != nil && !errors.Is(err, settings.ErrNotFound) {
 			slog.Warn("enqueueModerate 读配置失败，仍入队", "err", err)
 		} else {
 			moderation.NormalizeConfig(&cfg)

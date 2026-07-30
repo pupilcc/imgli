@@ -138,11 +138,12 @@ it('内联重命名 PATCH name', async () => {
   })
 })
 
-it('复制行各 5 条（无短链），加入回收站两击后 DELETE 并关闭', async () => {
+it('复制行含分享页共 6 条（无短链），加入回收站两击后 DELETE 并关闭', async () => {
   const user = userEvent.setup()
   const { onClose } = renderModal()
   await screen.findByText('b.png')
-  expect(screen.getAllByRole('button', { name: '复制' })).toHaveLength(5)
+  // url + markdown + html + bbcode + thumb + share page
+  expect(screen.getAllByRole('button', { name: '复制' })).toHaveLength(6)
   await user.click(screen.getByRole('button', { name: '加入回收站' }))
   await user.click(screen.getByRole('button', { name: '确认删除？' }))
   await waitFor(() => {

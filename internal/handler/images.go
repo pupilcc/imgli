@@ -9,7 +9,6 @@ import (
 
 	"github.com/go-chi/chi/v5"
 
-	"github.com/yixian-huang/imgli/internal/linkbuilder"
 	"github.com/yixian-huang/imgli/internal/service/auth"
 	"github.com/yixian-huang/imgli/internal/service/imagesvc"
 	"github.com/yixian-huang/imgli/internal/service/stats"
@@ -30,13 +29,7 @@ const maxListLimit = 100
 // imageItemDTO 列表项（精简）。
 func (h *ImageHandlers) imageItemDTO(row *imagesvc.Row) map[string]any {
 	base := h.D.Res.LinkBase(&row.Policy)
-	ref := row.Img.Key
-	if row.Img.Slug != nil && *row.Img.Slug != "" {
-		ref = *row.Img.Slug
-	}
-	links := linkbuilder.Build(base, ref, row.Img.Ext, row.Img.Name)
-	// 缩略图仍用稳定 key（存储与缓存键）
-	links.ThumbnailURL = base + "/t/" + row.Img.Key + ".jpg"
+	links := imageLinksFrom(base, &row.Img)
 	var expiresAt any
 	if row.Img.ExpiresAt != nil {
 		// 与 upload.go 同口径归一 UTC:Postgres timestamptz 按会话时区返回,
@@ -230,8 +223,11 @@ func (h *ImageHandlers) Update(w http.ResponseWriter, r *http.Request) {
 		}
 		// <=0 → expAt=nil（清除）
 	}
-	row, err := h.D.Img.Update(PrincipalFrom(r).User.ID, chi.URLParam(r, "key"),
-		req.Name, req.Visibility, req.AlbumID, expAt, setExp, req.Slug, req.MaxViews, req.AccessPassword)
+	row, err := h.D.Img.Update(PrincipalFrom(r).User.ID, chi.URLParam(r, "key"), imagesvc.UpdatePatch{
+		Name: req.Name, Visibility: req.Visibility, AlbumID: req.AlbumID,
+		ExpiresAt: expAt, SetExpires: setExp, Slug: req.Slug,
+		MaxViews: req.MaxViews, AccessPassword: req.AccessPassword,
+	})
 	switch {
 	case err == nil:
 		if req.AccessPassword != nil && strings.TrimSpace(*req.AccessPassword) == "" {

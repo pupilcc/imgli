@@ -31,9 +31,30 @@ type ServeDeps struct {
 	Res     *storagesvc.Resolver
 	Stats   *stats.Service // D-①:hotlink 快照+访问计数;nil=跳过(轻量测试兼容)
 	OwnHost string         // BaseURL 的 host(去端口),hotlink 恒放行自站
+	Proc    imaging.Processor // 可选；nil 时按需 imaging.New()（测试可省略）
 }
 
 type ServeHandlers struct{ D ServeDeps }
+
+func (h *ServeHandlers) proc() imaging.Processor {
+	if h.D.Proc != nil {
+		return h.D.Proc
+	}
+	return imaging.New()
+}
+
+// loadFilePolicy 按 fileID 取 File+Policy；任一缺失返回 ok=false。
+func (h *ServeHandlers) loadFilePolicy(fileID uint64) (model.File, model.StoragePolicy, bool) {
+	var file model.File
+	if err := h.D.DB.First(&file, fileID).Error; err != nil {
+		return file, model.StoragePolicy{}, false
+	}
+	var policy model.StoragePolicy
+	if err := h.D.DB.First(&policy, file.StoragePolicyID).Error; err != nil {
+		return file, policy, false
+	}
+	return file, policy, true
+}
 
 // splitKeyExt 从 "aB3xK9mQ2wZp.png" 拆出 key 与 ext。
 func splitKeyExt(name string) (key, ext string) {
@@ -208,10 +229,8 @@ func (h *ServeHandlers) Original(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 	// 门禁已在 lookupServable 过完,以下只决定「怎么送字节」,不再做访问控制。
-	var file model.File
-	var policy model.StoragePolicy
-	havePolicy := h.D.DB.First(&file, img.FileID).Error == nil &&
-		h.D.DB.First(&policy, file.StoragePolicyID).Error == nil
+	// File+Policy 一次加载，供 CDN/预签名/流式共用（避免 stream 路径再 First 两次）。
+	file, policy, havePolicy := h.loadFilePolicy(img.FileID)
 
 	// 公开图 + 策略配 CDNDomain → 302 卸带宽(裁决 3)。
 	// S4 纵深：visibility、file.surface、对象键前缀三道门；任一非公开则不拼 CDN URL
@@ -255,7 +274,11 @@ func (h *ServeHandlers) Original(w http.ResponseWriter, r *http.Request) {
 	if limited {
 		w.Header().Set("Cache-Control", "private, no-store")
 	}
-	if n, ok := h.streamFile(w, r, img.FileID, false, img.Visibility == "public" && !limited); ok {
+	if !havePolicy {
+		h.placeholder(w, r, http.StatusNotFound, "NOT FOUND")
+		return
+	}
+	if n, ok := h.streamFile(w, r, &file, &policy, false, img.Visibility == "public" && !limited); ok {
 		if h.D.Stats != nil {
 			h.D.Stats.Record(img.ID, refererHost(r))
 		}
@@ -268,6 +291,11 @@ func (h *ServeHandlers) Original(w http.ResponseWriter, r *http.Request) {
 func (h *ServeHandlers) Thumbnail(w http.ResponseWriter, r *http.Request) {
 	img, ok := h.lookupServable(w, r)
 	if !ok {
+		return
+	}
+	file, policy, havePolicy := h.loadFilePolicy(img.FileID)
+	if !havePolicy {
+		h.placeholder(w, r, http.StatusNotFound, "NOT FOUND")
 		return
 	}
 	public := img.Visibility == "public" && !imgHasPassword(img) && img.MaxViews == 0
@@ -289,29 +317,20 @@ func (h *ServeHandlers) Thumbnail(w http.ResponseWriter, r *http.Request) {
 			}
 			return
 		}
-		if m, ok := h.streamWidthThumb(w, r, img, n, public); ok {
+		if m, ok := h.streamWidthThumb(w, r, &file, &policy, n, public); ok {
 			h.meterOwner(img, m)
 		}
 		return
 	}
-	if n, ok := h.streamFile(w, r, img.FileID, true, public); ok {
+	if n, ok := h.streamFile(w, r, &file, &policy, true, public); ok {
 		h.meterOwner(img, n)
 	}
 }
 
 // streamWidthThumb 提供白名单边长 JPEG；缓存未命中时从原图生成并 Put。
-func (h *ServeHandlers) streamWidthThumb(w http.ResponseWriter, r *http.Request, img *model.Image, width int, public bool) (int64, bool) {
-	var file model.File
-	if err := h.D.DB.First(&file, img.FileID).Error; err != nil {
-		h.placeholder(w, r, http.StatusNotFound, "NOT FOUND")
-		return 0, false
-	}
-	var policy model.StoragePolicy
-	if err := h.D.DB.First(&policy, file.StoragePolicyID).Error; err != nil {
-		h.placeholder(w, r, http.StatusNotFound, "NOT FOUND")
-		return 0, false
-	}
-	d, err := h.D.Res.Driver(&policy)
+// file/policy 由调用方一次加载，避免与 streamFile 重复查库。
+func (h *ServeHandlers) streamWidthThumb(w http.ResponseWriter, r *http.Request, file *model.File, policy *model.StoragePolicy, width int, public bool) (int64, bool) {
+	d, err := h.D.Res.Driver(policy)
 	if err != nil {
 		Fail(w, http.StatusInternalServerError, CodeInternal, "存储不可用")
 		return 0, false
@@ -335,10 +354,10 @@ func (h *ServeHandlers) streamWidthThumb(w http.ResponseWriter, r *http.Request,
 			Fail(w, http.StatusInternalServerError, CodeInternal, "读取失败")
 			return 0, false
 		}
-		out, terr := imaging.New().Thumbnail(bytes.NewReader(raw), width)
+		out, terr := h.proc().Thumbnail(bytes.NewReader(raw), width)
 		if terr != nil {
 			// 非 JPEG/PNG 等：回退默认 thumb 路径
-			return h.streamFile(w, r, img.FileID, true, public)
+			return h.streamFile(w, r, file, policy, true, public)
 		}
 		_ = d.Put(r.Context(), key, bytes.NewReader(out))
 		rc, err = d.Open(r.Context(), key)
@@ -415,18 +434,9 @@ func openThumb(ctx context.Context, d storage.Driver, surface, hash string) (io.
 // ServeContent 回源。public 为 false（私密图）时禁止共享缓存，避免经 CDN
 // 泄露给非所有者。成功返回 (meterBytes, true)；失败 (0, false)。
 // meterBytes：原图用 file.Size；缩略图用可读长度（Seek）；304 计 0。
-func (h *ServeHandlers) streamFile(w http.ResponseWriter, r *http.Request, fileID uint64, thumb bool, public bool) (int64, bool) {
-	var file model.File
-	if err := h.D.DB.First(&file, fileID).Error; err != nil {
-		h.placeholder(w, r, http.StatusNotFound, "NOT FOUND")
-		return 0, false
-	}
-	var policy model.StoragePolicy
-	if err := h.D.DB.First(&policy, file.StoragePolicyID).Error; err != nil {
-		h.placeholder(w, r, http.StatusNotFound, "NOT FOUND")
-		return 0, false
-	}
-	d, err := h.D.Res.Driver(&policy)
+// file/policy 须已由调用方加载（Original/Thumbnail 各一次）。
+func (h *ServeHandlers) streamFile(w http.ResponseWriter, r *http.Request, file *model.File, policy *model.StoragePolicy, thumb bool, public bool) (int64, bool) {
+	d, err := h.D.Res.Driver(policy)
 	if err != nil {
 		Fail(w, http.StatusInternalServerError, CodeInternal, "存储不可用")
 		return 0, false

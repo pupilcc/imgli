@@ -44,34 +44,47 @@ func EffectiveUsed(u *model.User, period string) int64 {
 
 // QuotaForUser 读取用户所属组的月流量配额；用户/组不存在返回 0,err。
 func QuotaForUser(db *gorm.DB, userID uint64) (quota int64, err error) {
-	var u model.User
-	if err = db.Select("id", "group_id").First(&u, userID).Error; err != nil {
-		return 0, err
+	var row struct {
+		Quota int64 `gorm:"column:bandwidth_quota_month"`
 	}
-	var g model.UserGroup
-	if err = db.Select("id", "bandwidth_quota_month").First(&g, u.GroupID).Error; err != nil {
-		return 0, err
-	}
-	return g.BandwidthQuotaMonth, nil
+	err = db.Table("users").
+		Select("user_groups.bandwidth_quota_month").
+		Joins("JOIN user_groups ON user_groups.id = users.group_id").
+		Where("users.id = ?", userID).
+		Take(&row).Error
+	return row.Quota, err
+}
+
+// checkRow 是 Check 单次 JOIN 的投影。
+type checkRow struct {
+	BandwidthUsedMonth  int64  `gorm:"column:bandwidth_used_month"`
+	BandwidthPeriod     string `gorm:"column:bandwidth_period"`
+	BandwidthQuotaMonth int64  `gorm:"column:bandwidth_quota_month"`
 }
 
 // Check 若用户本月已用尽硬顶返回 ErrExceeded；quota<=0 或 userID==0 不限制。
+// 单次 JOIN users↔user_groups（原 3 次查询），减轻 /i /t 门禁在 SQLite 单连接下的往返。
 func Check(db *gorm.DB, userID uint64) error {
 	if userID == 0 {
 		return nil
 	}
-	quota, err := QuotaForUser(db, userID)
+	var row checkRow
+	err := db.Table("users").
+		Select("users.bandwidth_used_month, users.bandwidth_period, user_groups.bandwidth_quota_month").
+		Joins("JOIN user_groups ON user_groups.id = users.group_id").
+		Where("users.id = ?", userID).
+		Take(&row).Error
 	if err != nil {
 		return err
 	}
-	if quota <= 0 {
+	if row.BandwidthQuotaMonth <= 0 {
 		return nil
 	}
-	var u model.User
-	if err := db.Select("id", "bandwidth_used_month", "bandwidth_period").First(&u, userID).Error; err != nil {
-		return err
+	u := model.User{
+		BandwidthUsedMonth: row.BandwidthUsedMonth,
+		BandwidthPeriod:    row.BandwidthPeriod,
 	}
-	if EffectiveUsed(&u, CurrentPeriod()) >= quota {
+	if EffectiveUsed(&u, CurrentPeriod()) >= row.BandwidthQuotaMonth {
 		return ErrExceeded
 	}
 	return nil
@@ -99,22 +112,26 @@ type Snapshot struct {
 	Quota  int64  `json:"quota"` // 0=不限
 }
 
-// SnapshotFor 组装展示数据。
+// SnapshotFor 组装展示数据（单次 JOIN）。
 func SnapshotFor(db *gorm.DB, userID uint64) (Snapshot, error) {
 	period := CurrentPeriod()
 	out := Snapshot{Period: period}
 	if userID == 0 {
 		return out, nil
 	}
-	var u model.User
-	if err := db.Select("id", "group_id", "bandwidth_used_month", "bandwidth_period").First(&u, userID).Error; err != nil {
+	var row checkRow
+	err := db.Table("users").
+		Select("users.bandwidth_used_month, users.bandwidth_period, user_groups.bandwidth_quota_month").
+		Joins("JOIN user_groups ON user_groups.id = users.group_id").
+		Where("users.id = ?", userID).
+		Take(&row).Error
+	if err != nil {
 		return out, err
 	}
-	out.Used = EffectiveUsed(&u, period)
-	var g model.UserGroup
-	if err := db.Select("bandwidth_quota_month").First(&g, u.GroupID).Error; err != nil {
-		return out, err
-	}
-	out.Quota = g.BandwidthQuotaMonth
+	out.Used = EffectiveUsed(&model.User{
+		BandwidthUsedMonth: row.BandwidthUsedMonth,
+		BandwidthPeriod:    row.BandwidthPeriod,
+	}, period)
+	out.Quota = row.BandwidthQuotaMonth
 	return out, nil
 }

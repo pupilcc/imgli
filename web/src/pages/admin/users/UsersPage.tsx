@@ -1,25 +1,25 @@
 import { useEffect, useState } from 'react'
-import { Link, useSearchParams } from 'react-router'
+import { Link } from 'react-router'
 import { useAdminGroups, useAdminUsers, useResetAdminPassword, useUpdateAdminUser } from '../../../api/adminHooks'
 import { useSession } from '../../../api/hooks'
 import type { AdminUser } from '../../../api/types'
 import { useT } from '../../../i18n'
 import { copyText } from '../../../lib/copy'
 import { formatBytes } from '../../../lib/format'
+import { useAdminSearchParam } from '../../../lib/useAdminSearchParam'
 import { useDebounced } from '../../../lib/useDebounced'
 import { PageHeader } from '../../../shell/PageHeader'
 import { Button } from '../../../ui/Button'
 import { EmptyState } from '../../../ui/EmptyState'
 import { InlineConfirm } from '../../../ui/InlineConfirm'
 import { Modal } from '../../../ui/Modal'
-import { Skeleton } from '../../../ui/Skeleton'
-import { AdminError } from '../ui/AdminError'
+import { AdminQueryGate } from '../ui/AdminQueryGate'
 import { Pager } from '../ui/Pager'
 import styles from './UsersPage.module.css'
 
 export function UsersPage() {
   const { t } = useT()
-  const [params, setParams] = useSearchParams()
+  const { params, setParams, setParam } = useAdminSearchParam()
   const q = params.get('q') ?? ''
   const group = Number(params.get('group')) || undefined
   const status = params.get('status') ?? ''
@@ -50,16 +50,6 @@ export function UsersPage() {
       return n
     })
   }, [debouncedInput])
-
-  const setParam = (key: string, value: string) => {
-    setParams((p) => {
-      const n = new URLSearchParams(p)
-      if (value) n.set(key, value)
-      else n.delete(key)
-      if (key !== 'page') n.delete('page')
-      return n
-    })
-  }
 
   const { data: me } = useSession()
   const channel = params.get('channel') ?? ''
@@ -141,93 +131,96 @@ export function UsersPage() {
           </div>
         }
       />
-      {users.isError ? (
-        <AdminError onRetry={() => users.refetch()} />
-      ) : !users.data ? (
-        <Skeleton height={220} />
-      ) : users.data.items.length === 0 ? (
-        <EmptyState title={t('adminA.noMatchingUsers')} desc={t('adminA.noMatchingUsersDesc')} />
-      ) : (
-        <>
-          <div className={styles.table}>
-            <div className={`${styles.head} ${styles.row}`}>
-              <span>{t('adminA.colUser')}</span>
-              <span>{t('adminA.colEmail')}</span>
-              <span>{t('adminA.colEmailVerified')}</span>
-              <span>{t('adminA.colGroup')}</span>
-              <span>{t('adminA.colImageCount')}</span>
-              <span>{t('adminA.colUsedStorage')}</span>
-              <span>{t('adminA.colStatus')}</span>
-              <span />
-            </div>
-            {users.data.items.map((u) => {
-              const quota = groupQuota(u.group_id)
-              const pct = quota > 0 ? Math.min(100, Math.round((u.used_storage / quota) * 100)) : 0
-              return (
-                <div key={u.id} className={styles.row}>
-                  <div className={styles.userCell}>
-                    <span className={styles.initial}>{(u.nickname || u.username).slice(0, 1)}</span>
-                    <span className={styles.uname}>{u.username}</span>
-                  </div>
-                  <span className={styles.email}>{u.email}</span>
-                  <span className={u.email_verified ? styles.stOk : styles.stErr}>
-                    {u.email_verified ? t('adminA.emailVerifiedYes') : t('adminA.emailVerifiedNo')}
-                  </span>
-                  <select
-                    className={styles.groupSel}
-                    value={u.group_id}
-                    aria-label={t('adminA.userGroupAria', { username: u.username })}
-                    onChange={(e) => update.mutate({ id: u.id, body: { group_id: Number(e.target.value) } })}
-                  >
-                    {groups.map((g) => (
-                      <option key={g.id} value={g.id}>
-                        {g.name}
-                      </option>
-                    ))}
-                    {groups.length === 0 && <option value={u.group_id}>{groupName(u.group_id)}</option>}
-                  </select>
-                  <span className={styles.mono}>{u.image_count}</span>
-                  <div className={styles.usageCell}>
-                    {quota > 0 && (
-                      <span className={styles.usageBar}>
-                        <span style={{ width: `${pct}%` }} />
-                      </span>
-                    )}
-                    <span className={styles.usageText}>{formatBytes(u.used_storage)}</span>
-                  </div>
-                  <span className={u.status === 'active' ? styles.stOk : styles.stErr}>
-                    {u.status === 'active' ? t('adminA.statusActive') : t('adminA.statusBanned')}
-                  </span>
-                  <div className={styles.actions}>
-                    {u.status === 'active' ? (
-                      <InlineConfirm
-                        label={t('adminA.ban')}
-                        confirmLabel={t('adminA.confirmBan')}
-                        disabled={me?.id === u.id}
-                        onConfirm={() => update.mutate({ id: u.id, body: { status: 'banned' } })}
-                      />
-                    ) : (
-                      <Button variant="secondary" onClick={() => update.mutate({ id: u.id, body: { status: 'active' } })}>
-                        {t('adminA.unban')}
-                      </Button>
-                    )}
-                    <Button variant="secondary" onClick={() => setResetTarget(u)}>
-                      {t('adminA.resetPassword')}
-                    </Button>
-                    <Link className={styles.viewLink} to={`/admin/images?user=${u.id}`}>
-                      {t('adminA.viewImages')}
-                    </Link>
-                  </div>
+      <AdminQueryGate query={users}>
+        {(data) =>
+          data.items.length === 0 ? (
+            <EmptyState title={t('adminA.noMatchingUsers')} desc={t('adminA.noMatchingUsersDesc')} />
+          ) : (
+            <>
+              <div className={styles.table}>
+                <div className={`${styles.head} ${styles.row}`}>
+                  <span>{t('adminA.colUser')}</span>
+                  <span>{t('adminA.colEmail')}</span>
+                  <span>{t('adminA.colEmailVerified')}</span>
+                  <span>{t('adminA.colGroup')}</span>
+                  <span>{t('adminA.colImageCount')}</span>
+                  <span>{t('adminA.colUsedStorage')}</span>
+                  <span>{t('adminA.colStatus')}</span>
+                  <span />
                 </div>
-              )
-            })}
-          </div>
-          <p className={styles.stat}>
-            {t('adminA.usersTotal', { total: users.data.total })}
-          </p>
-          <Pager page={page} limit={users.data.limit} total={users.data.total} onPage={(p) => setParam('page', p > 1 ? String(p) : '')} />
-        </>
-      )}
+                {data.items.map((u) => {
+                  const quota = groupQuota(u.group_id)
+                  const pct = quota > 0 ? Math.min(100, Math.round((u.used_storage / quota) * 100)) : 0
+                  return (
+                    <div key={u.id} className={styles.row}>
+                      <div className={styles.userCell}>
+                        <span className={styles.initial}>{(u.nickname || u.username).slice(0, 1)}</span>
+                        <span className={styles.uname}>{u.username}</span>
+                      </div>
+                      <span className={styles.email}>{u.email}</span>
+                      <span className={u.email_verified ? styles.stOk : styles.stErr}>
+                        {u.email_verified ? t('adminA.emailVerifiedYes') : t('adminA.emailVerifiedNo')}
+                      </span>
+                      <select
+                        className={styles.groupSel}
+                        value={u.group_id}
+                        aria-label={t('adminA.userGroupAria', { username: u.username })}
+                        onChange={(e) => update.mutate({ id: u.id, body: { group_id: Number(e.target.value) } })}
+                      >
+                        {groups.map((g) => (
+                          <option key={g.id} value={g.id}>
+                            {g.name}
+                          </option>
+                        ))}
+                        {groups.length === 0 && <option value={u.group_id}>{groupName(u.group_id)}</option>}
+                      </select>
+                      <span className={styles.mono}>{u.image_count}</span>
+                      <div className={styles.usageCell}>
+                        {quota > 0 && (
+                          <span className={styles.usageBar}>
+                            <span style={{ width: `${pct}%` }} />
+                          </span>
+                        )}
+                        <span className={styles.usageText}>{formatBytes(u.used_storage)}</span>
+                      </div>
+                      <span className={u.status === 'active' ? styles.stOk : styles.stErr}>
+                        {u.status === 'active' ? t('adminA.statusActive') : t('adminA.statusBanned')}
+                      </span>
+                      <div className={styles.actions}>
+                        {u.status === 'active' ? (
+                          <InlineConfirm
+                            label={t('adminA.ban')}
+                            confirmLabel={t('adminA.confirmBan')}
+                            disabled={me?.id === u.id}
+                            onConfirm={() => update.mutate({ id: u.id, body: { status: 'banned' } })}
+                          />
+                        ) : (
+                          <Button variant="secondary" onClick={() => update.mutate({ id: u.id, body: { status: 'active' } })}>
+                            {t('adminA.unban')}
+                          </Button>
+                        )}
+                        <Button variant="secondary" onClick={() => setResetTarget(u)}>
+                          {t('adminA.resetPassword')}
+                        </Button>
+                        <Link className={styles.viewLink} to={`/admin/images?user=${u.id}`}>
+                          {t('adminA.viewImages')}
+                        </Link>
+                      </div>
+                    </div>
+                  )
+                })}
+              </div>
+              <p className={styles.stat}>{t('adminA.usersTotal', { total: data.total })}</p>
+              <Pager
+                page={page}
+                limit={data.limit}
+                total={data.total}
+                onPage={(p) => setParam('page', p > 1 ? String(p) : '')}
+              />
+            </>
+          )
+        }
+      </AdminQueryGate>
       <Modal open={resetTarget !== null} onClose={closeReset} width={400}>
         {resetTarget && (
           <div className={styles.resetBox}>
