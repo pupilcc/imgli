@@ -3,6 +3,9 @@
 .card {
   border: 1px solid var(--border); border-radius: 3px; background: var(--surface);
   overflow: hidden; cursor: pointer; position: relative; animation: rise 0.28s both;
+  /* 网格/瀑布流：浏览器跳过屏外布局与绘制 */
+  content-visibility: auto;
+  contain-intrinsic-size: 220px;
 }
 .card:hover { border-color: var(--muted); }
 .cardMasonry { break-inside: avoid; margin-bottom: 14px; }
@@ -42,9 +45,12 @@
 .metaSize { font-family: var(--font-mono); font-size: 10px; color: var(--muted); flex: none; }
 
 .listBox { border: 1px solid var(--border); border-radius: 3px; background: var(--surface); overflow: hidden; }
+.listBody { position: relative; width: 100%; }
 .listHead, .row {
   display: grid; grid-template-columns: 34px 44px 1.8fr 1fr 0.7fr 0.6fr 0.7fr 1fr auto;
   gap: 12px; align-items: center; padding: 8px 14px; border-bottom: 1px solid var(--border);
+  box-sizing: border-box;
+  min-height: 53px;
 }
 .listHead { background: var(--soft); font-family: var(--font-mono); font-size: 10px; color: var(--muted); letter-spacing: 0.1em; }
 .row { cursor: pointer; }

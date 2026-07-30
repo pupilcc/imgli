@@ -65,8 +65,9 @@ func DefaultProcessing() Processing {
 }
 
 // ValidateProcessing 校验(全部违规返回 ErrProcessingInvalid):
-//   position ∈ 九宫格;opacity ∈ (0,1];size_ratio ∈ [0.01,0.2];
-//   enabled 时 TrimSpace(text) 非空且 utf8 长度 ≤64;max_edge == 0 || 256 ≤ max_edge ≤ 16384。
+//
+//	position ∈ 九宫格;opacity ∈ (0,1];size_ratio ∈ [0.01,0.2];
+//	enabled 时 TrimSpace(text) 非空且 utf8 长度 ≤64;max_edge == 0 || 256 ≤ max_edge ≤ 16384。
 func ValidateProcessing(p Processing) error {
 	tw := p.TextWatermark
 	if !imaging.Positions[tw.Position] {

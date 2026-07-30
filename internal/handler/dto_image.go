@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"github.com/yixian-huang/imgli/internal/linkbuilder"
+	"github.com/yixian-huang/imgli/internal/service/adminsvc"
 	"github.com/yixian-huang/imgli/internal/service/imagesvc"
 )
 
@@ -59,5 +60,40 @@ func imageItemDTOFrom(row *imagesvc.Row, base string) ImageItemDTO {
 		ViewsServed:       row.Img.ViewsServed,
 		HasAccessPassword: strings.TrimSpace(row.Img.AccessPasswordHash) != "",
 		Links:             links,
+	}
+}
+
+// AdminImageItemDTO 管理端全站图片列表/审核队列项。
+type AdminImageItemDTO struct {
+	Key           string            `json:"key"`
+	Name          string            `json:"name"`
+	Ext           string            `json:"ext"`
+	Size          int64             `json:"size"`
+	Visibility    string            `json:"visibility"`
+	Status        string            `json:"status"`
+	IsWhitelisted bool              `json:"is_whitelisted"`
+	NSFWScore     *float64          `json:"nsfw_score"`
+	Username      string            `json:"username"`
+	UserID        *uint64           `json:"user_id"`
+	CreatedAt     string            `json:"created_at"`
+	Links         linkbuilder.Links `json:"links"`
+	// Review queue optional
+	Triggers []adminsvc.ModerationTrigger `json:"triggers,omitempty"`
+}
+
+func adminImageItemDTOFrom(row *adminsvc.ImageRow, base string) AdminImageItemDTO {
+	return AdminImageItemDTO{
+		Key:           row.Img.Key,
+		Name:          row.Img.Name,
+		Ext:           row.Img.Ext,
+		Size:          row.File.Size,
+		Visibility:    row.Img.Visibility,
+		Status:        row.Img.Status,
+		IsWhitelisted: row.Img.IsWhitelisted,
+		NSFWScore:     row.Img.NSFWScore,
+		Username:      row.Username,
+		UserID:        row.Img.UserID,
+		CreatedAt:     row.Img.CreatedAt.Format(time.RFC3339),
+		Links:         imageLinksFrom(base, &row.Img),
 	}
 }

@@ -34,11 +34,11 @@ func (h *AdminHandlers) Review(w http.ResponseWriter, r *http.Request) {
 	}
 	// best-effort：触发原因查失败仍返回队列本身，不 500。
 	triggers, _ := h.D.Adm.ModerationTriggersByKeys(keys)
-	items := make([]map[string]any, 0, len(rows))
+	items := make([]AdminImageItemDTO, 0, len(rows))
 	for i := range rows {
 		item := h.adminImageItemDTO(&rows[i])
 		if trigs, ok := triggers[rows[i].Img.Key]; ok && len(trigs) > 0 {
-			item["triggers"] = trigs
+			item.Triggers = trigs
 		}
 		items = append(items, item)
 	}

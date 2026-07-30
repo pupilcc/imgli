@@ -4,7 +4,6 @@ import (
 	"errors"
 	"net/http"
 	"strconv"
-	"time"
 
 	"github.com/go-chi/chi/v5"
 
@@ -17,24 +16,9 @@ const (
 	imagesMaxLimit     = 200
 )
 
-// adminImageItemDTO 全站图片列表/详情项（含 links，同②c imageItemDTO 模式）。
-func (h *AdminHandlers) adminImageItemDTO(row *adminsvc.ImageRow) map[string]any {
-	base := h.D.Res.LinkBase(&row.Policy)
-	links := imageLinksFrom(base, &row.Img)
-	return map[string]any{
-		"key":            row.Img.Key,
-		"name":           row.Img.Name,
-		"ext":            row.Img.Ext,
-		"size":           row.File.Size,
-		"visibility":     row.Img.Visibility,
-		"status":         row.Img.Status,
-		"is_whitelisted": row.Img.IsWhitelisted,
-		"nsfw_score":     row.Img.NSFWScore,
-		"username":       row.Username,
-		"user_id":        row.Img.UserID,
-		"created_at":     row.Img.CreatedAt.Format(time.RFC3339),
-		"links":          links,
-	}
+// adminImageItemDTO 全站图片列表/详情项（类型化 DTO）。
+func (h *AdminHandlers) adminImageItemDTO(row *adminsvc.ImageRow) AdminImageItemDTO {
+	return adminImageItemDTOFrom(row, h.D.Res.LinkBase(&row.Policy))
 }
 
 // Images GET /api/v1/admin/images?user=&status=&policy=&page=&limit=
@@ -65,7 +49,7 @@ func (h *AdminHandlers) Images(w http.ResponseWriter, r *http.Request) {
 		Fail(w, http.StatusInternalServerError, CodeInternal, "服务器内部错误")
 		return
 	}
-	items := make([]map[string]any, 0, len(rows))
+	items := make([]AdminImageItemDTO, 0, len(rows))
 	for i := range rows {
 		items = append(items, h.adminImageItemDTO(&rows[i]))
 	}

@@ -148,7 +148,7 @@ type ModerationTrigger struct {
 
 // ModerationTriggersByKeys 批量取每 key 最近一条 system moderation_flag 的 results。
 // 旧 audit 仅有 score 时合成一条 plugin=legacy 的触发项。查不到则 key 不在 map 中。
-// best-effort：查询失败返回 error；单条 detail 解析失败则跳过该 key。
+// 一次查询：OR LIKE 所有 key + id 降序，内存里 first-wins 取每 key 最新日志。
 func (s *Service) ModerationTriggersByKeys(keys []string) (map[string][]ModerationTrigger, error) {
 	out := make(map[string][]ModerationTrigger, len(keys))
 	if len(keys) == 0 {
@@ -167,25 +167,54 @@ func (s *Service) ModerationTriggersByKeys(keys []string) (map[string][]Moderati
 		seen[k] = struct{}{}
 		uniq = append(uniq, k)
 	}
+	if len(uniq) == 0 {
+		return out, nil
+	}
+	// detail 含 "key":"<key>"；key 为 base62 无引号，LIKE 安全。
+	q := s.db.Where("action = ? AND actor_type = ?", "moderation_flag", "system")
+	ors := make([]string, 0, len(uniq))
+	args := make([]any, 0, len(uniq))
 	for _, key := range uniq {
-		// detail 含 "key":"<key>"（JSON 字段）；key 为 base62 无引号，LIKE 安全。
-		pat := fmt.Sprintf(`%%"key":"%s"%%`, key)
-		var log model.AuditLog
-		err := s.db.Where("action = ? AND actor_type = ? AND detail LIKE ?",
-			"moderation_flag", "system", pat).
-			Order("id DESC").Limit(1).First(&log).Error
-		if errors.Is(err, gorm.ErrRecordNotFound) {
+		ors = append(ors, "detail LIKE ?")
+		args = append(args, fmt.Sprintf(`%%"key":"%s"%%`, key))
+	}
+	q = q.Where("("+strings.Join(ors, " OR ")+")", args...)
+	var logs []model.AuditLog
+	// 多取一些以防同 key 多条；按 id 降序后每 key 只保留第一条。
+	if err := q.Order("id DESC").Limit(len(uniq) * 3).Find(&logs).Error; err != nil {
+		return nil, err
+	}
+	for i := range logs {
+		key := moderationFlagKey(logs[i].Detail)
+		if key == "" {
 			continue
 		}
-		if err != nil {
-			return nil, err
+		if _, ok := seen[key]; !ok {
+			continue
 		}
-		trigs := parseModerationFlagTriggers(log.Detail)
+		if _, have := out[key]; have {
+			continue // 已是更新的一条
+		}
+		trigs := parseModerationFlagTriggers(logs[i].Detail)
 		if len(trigs) > 0 {
 			out[key] = trigs
 		}
 	}
 	return out, nil
+}
+
+// moderationFlagKey 从 audit detail 抽出 key 字段。
+func moderationFlagKey(detail string) string {
+	if strings.TrimSpace(detail) == "" {
+		return ""
+	}
+	var raw struct {
+		Key string `json:"key"`
+	}
+	if err := json.Unmarshal([]byte(detail), &raw); err != nil {
+		return ""
+	}
+	return raw.Key
 }
 
 // parseModerationFlagTriggers 解析 moderation_flag detail。

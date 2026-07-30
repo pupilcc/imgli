@@ -1,4 +1,4 @@
-import { memo, type RefObject } from 'react'
+import { memo, useRef, type RefObject } from 'react'
 import type { ImageItem } from '../../api/types'
 import { useT } from '../../i18n'
 import { copyText } from '../../lib/copy'
@@ -6,6 +6,9 @@ import { formatBytes, formatDate } from '../../lib/format'
 import type { View } from '../../store'
 import { ArmedButton } from '../../ui/ArmedButton'
 import styles from './ImageGrid.module.css'
+import { useWindowVirtual } from './useWindowVirtual'
+
+const LIST_ROW_H = 53 // ≈ padding + 36px thumb + border
 
 interface CardActions {
   onToggleSelect(key: string): void
@@ -155,6 +158,11 @@ const ListRow = memo(function ListRow({
 
 export function ImageGrid({ items, view, selected, sentinelRef, loadingMore, ...a }: Props) {
   const { t } = useT()
+  const listBodyRef = useRef<HTMLDivElement>(null)
+  // 列表视图：窗口滚动虚拟化，只挂载可视区行（无限滚动仍用 sentinel）
+  const virt = useWindowVirtual(view === 'list' ? items.length : 0, LIST_ROW_H, listBodyRef)
+  const listSlice = view === 'list' ? items.slice(virt.start, virt.end) : items
+
   return (
     <>
       {view === 'list' ? (
@@ -163,9 +171,13 @@ export function ImageGrid({ items, view, selected, sentinelRef, loadingMore, ...
             <span></span><span></span><span>{t('images.colName')}</span><span>{t('images.colDims')}</span><span>{t('images.colSize')}</span>
             <span>{t('images.colFormat')}</span><span>{t('images.colVisibility')}</span><span>{t('images.colUploaded')}</span><span></span>
           </div>
-          {items.map((i) => (
-            <ListRow key={i.key} item={i} selected={selected.has(i.key)} {...a} />
-          ))}
+          <div ref={listBodyRef} className={styles.listBody} style={{ height: virt.totalHeight || undefined }}>
+            <div style={{ transform: `translateY(${virt.offsetY}px)` }}>
+              {listSlice.map((i) => (
+                <ListRow key={i.key} item={i} selected={selected.has(i.key)} {...a} />
+              ))}
+            </div>
+          </div>
         </div>
       ) : (
         <div className={view === 'masonry' ? styles.masonry : styles.grid}>
