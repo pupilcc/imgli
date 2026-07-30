@@ -35,7 +35,13 @@ See also [s3-compatibility.md](s3-compatibility.md) and the design notes under
 - Enabling an enabled compat policy records audit `policy_enable_compat`  
 - **In-package only:** small control-connection pool (default max 4, idle ~90s) and
   remembered TLS mode (explicit vs implicit) so hot reads do not dial+login every
-  time or dual-probe FTPS. Still **not** recommended as the default hot store.  
+  time or dual-probe FTPS.
+- **Streaming Open:** when the server supports `SIZE`, `Open` holds the control
+  connection and streams via `RETR`/`REST` (lazy data conn on first `Read`) so
+  `http.ServeContent` can start sending before the whole object is buffered.
+  If `SIZE` fails, falls back to full-buffer open. Still **not** recommended as
+  the default hot store.  
+
 
 
 ## Removal

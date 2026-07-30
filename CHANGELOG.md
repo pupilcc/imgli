@@ -13,6 +13,7 @@ separate version in `go.mod` or `web/package.json`.
 ### Changed
 
 - **FTP driver:** in-package control connection pool + remembered TLS mode (no dual-dial per request); still compat-tier, no serve changes.
+- **FTP Open streaming:** use `SIZE` + lazy `RETR`/`REST` for better TTFB; full-buffer fallback when `SIZE` unsupported.
 
 ## [0.4.0] - 2026-07-30
 

@@ -3,10 +3,13 @@ package ftp
 import (
 	"bytes"
 	"context"
+	"errors"
 	"io"
 	"os"
 	"testing"
 	"time"
+
+	"github.com/yixian-huang/imgli/internal/storage"
 )
 
 func TestNewRequiresHost(t *testing.T) {
@@ -61,6 +64,38 @@ func TestIdleTTLConstantPositive(t *testing.T) {
 	}
 }
 
+func TestIsNotFound(t *testing.T) {
+	if !isNotFound(storage.ErrNotFound) || !isNotFound(errors.New("550 File not found")) {
+		t.Fatal("expected not found")
+	}
+	if isNotFound(errors.New("421 service not available")) {
+		t.Fatal("421 is not not-found")
+	}
+}
+
+// ServeContent pattern: SeekEnd → SeekStart → Read (body still nil until Read).
+func TestStreamRSCSeekLikeServeContent(t *testing.T) {
+	s := &streamRSC{size: 1024, pos: 0}
+	n, err := s.Seek(0, io.SeekEnd)
+	if err != nil || n != 1024 {
+		t.Fatalf("SeekEnd: %d %v", n, err)
+	}
+	n, err = s.Seek(0, io.SeekStart)
+	if err != nil || n != 0 {
+		t.Fatalf("SeekStart: %d %v", n, err)
+	}
+	if s.body != nil {
+		t.Fatal("body should stay lazy until Read")
+	}
+	if _, err := s.Seek(-1, io.SeekStart); err == nil {
+		t.Fatal("want out of range")
+	}
+	_ = s.Close()
+	if _, err := s.Read([]byte{0}); err == nil {
+		t.Fatal("read after close")
+	}
+}
+
 // Live probe: IMGLI_TEST_FTP=1 (defaults 127.0.0.1:2121 imgli/imgli).
 // Asserts second Open reuses pool (mode remembered / no re-probe required for plain).
 func TestLiveRoundTrip(t *testing.T) {
@@ -107,6 +142,13 @@ func TestLiveRoundTrip(t *testing.T) {
 	if err != nil {
 		t.Fatalf("open: %v", err)
 	}
+	// Mimic http.ServeContent: size via SeekEnd, then rewind, then stream.
+	if n, err := rc.Seek(0, io.SeekEnd); err != nil || n != int64(len(payload)) {
+		t.Fatalf("SeekEnd: %d %v", n, err)
+	}
+	if _, err := rc.Seek(0, io.SeekStart); err != nil {
+		t.Fatal(err)
+	}
 	got, err := io.ReadAll(rc)
 	rc.Close()
 	if err != nil {
@@ -115,18 +157,25 @@ func TestLiveRoundTrip(t *testing.T) {
 	if !bytes.Equal(got, payload) {
 		t.Fatalf("mismatch %q", got)
 	}
-	// Soft signal: reuse should not take multi-second dial (local vsftpd).
-	if elapsed := time.Since(t0); elapsed > 3*time.Second {
-		t.Logf("warning: open took %v (pool may not help on slow link)", elapsed)
+	if elapsed := time.Since(t0); elapsed > 5*time.Second {
+		t.Logf("warning: open+stream took %v", elapsed)
 	}
 
-	// Two opens in a row — still correct.
+	// Second open (pool + stream) still correct.
 	rc2, err := d.Open(ctx, key)
 	if err != nil {
 		t.Fatalf("open2: %v", err)
 	}
-	_, _ = io.ReadAll(rc2)
+	buf := make([]byte, 4)
+	n, err := rc2.Read(buf)
+	if err != nil || n != 4 || !bytes.Equal(buf, payload[:4]) {
+		t.Fatalf("partial read: n=%d err=%v buf=%q", n, err, buf)
+	}
+	rest, _ := io.ReadAll(rc2)
 	rc2.Close()
+	if !bytes.Equal(append(buf[:n], rest...), payload) {
+		t.Fatal("reassembled mismatch")
+	}
 
 	if err := d.Delete(ctx, key); err != nil {
 		t.Fatalf("delete: %v", err)

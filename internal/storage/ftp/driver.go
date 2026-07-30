@@ -343,23 +343,65 @@ func (d *Driver) Put(ctx context.Context, key string, r io.Reader) error {
 	})
 }
 
+func isNotFound(err error) bool {
+	if err == nil {
+		return false
+	}
+	if errors.Is(err, storage.ErrNotFound) {
+		return true
+	}
+	s := err.Error()
+	return strings.Contains(s, "550") || strings.Contains(strings.ToLower(s), "no such")
+}
+
+// Open returns a streaming ReadSeekCloser when SIZE works (better TTFB for /i).
+// Control connection is held until Close and then returned to the pool.
+// If SIZE is unsupported, falls back to a one-shot buffered open (compat).
 func (d *Driver) Open(ctx context.Context, key string) (io.ReadSeekCloser, error) {
-	// Still buffer whole object: ServeContent needs Seek; FTP REST is uneven.
-	// Pooling removes per-request dial/login; TTFB still includes full Retr.
-	var data []byte
-	err := d.withConn(ctx, func(c *ftp.ServerConn) error {
-		resp, err := c.Retr(d.remotePath(key))
-		if err != nil {
-			if strings.Contains(strings.ToLower(err.Error()), "no such") ||
-				strings.Contains(err.Error(), "550") {
-				return storage.ErrNotFound
-			}
-			return err
+	c, err := d.acquire(ctx)
+	if err != nil {
+		return nil, err
+	}
+	remote := d.remotePath(key)
+	size, err := c.FileSize(remote)
+	if err != nil {
+		if isNotFound(err) {
+			d.release(c, false)
+			return nil, storage.ErrNotFound
 		}
-		defer resp.Close()
-		data, err = io.ReadAll(resp)
-		return err
-	})
+		// SIZE unavailable: buffer whole object, then release conn.
+		rsc, berr := d.openBuffered(c, remote)
+		if berr != nil {
+			d.release(c, !isNotFound(berr))
+			if isNotFound(berr) {
+				return nil, storage.ErrNotFound
+			}
+			return nil, berr
+		}
+		d.release(c, false)
+		return rsc, nil
+	}
+	return &streamRSC{
+		d:      d,
+		c:      c,
+		remote: remote,
+		size:   size,
+		pos:    0,
+	}, nil
+}
+
+// openBuffered RETRs the whole file into memory (legacy path when SIZE fails).
+// Caller owns c and must release it after this returns.
+func (d *Driver) openBuffered(c *ftp.ServerConn, remote string) (io.ReadSeekCloser, error) {
+	resp, err := c.Retr(remote)
+	if err != nil {
+		if isNotFound(err) {
+			return nil, storage.ErrNotFound
+		}
+		return nil, err
+	}
+	defer resp.Close()
+	data, err := io.ReadAll(resp)
 	if err != nil {
 		return nil, err
 	}
@@ -370,7 +412,7 @@ func (d *Driver) Delete(ctx context.Context, key string) error {
 	return d.withConn(ctx, func(c *ftp.ServerConn) error {
 		err := c.Delete(d.remotePath(key))
 		if err != nil {
-			if strings.Contains(err.Error(), "550") {
+			if isNotFound(err) {
 				return nil
 			}
 			return err
@@ -384,9 +426,7 @@ func (d *Driver) Exists(ctx context.Context, key string) (bool, error) {
 	err := d.withConn(ctx, func(c *ftp.ServerConn) error {
 		_, err := c.FileSize(d.remotePath(key))
 		if err != nil {
-			// 550 / no such → missing; other errors drop the connection
-			if strings.Contains(err.Error(), "550") ||
-				strings.Contains(strings.ToLower(err.Error()), "no such") {
+			if isNotFound(err) {
 				ok = false
 				return nil
 			}
@@ -396,6 +436,110 @@ func (d *Driver) Exists(ctx context.Context, key string) (bool, error) {
 		return nil
 	})
 	return ok, err
+}
+
+// streamRSC streams via RETR/REST. ServeContent does SeekEnd→SeekStart→Read;
+// data connection opens lazily on first Read so SIZE-only probes stay cheap.
+type streamRSC struct {
+	d      *Driver
+	c      *ftp.ServerConn
+	remote string
+	size   int64
+	pos    int64
+	body   io.ReadCloser
+	bad    bool
+	closed bool
+}
+
+func (s *streamRSC) Read(p []byte) (int, error) {
+	if s.closed {
+		return 0, errors.New("ftp: read on closed stream")
+	}
+	if s.pos >= s.size {
+		return 0, io.EOF
+	}
+	if s.body == nil {
+		if err := s.openBody(); err != nil {
+			s.bad = true
+			return 0, err
+		}
+	}
+	n, err := s.body.Read(p)
+	s.pos += int64(n)
+	if err != nil && !errors.Is(err, io.EOF) {
+		s.bad = true
+	}
+	return n, err
+}
+
+func (s *streamRSC) Seek(offset int64, whence int) (int64, error) {
+	if s.closed {
+		return 0, errors.New("ftp: seek on closed stream")
+	}
+	var abs int64
+	switch whence {
+	case io.SeekStart:
+		abs = offset
+	case io.SeekCurrent:
+		abs = s.pos + offset
+	case io.SeekEnd:
+		abs = s.size + offset
+	default:
+		return 0, errors.New("ftp: invalid whence")
+	}
+	if abs < 0 || abs > s.size {
+		return 0, errors.New("ftp: seek out of range")
+	}
+	if abs == s.pos {
+		return abs, nil
+	}
+	// Invalidate data connection; next Read uses REST/RETR from abs.
+	s.closeBody()
+	s.pos = abs
+	return abs, nil
+}
+
+func (s *streamRSC) openBody() error {
+	if s.c == nil {
+		return errors.New("ftp: no connection")
+	}
+	var (
+		resp *ftp.Response
+		err  error
+	)
+	if s.pos == 0 {
+		resp, err = s.c.Retr(s.remote)
+	} else {
+		resp, err = s.c.RetrFrom(s.remote, uint64(s.pos))
+	}
+	if err != nil {
+		if isNotFound(err) {
+			return storage.ErrNotFound
+		}
+		return err
+	}
+	s.body = resp
+	return nil
+}
+
+func (s *streamRSC) closeBody() {
+	if s.body != nil {
+		_ = s.body.Close()
+		s.body = nil
+	}
+}
+
+func (s *streamRSC) Close() error {
+	if s.closed {
+		return nil
+	}
+	s.closed = true
+	s.closeBody()
+	if s.c != nil {
+		s.d.release(s.c, s.bad)
+		s.c = nil
+	}
+	return nil
 }
 
 type memRSC struct {
