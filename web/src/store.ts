@@ -1,7 +1,7 @@
 import { create } from 'zustand'
 import { detectLang, setHtmlLang, type Lang } from './i18n/lang'
 
-export type Theme = 'light' | 'dark'
+export type Theme = 'light' | 'dark' | 'system'
 export type View = 'masonry' | 'grid' | 'list'
 export type { Lang }
 const THEME_KEY = 'imgli-theme'
@@ -11,8 +11,17 @@ export const TOAST_MS = 1600
 
 export function initialTheme(): Theme {
   const saved = localStorage.getItem(THEME_KEY)
-  if (saved === 'light' || saved === 'dark') return saved
+  if (saved === 'light' || saved === 'dark' || saved === 'system') return saved
+  return 'system'
+}
+
+export function resolveTheme(t: Theme): 'light' | 'dark' {
+  if (t === 'light' || t === 'dark') return t
   return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'
+}
+
+function applyResolved(t: Theme) {
+  document.body.dataset.theme = resolveTheme(t)
 }
 
 export function initialView(): View {
@@ -42,9 +51,10 @@ let toastSeq = 0
 export const useGlobal = create<GlobalState>((set, get) => ({
   theme: initialTheme(),
   toggleTheme() {
-    const t: Theme = get().theme === 'light' ? 'dark' : 'light'
+    const cur = get().theme
+    const t: Theme = cur === 'light' ? 'dark' : cur === 'dark' ? 'system' : 'light'
     localStorage.setItem(THEME_KEY, t)
-    document.body.dataset.theme = t
+    applyResolved(t)
     set({ theme: t })
   },
   toasts: [],
@@ -71,5 +81,11 @@ export const useGlobal = create<GlobalState>((set, get) => ({
 
 /** 启动时把当前主题写到 body（此后由 toggleTheme 维护）。 */
 export function applyTheme() {
-  document.body.dataset.theme = useGlobal.getState().theme
+  applyResolved(useGlobal.getState().theme)
+  // system: follow OS changes
+  try {
+    window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => {
+      if (useGlobal.getState().theme === 'system') applyResolved('system')
+    })
+  } catch { /* ignore */ }
 }

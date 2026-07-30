@@ -1,6 +1,8 @@
 package server
 
 import (
+	"fmt"
+	"html"
 	"io/fs"
 	"mime"
 	"net/http"
@@ -8,6 +10,9 @@ import (
 	"strings"
 
 	"github.com/yixian-huang/imgli/internal/handler"
+	"github.com/yixian-huang/imgli/internal/model"
+	"github.com/yixian-huang/imgli/internal/service/imagesvc"
+	"github.com/yixian-huang/imgli/internal/service/storagesvc"
 )
 
 func init() {
@@ -43,9 +48,12 @@ func (s *Server) mountWeb(dist fs.FS) {
 		if err != nil {
 			b = []byte(noBuildHTML)
 		}
+		if inj := s.ogInject(r); inj != "" {
+			b = injectHead(b, inj)
+		}
 		w.Header().Set("Content-Type", "text/html; charset=utf-8")
 		w.Header().Set("Cache-Control", "no-cache")
-		w.Write(b)
+		_, _ = w.Write(b)
 	}
 	s.mux.Get("/", index)
 	s.mux.Head("/", index)
@@ -80,4 +88,90 @@ func (s *Server) mountWeb(dist fs.FS) {
 		}
 		index(w, r)
 	})
+}
+
+func injectHead(htmlDoc []byte, snippet string) []byte {
+	s := string(htmlDoc)
+	low := strings.ToLower(s)
+	if i := strings.Index(low, "</head>"); i >= 0 {
+		return []byte(s[:i] + snippet + s[i:])
+	}
+	return append([]byte(snippet), htmlDoc...)
+}
+
+// ogInject 为 /s/{key} 与 /a/{id} 注入 Open Graph 元数据（爬虫可读）。
+func (s *Server) ogInject(r *http.Request) string {
+	if s.opts.DB == nil || s.opts.Cfg == nil {
+		return ""
+	}
+	p := r.URL.Path
+	base := strings.TrimRight(strings.TrimSpace(s.opts.Cfg.BaseURL), "/")
+	if base == "" {
+		scheme := "http"
+		if r.TLS != nil || strings.EqualFold(r.Header.Get("X-Forwarded-Proto"), "https") {
+			scheme = "https"
+		}
+		base = scheme + "://" + r.Host
+	}
+	switch {
+	case strings.HasPrefix(p, "/s/"):
+		ref := strings.TrimPrefix(p, "/s/")
+		ref = strings.Split(ref, "/")[0]
+		if ref == "" {
+			return ""
+		}
+		svc := s.imgSvc
+		if svc == nil {
+			svc = imagesvc.New(s.opts.DB, storagesvc.New(s.opts.Cfg, s.opts.DB), nil)
+		}
+		row, err := svc.GetPublicShare(ref)
+		if err != nil || row == nil {
+			return ""
+		}
+		title := html.EscapeString(row.Img.Name)
+		if strings.TrimSpace(row.Img.AccessPasswordHash) != "" {
+			return fmt.Sprintf(`
+<meta property="og:type" content="website"/>
+<meta property="og:title" content="%s"/>
+<meta name="twitter:card" content="summary"/>
+`, title)
+		}
+		imgURL := html.EscapeString(base + "/i/" + row.Img.Key + "." + row.Img.Ext)
+		pageURL := html.EscapeString(base + "/s/" + row.Img.Key)
+		return fmt.Sprintf(`
+<meta property="og:type" content="website"/>
+<meta property="og:title" content="%s"/>
+<meta property="og:url" content="%s"/>
+<meta property="og:image" content="%s"/>
+<meta name="twitter:card" content="summary_large_image"/>
+<meta name="twitter:image" content="%s"/>
+`, title, pageURL, imgURL, imgURL)
+	case strings.HasPrefix(p, "/a/"):
+		idStr := strings.TrimPrefix(p, "/a/")
+		idStr = strings.Split(idStr, "/")[0]
+		var alb model.Album
+		if err := s.opts.DB.Where("id = ? AND visibility = ?", idStr, "public").First(&alb).Error; err != nil {
+			return ""
+		}
+		title := html.EscapeString(alb.Name)
+		pageURL := html.EscapeString(base + "/a/" + idStr)
+		imgMeta := ""
+		var cover model.Image
+		if err := s.opts.DB.Where("album_id = ? AND visibility = ? AND status = ?", alb.ID, "public", "normal").
+			Order("created_at DESC").First(&cover).Error; err == nil {
+			iu := html.EscapeString(base + "/t/" + cover.Key + ".jpg")
+			imgMeta = fmt.Sprintf(`
+<meta property="og:image" content="%s"/>
+<meta name="twitter:image" content="%s"/>
+`, iu, iu)
+		}
+		return fmt.Sprintf(`
+<meta property="og:type" content="website"/>
+<meta property="og:title" content="%s"/>
+<meta property="og:url" content="%s"/>
+<meta name="twitter:card" content="summary_large_image"/>
+%s`, title, pageURL, imgMeta)
+	default:
+		return ""
+	}
 }

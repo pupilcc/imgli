@@ -12,6 +12,8 @@ separate version in `go.mod` or `web/package.json`.
 
 ### Added
 
+- **Open Graph meta** on SPA `/s/{key}` and `/a/{id}` HTML shell for crawlers (passworded shares omit image).
+- **Theme `system`**: cycle light → dark → system in the UI toggle.
 - **CLI `imgli import-dir`:** bulk-import a local directory via upload API (recursive, dry-run, continue-on-error).
 - **Public album visitor page:** `GET /api/v1/a/{id}` + `/a/{id}/images` and SPA `/a/:id` (public+normal images only).
 - **Controlled thumbnail width query:** `GET /t/{name}?w=200|400|800` with disk cache keys under `.thumbs/w{N}/` (isolated from content-hash); invalid `w` → 400.
