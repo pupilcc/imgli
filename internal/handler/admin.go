@@ -3,9 +3,11 @@ package handler
 import (
 	"encoding/json"
 	"errors"
+	"fmt"
 	"net/http"
 	"sort"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/go-chi/chi/v5"
@@ -15,9 +17,11 @@ import (
 	"github.com/yixian-huang/imgli/internal/model"
 	"github.com/yixian-huang/imgli/internal/service/adminsvc"
 	"github.com/yixian-huang/imgli/internal/service/moderation"
+	"github.com/yixian-huang/imgli/internal/service/settings"
 	"github.com/yixian-huang/imgli/internal/service/stats"
 	"github.com/yixian-huang/imgli/internal/service/storagesvc"
 	"github.com/yixian-huang/imgli/internal/service/upload"
+	"github.com/yixian-huang/imgli/internal/service/webhook"
 )
 
 // AdminDeps 管理端 handler 依赖。
@@ -27,7 +31,8 @@ type AdminDeps struct {
 	Mail    *mail.Service
 	Stats   *stats.Service
 	Mod     *moderation.Service // 可选；拒绝通知
-	OwnHost string              // BaseURL host，用于 referer suspect 排除自站
+	Hooks   *webhook.Service   // 可选；出站 webhook
+	OwnHost string             // BaseURL host，用于 referer suspect 排除自站
 }
 
 type AdminHandlers struct{ D AdminDeps }
@@ -117,7 +122,7 @@ func (h *AdminHandlers) Users(w http.ResponseWriter, r *http.Request) {
 			groupID = n
 		}
 	}
-	rows, total, err := h.D.Adm.ListUsers(query.Get("q"), groupID, query.Get("status"), page, limit)
+	rows, total, err := h.D.Adm.ListUsers(query.Get("q"), groupID, query.Get("status"), query.Get("channel"), query.Get("sort"), page, limit)
 	if err != nil {
 		Fail(w, http.StatusInternalServerError, CodeInternal, "服务器内部错误")
 		return
@@ -127,6 +132,39 @@ func (h *AdminHandlers) Users(w http.ResponseWriter, r *http.Request) {
 		items = append(items, userRowDTO(&rows[i]))
 	}
 	OK(w, map[string]any{"items": items, "total": total, "page": page, "limit": limit})
+}
+
+// ExportUsersCSV GET /api/v1/admin/export/users.csv — 用户摘要 CSV（含带宽与注册渠道）。
+func (h *AdminHandlers) ExportUsersCSV(w http.ResponseWriter, r *http.Request) {
+	query := r.URL.Query()
+	var groupID uint64
+	if v := query.Get("group"); v != "" {
+		if n, err := strconv.ParseUint(v, 10, 64); err == nil {
+			groupID = n
+		}
+	}
+	rows, _, err := h.D.Adm.ListUsers(query.Get("q"), groupID, query.Get("status"), query.Get("channel"), query.Get("sort"), 1, usersMaxLimit)
+	if err != nil {
+		Fail(w, http.StatusInternalServerError, CodeInternal, "服务器内部错误")
+		return
+	}
+	w.Header().Set("Content-Type", "text/csv; charset=utf-8")
+	w.Header().Set("Content-Disposition", `attachment; filename="imgli-users.csv"`)
+	_, _ = w.Write([]byte("id,username,email,status,group_id,bandwidth_used_month,bandwidth_period,signup_channel,image_count\n"))
+	for i := range rows {
+		u := rows[i].User
+		line := fmt.Sprintf("%d,%s,%s,%s,%d,%d,%s,%s,%d\n",
+			u.ID, csvEsc(u.Username), csvEsc(u.Email), csvEsc(u.Status), u.GroupID,
+			u.BandwidthUsedMonth, csvEsc(u.BandwidthPeriod), csvEsc(u.SignupChannel), rows[i].ImageCount)
+		_, _ = w.Write([]byte(line))
+	}
+}
+
+func csvEsc(s string) string {
+	if strings.ContainsAny(s, ",\"\n") {
+		return `"` + strings.ReplaceAll(s, `"`, `""`) + `"`
+	}
+	return s
 }
 
 // UpdateUser PATCH /api/v1/admin/users/{id} {group_id?,status?}
@@ -339,6 +377,11 @@ func (h *AdminHandlers) ReviewDecide(w http.ResponseWriter, r *http.Request) {
 			map[string]any{"key": key, "score": img.NSFWScore}, ClientIP(r))
 		if req.Action == "reject" && h.D.Mod != nil {
 			h.D.Mod.NotifyRejectIfConfigured(*img)
+		}
+		if h.D.Hooks != nil {
+			h.D.Hooks.Emit("image.moderated", map[string]any{
+				"key": img.Key, "status": img.Status, "action": req.Action,
+			})
 		}
 		row, rerr := h.D.Adm.GetImageRow(key)
 		if rerr != nil {
@@ -958,4 +1001,32 @@ func (h *AdminHandlers) Logs(w http.ResponseWriter, r *http.Request) {
 		items = append(items, auditLogDTO(&logs[i]))
 	}
 	OK(w, map[string]any{"items": items, "total": total, "page": page, "limit": limit})
+}
+
+// GetWebhooks GET /api/v1/admin/webhooks
+func (h *AdminHandlers) GetWebhooks(w http.ResponseWriter, r *http.Request) {
+	var c webhook.Config
+	_ = settings.New(h.D.Adm.DB()).Get(webhook.SettingKey, &c)
+	OK(w, c)
+}
+
+// PutWebhooks PUT /api/v1/admin/webhooks
+func (h *AdminHandlers) PutWebhooks(w http.ResponseWriter, r *http.Request) {
+	var c webhook.Config
+	if err := DecodeJSON(r, &c); err != nil {
+		Fail(w, http.StatusBadRequest, CodeInvalidRequest, "请求体无效")
+		return
+	}
+	c.URL = strings.TrimSpace(c.URL)
+	if c.Enabled && c.URL == "" {
+		Fail(w, http.StatusBadRequest, CodeInvalidRequest, "启用时需要 URL")
+		return
+	}
+	if err := settings.New(h.D.Adm.DB()).Set(webhook.SettingKey, c); err != nil {
+		Fail(w, http.StatusInternalServerError, CodeInternal, "服务器内部错误")
+		return
+	}
+	actor := PrincipalFrom(r).User
+	h.D.Adm.Audit(&actor.ID, "admin", "webhooks_update", map[string]any{"enabled": c.Enabled}, ClientIP(r))
+	OK(w, c)
 }

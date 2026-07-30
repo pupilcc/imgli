@@ -62,6 +62,8 @@ export interface AdminUsersFilter {
   q?: string
   group?: number
   status?: string
+  channel?: string
+  sort?: string
   page?: number
 }
 
@@ -70,6 +72,8 @@ export function useAdminUsers(f: AdminUsersFilter = {}) {
   if (f.q) p.set('q', f.q)
   if (f.group) p.set('group', String(f.group))
   if (f.status) p.set('status', f.status)
+  if (f.channel) p.set('channel', f.channel)
+  if (f.sort) p.set('sort', f.sort)
   if (f.page && f.page > 1) p.set('page', String(f.page))
   const qs = p.toString()
   return useQuery({

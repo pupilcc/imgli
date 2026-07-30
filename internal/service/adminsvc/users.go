@@ -29,8 +29,9 @@ const (
 	maxListLimit     = 200
 )
 
-// ListUsers 按 q（username/email LIKE）、group_id、status 筛选，分页返回 (rows, total)。
-func (s *Service) ListUsers(q string, groupID uint64, status string, page, limit int) ([]UserRow, int64, error) {
+// ListUsers 按 q（username/email LIKE）、group_id、status、signup channel 筛选；
+// sort=bandwidth 时按本月出站降序，否则 id。
+func (s *Service) ListUsers(q string, groupID uint64, status, channel, sort string, page, limit int) ([]UserRow, int64, error) {
 	if page < 1 {
 		page = 1
 	}
@@ -51,12 +52,19 @@ func (s *Service) ListUsers(q string, groupID uint64, status string, page, limit
 	if status != "" {
 		tx = tx.Where("status = ?", status)
 	}
+	if channel != "" {
+		tx = tx.Where("signup_channel = ?", channel)
+	}
 	var total int64
 	if err := tx.Count(&total).Error; err != nil {
 		return nil, 0, err
 	}
+	order := "id"
+	if sort == "bandwidth" {
+		order = "bandwidth_used_month DESC, id DESC"
+	}
 	var users []model.User
-	if err := tx.Order("id").Offset((page - 1) * limit).Limit(limit).Find(&users).Error; err != nil {
+	if err := tx.Order(order).Offset((page - 1) * limit).Limit(limit).Find(&users).Error; err != nil {
 		return nil, 0, err
 	}
 	rows := make([]UserRow, 0, len(users))
