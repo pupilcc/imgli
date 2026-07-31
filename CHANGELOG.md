@@ -10,6 +10,14 @@ separate version in `go.mod` or `web/package.json`.
 
 ## [Unreleased]
 
+### Fixed
+
+- **Dark theme:** first-run Token onboarding card uses design tokens (readable on dark backgrounds). Closes #50.
+
+### Added
+
+- **Docs:** `docs/storage-migrate.md` + design draft for multi-policy migrate/sync.
+
 ## [0.5.0] - 2026-07-31
 
 Theme: **Trust · Onboard · Community**
