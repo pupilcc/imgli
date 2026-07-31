@@ -5,7 +5,7 @@
 
 ## Latest shipped — v0.5.0 · Trust · Onboard · Community
 
-Release: https://github.com/yixian-huang/imgli/releases/tag/v0.5.0  
+Release: https://github.com/yixian-huang/imgli/releases/tag/v0.5.1 (patch) · [v0.5.0](https://github.com/yixian-huang/imgli/releases/tag/v0.5.0)  
 Milestone: https://github.com/yixian-huang/imgli/milestone/4 (**closed**, 14/14)
 
 | Theme | Highlights |

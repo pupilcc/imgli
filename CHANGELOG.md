@@ -10,13 +10,17 @@ separate version in `go.mod` or `web/package.json`.
 
 ## [Unreleased]
 
+## [0.5.1] - 2026-07-31
+
+Theme: **Patch — dark onboarding + storage-migrate docs**
+
 ### Fixed
 
-- **Dark theme:** first-run Token onboarding card uses design tokens (readable on dark backgrounds). Closes #50.
+- **Dark theme:** first-run Token onboarding card uses design tokens (readable on dark backgrounds). (#50)
 
 ### Added
 
-- **Docs:** `docs/storage-migrate.md` + design draft for multi-policy migrate/sync.
+- **Docs:** `docs/storage-migrate.md` (CLI cutover) + `docs/design/storage-migrate-sync-draft.md` (multi-policy migrate vs sync roadmap).
 
 ## [0.5.0] - 2026-07-31
 
