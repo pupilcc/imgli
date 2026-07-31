@@ -10,9 +10,13 @@ separate version in `go.mod` or `web/package.json`.
 
 ## [Unreleased]
 
+## [0.5.0] - 2026-07-31
+
+Theme: **Trust · Onboard · Community**
+
 ### Added
 
-- **Site ops (v0.5):** optional `favicon_url`, `source_url` (AGPL corresponding source), `oss_credit` footer toggle, About page (`about_enabled` / `about_body`), `welcome_email` on register when SMTP configured.
+- **Site ops:** optional `favicon_url`, `source_url` (AGPL corresponding source), `oss_credit` footer toggle, About page (`about_enabled` / `about_body`), `welcome_email` on register when SMTP configured.
 - **Onboarding:** dismissible first-run Token path on upload page; auth scenario copy via `?from=` / `utm_campaign`.
 - **Preferences:** `auto_copy_format=share` copies share page URL after upload.
 - **Docs:** `docs/moderation-spot-check.md`, public `ROADMAP.md` mirror, README docs map.
@@ -20,8 +24,6 @@ separate version in `go.mod` or `web/package.json`.
 ### Changed
 
 - **Document title:** custom `site_name` is primary (product brand only when still default img.li).
-
-
 - **WebDAV:** Open falls back to full GET when HEAD lacks `Content-Length` or is unsupported; Range-ignored servers fall back to full-object buffer on mid-file read; clearer auth/status errors.
 - **Docs:** `docs/webdav-compatibility.md` + `scripts/webdav-vendor-matrix.sh` (self-hosted live probe; no SaaS signup required for a matrix row).
 - **Docs SSOT:** `docs/documentation-ssot.md` — layered truth (repo engineering vs product `docs-imgli` vs internal KB); CONTRIBUTING pointer.
