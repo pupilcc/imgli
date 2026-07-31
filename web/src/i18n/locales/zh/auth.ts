@@ -70,4 +70,7 @@ export default {
   verifyOkText: '你的邮箱已完成验证。',
 
   oidcLogin: '使用 SSO / OIDC 登录',
+  scenarioPicgo: '对接 PicGo / 图床插件？注册后在「设置 → API Token」一键复制配置片段。',
+  scenarioBlog: '博客/笔记外链：注册后上传即可复制 Markdown，公共试用有限额，重度请自托管。',
+  scenarioPrivate: '需要口令/私密图？注册后可在详情设置访问控制；自托管可完全掌控。',
 }

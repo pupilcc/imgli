@@ -88,8 +88,9 @@ func (h *ConfigHandler) Config(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	var helpURL, upgradeURL, shareBrand string
-	var regNotice adminsvc.LocaleString
+	var helpURL, upgradeURL, shareBrand, faviconURL, sourceURL, ossCredit string
+	var regNotice, aboutBody adminsvc.LocaleString
+	var aboutEnabled bool
 	if err := st.Get(model.SettingHelpURL, &helpURL); err != nil && !errors.Is(err, settings.ErrNotFound) {
 		Fail(w, http.StatusInternalServerError, CodeInternal, "服务器内部错误")
 		return
@@ -106,10 +107,34 @@ func (h *ConfigHandler) Config(w http.ResponseWriter, r *http.Request) {
 		Fail(w, http.StatusInternalServerError, CodeInternal, "服务器内部错误")
 		return
 	}
+	if err := st.Get(model.SettingFaviconURL, &faviconURL); err != nil && !errors.Is(err, settings.ErrNotFound) {
+		Fail(w, http.StatusInternalServerError, CodeInternal, "服务器内部错误")
+		return
+	}
+	if err := st.Get(model.SettingSourceURL, &sourceURL); err != nil && !errors.Is(err, settings.ErrNotFound) {
+		Fail(w, http.StatusInternalServerError, CodeInternal, "服务器内部错误")
+		return
+	}
+	if err := st.Get(model.SettingOSSCredit, &ossCredit); err != nil && !errors.Is(err, settings.ErrNotFound) {
+		Fail(w, http.StatusInternalServerError, CodeInternal, "服务器内部错误")
+		return
+	}
+	if err := st.Get(model.SettingAboutEnabled, &aboutEnabled); err != nil && !errors.Is(err, settings.ErrNotFound) {
+		Fail(w, http.StatusInternalServerError, CodeInternal, "服务器内部错误")
+		return
+	}
+	if err := st.Get(model.SettingAboutBody, &aboutBody); err != nil && !errors.Is(err, settings.ErrNotFound) {
+		Fail(w, http.StatusInternalServerError, CodeInternal, "服务器内部错误")
+		return
+	}
 	helpURL = adminsvc.NormalizeOptionalURL(helpURL)
 	upgradeURL = adminsvc.NormalizeOptionalURL(upgradeURL)
+	faviconURL = adminsvc.NormalizeOptionalURL(faviconURL)
+	sourceURL = adminsvc.NormalizeOptionalURL(sourceURL)
 	regNotice = regNotice.Normalize()
+	aboutBody = aboutBody.Normalize()
 	shareBrand = adminsvc.NormalizeShareBranding(shareBrand)
+	ossCredit = adminsvc.NormalizeOSSCredit(ossCredit)
 
 	baseURL := strings.TrimRight(strings.TrimSpace(h.BaseURL), "/")
 
@@ -132,5 +157,10 @@ func (h *ConfigHandler) Config(w http.ResponseWriter, r *http.Request) {
 		"upgrade_url":          upgradeURL,
 		"register_notice":      regNotice,
 		"share_branding":       shareBrand,
+		"favicon_url":          faviconURL,
+		"source_url":           sourceURL,
+		"oss_credit":           ossCredit,
+		"about_enabled":        aboutEnabled,
+		"about_body":           aboutBody,
 	})
 }

@@ -33,6 +33,13 @@ const (
 	SettingUpgradeURL      = "upgrade_url"       // 满额/升级/自托管说明（可选）
 	SettingRegisterNotice  = "register_notice"   // 注册页短说明（可选）
 	SettingShareBranding   = "share_branding"    // off | site | links
+	// v0.5 轻度站配 / AGPL 合规辅助（单实例 OSS；非白标）
+	SettingFaviconURL      = "favicon_url"       // 可选自定义 favicon URL；空=内置 brand
+	SettingSourceURL       = "source_url"        // AGPL 对应源码 URL；空不展示
+	SettingOSSCredit       = "oss_credit"        // on | off；页脚「基于 imgli」默认可关
+	SettingAboutEnabled    = "about_enabled"     // 是否启用 /about
+	SettingAboutBody       = "about_body"        // 关于页正文 locale map {zh,en}
+	SettingWelcomeEmail    = "welcome_email"     // bool；SMTP 已配时注册欢迎信，默认 true
 )
 
 // settingModerationDefaultJSON 是 moderation.DefaultConfig() 的 JSON 字面量，手写在此
@@ -224,6 +231,12 @@ func Seed(db *gorm.DB) error {
 			SettingRegisterNotice:  settingRegisterNoticeDefaultJSON,
 			// 默认 site：展示站名；开源产品署名在前端始终保留
 			SettingShareBranding: `"site"`,
+			SettingFaviconURL:    `""`,
+			SettingSourceURL:     `""`,
+			SettingOSSCredit:     `"on"`,
+			SettingAboutEnabled:  `false`,
+			SettingAboutBody:     `{"zh":"","en":""}`,
+			SettingWelcomeEmail:  `true`,
 		} {
 			if err := tx.Where("key = ?", k).
 				FirstOrCreate(&Setting{Key: k, Value: v}).Error; err != nil {

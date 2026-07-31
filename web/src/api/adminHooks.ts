@@ -321,6 +321,12 @@ export interface SettingsBody {
   upgrade_url?: string
   register_notice?: AdminSettings['register_notice']
   share_branding?: AdminSettings['share_branding']
+  favicon_url?: string
+  source_url?: string
+  oss_credit?: AdminSettings['oss_credit']
+  about_enabled?: boolean
+  about_body?: AdminSettings['about_body']
+  welcome_email?: boolean
 }
 
 export function useUpdateSettings() {

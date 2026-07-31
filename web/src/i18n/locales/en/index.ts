@@ -15,6 +15,7 @@ import adminA from './adminA'
 import adminB from './adminB'
 import pwa from './pwa'
 import storage from './storage'
+import about from './about'
 
 export default {
   common,
@@ -34,4 +35,5 @@ export default {
   adminB,
   pwa,
   storage,
+  about,
 }

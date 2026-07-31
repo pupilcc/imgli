@@ -18,6 +18,7 @@ import { DiscoverLayout } from './pages/discover/DiscoverLayout'
 import { ExplorePage } from './pages/discover/ExplorePage'
 import { UserPublicPage } from './pages/discover/UserPublicPage'
 import { SharePage } from './pages/share/SharePage'
+import { AboutPage } from './pages/about/AboutPage'
 import { ImagesPage } from './pages/images/ImagesPage'
 import { SettingsPage } from './pages/settings/SettingsPage'
 import { TrashPage } from './pages/trash/TrashPage'
@@ -54,9 +55,26 @@ export function App() {
   }, [session?.preferences?.lang, setLang])
   useEffect(() => {
     const name = config.data?.site_name?.trim() || BRAND_WORDMARK
+    // 标题以站点显示名为主；仅在仍是产品默认站名时附加中文副标
     document.title =
-      name === BRAND_WORDMARK ? `${BRAND_WORDMARK} · ${t('meta.brandCn')}` : `${name} · ${BRAND_WORDMARK}`
-  }, [config.data?.site_name, lang])
+      name === BRAND_WORDMARK || name === 'img.li'
+        ? `${BRAND_WORDMARK} · ${t('meta.brandCn')}`
+        : name
+  }, [config.data?.site_name, lang, t])
+  useEffect(() => {
+    const href = (config.data?.favicon_url || '').trim()
+    const sel = 'link[data-imgli-favicon="1"]'
+    document.querySelectorAll(sel).forEach((n) => n.remove())
+    if (!href) return
+    const link = document.createElement('link')
+    link.rel = 'icon'
+    link.href = href
+    link.setAttribute('data-imgli-favicon', '1')
+    document.head.appendChild(link)
+    return () => {
+      document.querySelectorAll(sel).forEach((n) => n.remove())
+    }
+  }, [config.data?.favicon_url])
   useEffect(() => {
     setOnUnauthorized(() => {
       if (window.location.pathname === '/login') return
@@ -81,6 +99,7 @@ export function App() {
       <AnnouncementBar announcement={config.data?.announcement} />
       <Routes>
         <Route path="/login" element={<AuthPage />} />
+        <Route path="/about" element={<AboutPage />} />
         <Route path="/forgot-password" element={<ForgotPasswordPage />} />
         <Route path="/reset-password" element={<ResetPasswordPage />} />
         <Route path="/verify-email" element={<VerifyEmailPage />} />

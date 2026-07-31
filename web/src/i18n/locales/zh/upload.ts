@@ -88,4 +88,10 @@ export default {
   errResponseFormat: '响应格式错误',
   errNetwork: '网络错误，请检查连接',
   errAborted: '已取消',
+  onboardingKicker: '三步接入',
+  onboardingStep1: '在设置里创建 API Token',
+  onboardingStep2: '复制 PicGo / ShareX / CLI 片段',
+  onboardingStep3: '回到这里试传一张图',
+  onboardingCta: '去设置创建 Token',
+  onboardingSkip: '知道了',
 }

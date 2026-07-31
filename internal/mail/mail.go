@@ -90,6 +90,12 @@ func (s *Service) SendChangeEmail(to, link, lang string) error {
 	return s.Send(to, sub, html)
 }
 
+// SendWelcome 注册欢迎信。baseURL 用于拼设置页链接；SMTP 未配返回 ErrNotConfigured。
+func (s *Service) SendWelcome(to, baseURL, lang string) error {
+	sub, html := RenderWelcome(s.siteName(), baseURL, lang)
+	return s.Send(to, sub, html)
+}
+
 // buildMessage 组 RFC5322 信封:中文主题 RFC2047 Q 编码;HTML utf-8 正文 8bit 直发
 // (现代 SMTP 普遍 8BITMIME,不做 quoted-printable——取舍见 spec §5)。
 func buildMessage(from, to, subject, htmlBody string) []byte {

@@ -132,6 +132,7 @@ export function PreferencesTab() {
                 { value: 'markdown', label: 'Markdown' },
                 { value: 'html', label: 'HTML' },
                 { value: 'bbcode', label: 'BBCode' },
+                { value: 'share', label: t('settings.autoCopyShare') },
               ]}
               value={copyFmt}
               onChange={setCopyFmt}

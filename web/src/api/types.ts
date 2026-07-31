@@ -2,7 +2,7 @@ export interface Preferences {
   default_album_id: number | null
   default_visibility: '' | 'public' | 'private'
   default_policy_id: number | null
-  auto_copy_format: '' | 'url' | 'markdown' | 'html' | 'bbcode'
+  auto_copy_format: '' | 'url' | 'markdown' | 'html' | 'bbcode' | 'share'
   watermark: {
     enabled: boolean
     position: string
@@ -463,6 +463,12 @@ export interface AdminSettings {
   upgrade_url?: string
   register_notice?: LocaleField
   share_branding?: ShareBranding
+  favicon_url?: string
+  source_url?: string
+  oss_credit?: 'on' | 'off'
+  about_enabled?: boolean
+  about_body?: string | { zh?: string; en?: string }
+  welcome_email?: boolean
 }
 
 export interface GuestLimits {
@@ -491,6 +497,11 @@ export interface PublicConfig {
   /** Shown on register form when non-empty (string or {zh,en}). */
   register_notice?: LocaleField
   share_branding?: ShareBranding
+  favicon_url?: string
+  source_url?: string
+  oss_credit?: 'on' | 'off'
+  about_enabled?: boolean
+  about_body?: string | { zh?: string; en?: string }
 }
 
 export interface DiscoverAuthor {

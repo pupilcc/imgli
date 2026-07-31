@@ -22,6 +22,7 @@ import { Skeleton } from '../../ui/Skeleton'
 import { PageHeader } from '../../shell/PageHeader'
 import { UploadCard } from './UploadCard'
 import styles from './UploadPage.module.css'
+import { FirstRunOnboarding } from './FirstRunOnboarding'
 
 const URL_RE = /^https?:\/\/\S+$/
 
@@ -128,8 +129,18 @@ export function UploadPage() {
     )
     if (!fresh.length) return
     for (const i of fresh) copiedRef.current.add(i.id)
-    const fmt = copyFmt as 'url' | 'markdown' | 'html' | 'bbcode'
-    const text = fresh.map((i) => i.result!.links[fmt]).join('\n')
+    const text = fresh
+      .map((i) => {
+        const links = i.result!.links
+        if (copyFmt === 'share') return links.share_url || links.url || ''
+        if (copyFmt === 'url') return links.url
+        if (copyFmt === 'markdown') return links.markdown
+        if (copyFmt === 'html') return links.html
+        if (copyFmt === 'bbcode') return links.bbcode
+        return links.url
+      })
+      .filter(Boolean)
+      .join('\n')
     navigator.clipboard
       .writeText(text)
       .then(() => pushToast(t('upload.toastAutoCopied', { count: fresh.length })))
@@ -206,6 +217,8 @@ export function UploadPage() {
         acceptFiles(e.dataTransfer.files)
       }}
     >
+      {!isGuest && <FirstRunOnboarding show />}
+
       {pageDrag && <div className={styles.pageDragOverlay}>{t('upload.dropRelease')}</div>}
       <PageHeader kicker="UPLOAD" title={t('upload.title')} extra={<p className={styles.subtitle}>{t('upload.subtitle')}</p>} />
 

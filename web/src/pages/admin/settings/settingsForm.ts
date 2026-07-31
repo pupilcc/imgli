@@ -81,6 +81,12 @@ export interface FormState {
   upgradeUrl: string
   registerNotice: FormLocale
   shareBranding: ShareBranding
+  faviconUrl: string
+  sourceUrl: string
+  ossCredit: 'on' | 'off'
+  aboutEnabled: boolean
+  aboutBody: FormLocale
+  welcomeEmail: boolean
 }
 
 export type FormSet = <K extends keyof FormState>(k: K, v: FormState[K]) => void
@@ -160,5 +166,11 @@ export function formOf(s: AdminSettings): FormState {
       s.share_branding === 'off' || s.share_branding === 'links'
         ? s.share_branding
         : 'site',
+    faviconUrl: s.favicon_url ?? '',
+    sourceUrl: s.source_url ?? '',
+    ossCredit: s.oss_credit === 'off' ? 'off' : 'on',
+    aboutEnabled: !!s.about_enabled,
+    aboutBody: toLocaleMap(s.about_body),
+    welcomeEmail: s.welcome_email !== false,
   }
 }

@@ -35,6 +35,16 @@ var (
 	ErrGuestUploadInvalid = apperr.New("guest_upload_enabled 需为布尔值")
 	// ErrPlazaEnabledInvalid plaza_enabled 需为布尔值。
 	ErrPlazaEnabledInvalid = apperr.New("plaza_enabled 需为布尔值")
+	// ErrFaviconURLInvalid favicon_url 须为空或 http(s) URL。
+	ErrFaviconURLInvalid = apperr.New("favicon_url 须为空或 http(s) URL")
+	// ErrSourceURLInvalid source_url 须为空或 http(s) URL。
+	ErrSourceURLInvalid = apperr.New("source_url 须为空或 http(s) URL")
+	// ErrOSSCreditInvalid oss_credit 仅 on|off。
+	ErrOSSCreditInvalid = apperr.New("oss_credit 仅支持 on|off")
+	// ErrAboutBodyInvalid about_body 格式无效。
+	ErrAboutBodyInvalid = apperr.New("about_body 格式无效")
+	// ErrWelcomeEmailInvalid welcome_email 需为布尔值。
+	ErrWelcomeEmailInvalid = apperr.New("welcome_email 需为布尔值")
 	// ErrSMTPInvalid smtp 配置：port 需 1-65535、encryption 需 none|starttls|ssl、from 需为邮箱或留空。
 	ErrSMTPInvalid = apperr.New("smtp 配置无效:port 需 1-65535、encryption 需 none|starttls|ssl、from 需为邮箱或留空")
 	// ErrHotlinkDomainInvalid 防盗链域名不合法（空/空白/scheme/路径/非法通配）。
@@ -112,16 +122,29 @@ func (s *Service) GetSettings() (map[string]any, error) {
 	if err := st.Get(model.SettingHTMLInject, &htmlInj); err != nil && !errors.Is(err, settings.ErrNotFound) {
 		return nil, err
 	}
-	var helpURL, upgradeURL, shareBrand string
+	var helpURL, upgradeURL, shareBrand, faviconURL, sourceURL, ossCredit string
 	var regNotice LocaleString
+	var aboutEnabled, welcomeEmail bool
+	var aboutBody LocaleString
 	_ = st.Get(model.SettingHelpURL, &helpURL)
 	_ = st.Get(model.SettingUpgradeURL, &upgradeURL)
 	_ = st.Get(model.SettingRegisterNotice, &regNotice)
 	_ = st.Get(model.SettingShareBranding, &shareBrand)
+	_ = st.Get(model.SettingFaviconURL, &faviconURL)
+	_ = st.Get(model.SettingSourceURL, &sourceURL)
+	_ = st.Get(model.SettingOSSCredit, &ossCredit)
+	_ = st.Get(model.SettingAboutEnabled, &aboutEnabled)
+	_ = st.Get(model.SettingAboutBody, &aboutBody)
+	welcomeEmail = true
+	_ = st.Get(model.SettingWelcomeEmail, &welcomeEmail)
 	helpURL = NormalizeOptionalURL(helpURL)
 	upgradeURL = NormalizeOptionalURL(upgradeURL)
+	faviconURL = NormalizeOptionalURL(faviconURL)
+	sourceURL = NormalizeOptionalURL(sourceURL)
 	regNotice = regNotice.Normalize()
+	aboutBody = aboutBody.Normalize()
 	shareBrand = NormalizeShareBranding(shareBrand)
+	ossCredit = NormalizeOSSCredit(ossCredit)
 
 	return map[string]any{
 		"site_name":            siteName,
@@ -166,6 +189,12 @@ func (s *Service) GetSettings() (map[string]any, error) {
 		"upgrade_url":      upgradeURL,
 		"register_notice":  regNotice,
 		"share_branding":   shareBrand,
+		"favicon_url":      faviconURL,
+		"source_url":       sourceURL,
+		"oss_credit":       ossCredit,
+		"about_enabled":    aboutEnabled,
+		"about_body":       aboutBody,
+		"welcome_email":    welcomeEmail,
 	}, nil
 }
 
@@ -397,6 +426,64 @@ func (s *Service) PutSettings(patch map[string]json.RawMessage) error {
 			}
 			writes = append(writes, settingWrite{model.SettingShareBranding, NormalizeShareBranding(mode)})
 
+		case model.SettingFaviconURL:
+			var u string
+			if err := json.Unmarshal(raw, &u); err != nil {
+				return ErrFaviconURLInvalid
+			}
+			u = NormalizeOptionalURL(u)
+			if err := ValidateOptionalURL(u); err != nil {
+				return ErrFaviconURLInvalid
+			}
+			writes = append(writes, settingWrite{model.SettingFaviconURL, u})
+
+		case model.SettingSourceURL:
+			var u string
+			if err := json.Unmarshal(raw, &u); err != nil {
+				return ErrSourceURLInvalid
+			}
+			u = NormalizeOptionalURL(u)
+			if err := ValidateOptionalURL(u); err != nil {
+				return ErrSourceURLInvalid
+			}
+			writes = append(writes, settingWrite{model.SettingSourceURL, u})
+
+		case model.SettingOSSCredit:
+			var mode string
+			if err := json.Unmarshal(raw, &mode); err != nil {
+				return ErrOSSCreditInvalid
+			}
+			mode = NormalizeOSSCredit(mode)
+			if mode != "on" && mode != "off" {
+				return ErrOSSCreditInvalid
+			}
+			writes = append(writes, settingWrite{model.SettingOSSCredit, mode})
+
+		case model.SettingAboutEnabled:
+			var enabled bool
+			if err := json.Unmarshal(raw, &enabled); err != nil {
+				return ErrAboutBodyInvalid
+			}
+			writes = append(writes, settingWrite{model.SettingAboutEnabled, enabled})
+
+		case model.SettingAboutBody:
+			var n LocaleString
+			if err := json.Unmarshal(raw, &n); err != nil {
+				return ErrAboutBodyInvalid
+			}
+			n = n.Normalize()
+			if n.MaxRunes() > 4000 {
+				return ErrAboutBodyInvalid
+			}
+			writes = append(writes, settingWrite{model.SettingAboutBody, n})
+
+		case model.SettingWelcomeEmail:
+			var enabled bool
+			if err := json.Unmarshal(raw, &enabled); err != nil {
+				return ErrWelcomeEmailInvalid
+			}
+			writes = append(writes, settingWrite{model.SettingWelcomeEmail, enabled})
+
 		default:
 			return ErrUnknownSetting
 		}
@@ -440,4 +527,14 @@ func normalizeHotlink(cfg stats.HotlinkConfig) (stats.HotlinkConfig, error) {
 	}
 	cfg.AllowedDomains = out
 	return cfg, nil
+}
+
+// NormalizeOSSCredit oss_credit: empty → on（默认展示「基于 imgli」）。
+func NormalizeOSSCredit(mode string) string {
+	switch strings.TrimSpace(strings.ToLower(mode)) {
+	case "off", "0", "false":
+		return "off"
+	default:
+		return "on"
+	}
 }

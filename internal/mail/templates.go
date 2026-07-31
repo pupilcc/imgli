@@ -98,3 +98,23 @@ func RenderVerifyEmail(siteName, link, lang string) (subject, html string) {
 			"若按钮无法点击,复制链接到浏览器打开",
 			"若这不是你发起的操作,忽略本邮件即可。")
 }
+
+// RenderWelcome 注册欢迎邮件（SMTP 已配时发送；含自托管/Token 提示）。
+func RenderWelcome(siteName, baseURL, lang string) (subject, html string) {
+	if baseURL == "" {
+		baseURL = "#"
+	}
+	settingsURL := strings.TrimRight(baseURL, "/") + "/settings"
+	if isEN(lang) {
+		body := "Welcome to " + siteName + ". Create an API token under Settings to use PicGo, ShareX, or the imgli CLI. Self-hosting: see the project docs and GitHub releases. Public trial instances may enforce storage and bandwidth caps."
+		return fmt.Sprintf("Welcome to %s", siteName),
+			render(siteName, body, settingsURL, "Open settings",
+				"If the button does not work, copy this link",
+				"This is an automated message.")
+	}
+	body := "欢迎使用 " + siteName + "。请到「设置」创建 API Token，即可对接 PicGo / ShareX / imgli CLI。需要长期稳定请自托管（见文档与 GitHub Release）。公共试用实例可能有存储与月流量限额。"
+	return fmt.Sprintf("欢迎使用 %s", siteName),
+		render(siteName, body, settingsURL, "打开设置",
+			"若按钮无法点击，复制链接到浏览器",
+			"本邮件由系统自动发送。")
+}

@@ -210,6 +210,15 @@ Changelog: [CHANGELOG.md](CHANGELOG.md). Security: [SECURITY.md](SECURITY.md) ·
 [hardening](docs/security-hardening.md). S3 matrix:
 [docs/s3-compatibility.md](docs/s3-compatibility.md).
 
+
+## Docs map (self-hosters)
+
+- Storage matrices: [S3](docs/s3-compatibility.md) · [WebDAV](docs/webdav-compatibility.md) · [FTP dual-track](docs/storage-ftp.md)
+- Migration: `imgli import-dir` (see CLI section) · bulk from a folder into the upload pipeline
+- Moderation operator path: [docs/moderation-spot-check.md](docs/moderation-spot-check.md)
+- Public roadmap mirror: [ROADMAP.md](ROADMAP.md) (execution = GitHub Issues)
+- Screenshots: [docs/screenshots/](docs/screenshots/)
+
 ## License
 
 **[AGPL-3.0-only](LICENSE)** © 2026 Yixian Huang.
