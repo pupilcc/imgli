@@ -18,4 +18,7 @@ export default {
   announcementKicker: 'NOTICE',
   /** 仅当站名未带 img.li/图鲤 时附在 © 行后，避免重复轰炸 */
   footerOss: '开源 imgli',
+  about: '关于',
+  sourceCode: '源码',
+  backHome: '返回首页',
 }

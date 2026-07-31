@@ -27,6 +27,7 @@ type Mailer interface {
 	SendResetPassword(to, link, lang string) error
 	SendVerifyEmail(to, link, lang string) error
 	SendChangeEmail(to, link, lang string) error
+	SendWelcome(to, baseURL, lang string) error
 }
 
 var (
@@ -184,6 +185,7 @@ func (s *Service) RegisterWithMeta(username, email, password, inviteCode string,
 		return nil, err
 	}
 	s.sendVerifyEmail(u)
+	s.sendWelcomeEmail(u)
 	return u, nil
 }
 
@@ -282,7 +284,7 @@ func (s *Service) SetPublicProfile(userID uint64, v bool) error {
 	return nil
 }
 
-var validCopyFormats = map[string]bool{"": true, "url": true, "markdown": true, "html": true, "bbcode": true}
+var validCopyFormats = map[string]bool{"": true, "url": true, "markdown": true, "html": true, "bbcode": true, "share": true}
 var validLangs = map[string]bool{"": true, "zh": true, "en": true}
 
 // UpdatePreferences 全量替换用户上传偏好。校验:可见性/复制格式/语言枚举、
@@ -538,6 +540,29 @@ func (s *Service) ConfirmChangeEmail(rawToken string) error {
 		return tx.Delete(&model.Session{}, "user_id = ?", at.UserID).Error
 	})
 }
+
+
+// sendWelcomeEmail 注册后可选欢迎信：welcome_email=false 或 Mailer 空时跳过；SMTP 未配仅 warn 吞掉。
+func (s *Service) sendWelcomeEmail(u *model.User) {
+	if s.Mailer == nil || u == nil || strings.TrimSpace(u.Email) == "" {
+		return
+	}
+	if !s.st.GetBool(model.SettingWelcomeEmail, true) {
+		return
+	}
+	email := u.Email
+	lang := u.Preferences.Lang
+	base := s.BaseURL
+	go func() {
+		if err := s.Mailer.SendWelcome(email, base, lang); err != nil {
+			if err.Error() == "mail: SMTP 未配置" {
+				return
+			}
+			slog.Warn("welcome-email 发送失败", "err", err)
+		}
+	}()
+}
+
 
 // sendVerifyEmail 同步建 24h 验证令牌、异步发送(失败仅日志)。Mailer 为空整体跳过。
 func (s *Service) sendVerifyEmail(u *model.User) {

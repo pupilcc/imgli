@@ -203,6 +203,15 @@ cd web && npm run e2e   # Playwright,会先构建二进制
 [加固清单](docs/security-hardening.md)；S3 兼容矩阵
 [docs/s3-compatibility.md](docs/s3-compatibility.md)。
 
+
+## 文档索引（自托管）
+
+- 存储矩阵：[S3](docs/s3-compatibility.md) · [WebDAV](docs/webdav-compatibility.md) · [FTP 双轨](docs/storage-ftp.md)
+- 迁移：`imgli import-dir`（见 CLI 节）· 本地目录批量导入上传管道
+- 机审抽检路径：[docs/moderation-spot-check.md](docs/moderation-spot-check.md)
+- 公开 Roadmap 镜像：[ROADMAP.md](ROADMAP.md)（执行面 = GitHub Issues）
+- 截图：[docs/screenshots/](docs/screenshots/)
+
 ## 许可
 
 **[AGPL-3.0-only](LICENSE)** © 2026 Yixian Huang。

@@ -365,6 +365,7 @@ func TestRegisterWithMetaUTMAndReferer(t *testing.T) {
 
 // fakeMailer 并发安全邮件桩;异步发送经 waitReset/waitVerify 轮询。
 type fakeMailer struct {
+	welcome [][3]string
 	mu                               sync.Mutex
 	resetTo, resetLink, resetLang    string
 	verifyTo, verifyLink, verifyLang string
@@ -384,6 +385,14 @@ func (f *fakeMailer) SendResetPassword(to, link, lang string) error {
 func (f *fakeMailer) SendChangeEmail(to, link, lang string) error {
 	return nil
 }
+
+func (f *fakeMailer) SendWelcome(to, baseURL, lang string) error {
+	f.mu.Lock()
+	defer f.mu.Unlock()
+	f.welcome = append(f.welcome, [3]string{to, baseURL, lang})
+	return nil
+}
+
 
 func (f *fakeMailer) SendVerifyEmail(to, link, lang string) error {
 	f.mu.Lock()

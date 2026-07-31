@@ -148,4 +148,5 @@ export default {
     'Counted when image links are served successfully (original/thumb). At cap: uploads blocked and serves return 429; resets next month; images are kept.',
   bandwidthUnlimitedNote: 'Your group has no monthly bandwidth cap (0 = unlimited).',
 
+  autoCopyShare: 'Share page',
 }

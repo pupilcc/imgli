@@ -107,6 +107,64 @@ export function SlotsTab({ form, set, setForm, setAnn, patchFooterGroup, patchFo
             />
             <span className={styles.hint}>{t('adminB.shareBrandingHint')}</span>
           </div>
+          <Input
+            label={t('adminB.faviconUrl')}
+            value={form.faviconUrl}
+            placeholder="https://…/favicon.svg"
+            onChange={(e) => set('faviconUrl', e.target.value)}
+          />
+          <span className={styles.hint}>{t('adminB.faviconUrlHint')}</span>
+          <Input
+            label={t('adminB.sourceUrl')}
+            value={form.sourceUrl}
+            placeholder="https://github.com/… or self-hosted source"
+            onChange={(e) => set('sourceUrl', e.target.value)}
+          />
+          <span className={styles.hint}>{t('adminB.sourceUrlHint')}</span>
+          <div className={styles.field}>
+            <div className={styles.sliderHead}>
+              <span className={styles.label}>{t('adminB.ossCredit')}</span>
+              <Toggle
+                aria-label={t('adminB.ossCredit')}
+                checked={form.ossCredit === 'on'}
+                onChange={(v) => set('ossCredit', v ? 'on' : 'off')}
+              />
+            </div>
+            <span className={styles.hint}>{t('adminB.ossCreditHint')}</span>
+          </div>
+          <div className={styles.field}>
+            <div className={styles.sliderHead}>
+              <span className={styles.label}>{t('adminB.aboutEnabled')}</span>
+              <Toggle
+                aria-label={t('adminB.aboutEnabled')}
+                checked={form.aboutEnabled}
+                onChange={(v) => set('aboutEnabled', v)}
+              />
+            </div>
+            <span className={styles.hint}>{t('adminB.aboutEnabledHint')}</span>
+          </div>
+          <div className={styles.localePair}>
+            <div className={styles.field}>
+              <span className={styles.label}>{`${t('adminB.aboutBody')} · ${t('adminB.localeZh')}`}</span>
+              <textarea
+                className={styles.textarea}
+                rows={4}
+                maxLength={4000}
+                value={form.aboutBody.zh}
+                onChange={(e) => set('aboutBody', { ...form.aboutBody, zh: e.target.value })}
+              />
+            </div>
+            <div className={styles.field}>
+              <span className={styles.label}>{`${t('adminB.aboutBody')} · ${t('adminB.localeEn')}`}</span>
+              <textarea
+                className={styles.textarea}
+                rows={4}
+                maxLength={4000}
+                value={form.aboutBody.en}
+                onChange={(e) => set('aboutBody', { ...form.aboutBody, en: e.target.value })}
+              />
+            </div>
+          </div>
         </section>
       )}
 

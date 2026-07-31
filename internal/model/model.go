@@ -21,7 +21,7 @@ type Preferences struct {
 	DefaultAlbumID    *uint64       `json:"default_album_id"`
 	DefaultVisibility string        `json:"default_visibility"` // "" | public | private
 	DefaultPolicyID   *uint64       `json:"default_policy_id"`
-	AutoCopyFormat    string        `json:"auto_copy_format"` // "" | url | markdown | html | bbcode
+	AutoCopyFormat    string        `json:"auto_copy_format"` // "" | url | markdown | html | bbcode | share
 	Watermark         WatermarkPref `json:"watermark"`
 	Lang              string        `json:"lang"` // "" | zh | en；"" = 跟随前端 detect
 }

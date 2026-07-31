@@ -43,6 +43,19 @@ export function AuthPage() {
   const regInvite = config.data?.registration_mode === 'invite'
   const siteName = (config.data?.site_name || 'imgli').trim() || 'imgli'
   const registerNotice = pickLocale(config.data?.register_notice, lang)
+  // 浅场景文案：?from=picgo|blog|private 或 utm_campaign（非多触点 funnel）
+  const scenarioCopy = (() => {
+    try {
+      const q = new URLSearchParams(window.location.search)
+      const key = (q.get('from') || q.get('utm_campaign') || '').toLowerCase()
+      if (key === 'picgo' || key === 'sharex' || key === 'upic') return t('auth.scenarioPicgo')
+      if (key === 'blog' || key === 'markdown' || key === 'typora') return t('auth.scenarioBlog')
+      if (key === 'private' || key === 'team') return t('auth.scenarioPrivate')
+    } catch {
+      /* ignore */
+    }
+    return ''
+  })()
   const helpURL = (config.data?.help_url || '').trim()
   const upgradeURL = (config.data?.upgrade_url || '').trim()
   // 注册关闭时强制回登录模式(含直接停在 reg 态的场景)

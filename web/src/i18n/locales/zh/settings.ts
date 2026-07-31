@@ -146,4 +146,5 @@ export default {
     '按图片外链成功访问累计（原图/缩略图）。到顶后无法上传，外链返回限流；下月重置，不删图。',
   bandwidthUnlimitedNote: '当前用户组未设置月流量硬顶（0 = 不限制）。',
 
+  autoCopyShare: '分享页',
 }

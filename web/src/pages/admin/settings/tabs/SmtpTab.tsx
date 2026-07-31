@@ -2,6 +2,7 @@ import { useT } from '../../../../i18n'
 import { Button } from '../../../../ui/Button'
 import { Input } from '../../../../ui/Input'
 import { Segmented } from '../../../../ui/Segmented'
+import { Toggle } from '../../../../ui/Toggle'
 import type { FormSet, FormState } from '../settingsForm'
 import styles from '../SettingsPage.module.css'
 
@@ -63,6 +64,17 @@ export function SmtpTab({ form, set, testTo, setTestTo, testMsg, testPending, on
           value={form.smtpEnc}
           onChange={(v) => set('smtpEnc', v)}
         />
+      </div>
+      <div className={styles.field}>
+        <div className={styles.sliderHead}>
+          <span className={styles.label}>{t('adminB.welcomeEmail')}</span>
+          <Toggle
+            aria-label={t('adminB.welcomeEmail')}
+            checked={form.welcomeEmail}
+            onChange={(v) => set('welcomeEmail', v)}
+          />
+        </div>
+        <span className={styles.hint}>{t('adminB.welcomeEmailHint')}</span>
       </div>
       <div className={styles.field}>
         <span className={styles.label}>{t('adminB.testSend')}</span>

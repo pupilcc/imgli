@@ -18,4 +18,7 @@ export default {
   announcementKicker: 'NOTICE',
   /** Appended only when site_name does not already mention img.li / imgli */
   footerOss: 'open-source imgli',
+  about: 'About',
+  sourceCode: 'Source',
+  backHome: 'Back home',
 }

@@ -85,32 +85,56 @@ type SiteFooterProps = {
   footer?: SiteFooterConfig | null
   /** Instance site_name; falls back to product wordmark. */
   siteName?: string | null
+  /** on|off — optional “based on imgli” credit (default on). */
+  ossCredit?: 'on' | 'off' | string | null
+  /** AGPL corresponding source URL; empty hides. */
+  sourceUrl?: string | null
+  /** Show link to /about when enabled. */
+  aboutEnabled?: boolean
 }
 
 /**
  * 页脚：以链接分组为主；底部一行克制署名。
  * 不重复砸站名/img.li/图鲤（顶栏已有品牌，此处避免标题轰炸）。
  */
-export function SiteFooter({ footer, siteName }: SiteFooterProps) {
+export function SiteFooter({ footer, siteName, ossCredit, sourceUrl, aboutEnabled }: SiteFooterProps) {
   const { t, lang } = useT()
   const groups = footer?.groups?.filter((g) => g.links?.length) ?? []
   const name = (siteName || '').trim() || BRAND_WORDMARK
   const year = new Date().getFullYear()
-  // 站名已含 img.li / 图鲤 时不再叠开源工程名
+  // 站名已含 img.li / 图鲤 时不再叠开源工程名；oss_credit=off 可关
   const nameLower = name.toLowerCase()
+  const creditOn = (ossCredit || 'on') !== 'off'
   const showOssSuffix =
-    !nameLower.includes('img.li') && !nameLower.includes('imgli') && !name.includes('图鲤')
+    creditOn &&
+    !nameLower.includes('img.li') &&
+    !nameLower.includes('imgli') &&
+    !name.includes('图鲤')
+  const src = (sourceUrl || '').trim()
+  const metaBits = (
+    <>
+      <span>
+        © {year} {name}
+        {showOssSuffix ? ` · ${t('common.footerOss')}` : ''}
+      </span>
+      {aboutEnabled ? (
+        <a href="/about" className={styles.footerMetaQuiet}>
+          {t('common.about')}
+        </a>
+      ) : null}
+      {src ? (
+        <a href={src} rel="noopener noreferrer" className={styles.footerMetaQuiet}>
+          {t('common.sourceCode')}
+        </a>
+      ) : null}
+    </>
+  )
 
   if (groups.length === 0) {
     return (
       <footer className={`${styles.footer} ${styles.footerMinimal}`}>
         <div className={styles.footerInner}>
-          <div className={styles.footerMeta}>
-            <span>
-              © {year} {name}
-              {showOssSuffix ? ` · ${t('common.footerOss')}` : ''}
-            </span>
-          </div>
+          <div className={styles.footerMeta}>{metaBits}</div>
         </div>
       </footer>
     )
@@ -143,10 +167,7 @@ export function SiteFooter({ footer, siteName }: SiteFooterProps) {
           })}
         </div>
         <div className={styles.footerMeta}>
-          <span>
-            © {year} {name}
-            {showOssSuffix ? ` · ${t('common.footerOss')}` : ''}
-          </span>
+          {metaBits}
           <span className={styles.footerMetaQuiet}>{t('meta.tagline')}</span>
         </div>
       </div>

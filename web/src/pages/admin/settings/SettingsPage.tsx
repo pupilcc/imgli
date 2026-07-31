@@ -211,6 +211,15 @@ export function SettingsPage() {
           en: form.registerNotice.en.trim(),
         },
         share_branding: form.shareBranding,
+        favicon_url: form.faviconUrl.trim(),
+        source_url: form.sourceUrl.trim(),
+        oss_credit: form.ossCredit,
+        about_enabled: form.aboutEnabled,
+        about_body: {
+          zh: form.aboutBody.zh.trim(),
+          en: form.aboutBody.en.trim(),
+        },
+        welcome_email: form.welcomeEmail,
       },
       {
         onSuccess: (data) => {

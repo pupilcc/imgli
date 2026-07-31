@@ -70,4 +70,7 @@ export default {
   verifyOkText: 'Your email has been verified.',
 
   oidcLogin: 'Sign in with SSO / OIDC',
+  scenarioPicgo: 'Using PicGo or similar? After signup, copy the snippet under Settings → API Token.',
+  scenarioBlog: 'For blog/note embeds: upload and copy Markdown. Public trials are capped — self-host for production.',
+  scenarioPrivate: 'Need password/private images? Set access controls after upload; self-host for full control.',
 }
