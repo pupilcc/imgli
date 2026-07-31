@@ -10,6 +10,10 @@ separate version in `go.mod` or `web/package.json`.
 
 ## [Unreleased]
 
+### Changed
+
+- **Docs:** Cloudflare R2 matrix row marked **Verified** (live surface + Presign GET, 2026-07-31).
+
 ## [0.5.0] - 2026-07-31
 
 Theme: **Trust · Onboard · Community**

@@ -29,7 +29,7 @@ This page tracks **what we have verified** and how to contribute a report.
 |--------|----------------|------------|----------------|-------------|-------|--------|-------|
 | MinIO | custom host | yes | yes | yes | Local / CI-friendly | **Verified** (maintainer toolkit) | ≥0.1 |
 | RustFS | S3-compatible | varies | yes | yes | Production path on img.li ops docs | **Verified** (self-host ops) | ≥0.1 |
-| Cloudflare R2 | `*.r2.cloudflarestorage.com` | often no | TBD | TBD | **v0.5 priority** — run `s3-vendor-matrix.sh r2` with dedicated bucket; PR or S3 vendor report issue | Untested in-tree | — |
+| Cloudflare R2 | `*.r2.cloudflarestorage.com` | often no | yes | yes | Live matrix 2026-07-31: Put/Open/Range/Exists/Delete + Presign GET; path-style false; region `auto`; bucket `imgli-presign-spike` | **Verified** (maintainer toolkit) | ≥0.5 |
 | AWS S3 | regional | no (typical) | TBD | TBD | Baseline expectation | Untested in-tree | — |
 | Aliyun OSS (S3 API) | `oss-*.aliyuncs.com` | no | TBD | TBD | Template in env example | Untested in-tree | — |
 | Tencent COS (S3 API) | `cos.*.myqcloud.com` | no | TBD | TBD | Bucket often `name-APPID` | Untested in-tree | — |
