@@ -151,9 +151,9 @@ export function AuthPage() {
         <div className={styles.formBox}>
           <div className={styles.kicker}>{isLogin ? t('auth.signInKicker') : t('auth.createAccountKicker')}</div>
           <h1 className={styles.heading}>{isLogin ? t('auth.welcomeBack') : t('auth.createAccount')}</h1>
-          {!isLogin && !regClosed && registerNotice && (
+          {!isLogin && !regClosed && (scenarioCopy || registerNotice) && (
             <p className={styles.trialNote} data-testid="reg-trial-note">
-              {registerNotice}
+              {scenarioCopy || registerNotice}
               {(helpURL || upgradeURL) && (
                 <>
                   {' '}

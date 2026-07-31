@@ -131,9 +131,13 @@ export function UploadPage() {
     for (const i of fresh) copiedRef.current.add(i.id)
     const text = fresh
       .map((i) => {
-        const links = i.result!.links as Record<string, string>
+        const links = i.result!.links
         if (copyFmt === 'share') return links.share_url || links.url || ''
-        return links[copyFmt] || links.url || ''
+        if (copyFmt === 'url') return links.url
+        if (copyFmt === 'markdown') return links.markdown
+        if (copyFmt === 'html') return links.html
+        if (copyFmt === 'bbcode') return links.bbcode
+        return links.url
       })
       .filter(Boolean)
       .join('\n')
