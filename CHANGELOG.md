@@ -10,10 +10,6 @@ separate version in `go.mod` or `web/package.json`.
 
 ## [Unreleased]
 
-### Changed
-
-- **Docs:** Cloudflare R2 matrix row marked **Verified** (live surface + Presign GET, 2026-07-31).
-
 ## [0.5.0] - 2026-07-31
 
 Theme: **Trust · Onboard · Community**
@@ -31,6 +27,7 @@ Theme: **Trust · Onboard · Community**
 - **WebDAV:** Open falls back to full GET when HEAD lacks `Content-Length` or is unsupported; Range-ignored servers fall back to full-object buffer on mid-file read; clearer auth/status errors.
 - **Docs:** `docs/webdav-compatibility.md` + `scripts/webdav-vendor-matrix.sh` (self-hosted live probe; no SaaS signup required for a matrix row).
 - **Docs SSOT:** `docs/documentation-ssot.md` — layered truth (repo engineering vs product `docs-imgli` vs internal KB); CONTRIBUTING pointer.
+- **Docs:** Cloudflare R2 matrix row marked **Verified** (live surface + Presign GET, 2026-07-31; post-tag docs commit on main).
 
 ## [0.4.1] - 2026-07-30
 
