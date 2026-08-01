@@ -3,6 +3,7 @@ package version
 import (
 	"context"
 	"fmt"
+	"io"
 	"net/http"
 	"strings"
 	"time"
@@ -19,6 +20,7 @@ type UpdateCheck struct {
 }
 
 // CheckLatestRelease 用 GitHub releases/latest 重定向解析最新 tag（与 install.sh 同思路，免 API token）。
+// 先 HEAD，无 Location 时再 GET（部分网络/CDN 对 HEAD 不回跳转）。
 func CheckLatestRelease(ctx context.Context, repo string, client *http.Client) UpdateCheck {
 	if repo == "" {
 		repo = DefaultReleaseRepo
@@ -36,26 +38,21 @@ func CheckLatestRelease(ctx context.Context, repo string, client *http.Client) U
 		}
 	}
 	url := "https://github.com/" + repo + "/releases/latest"
-	req, err := http.NewRequestWithContext(ctx, http.MethodHead, url, nil)
-	if err != nil {
-		out.Error = err.Error()
-		return out
-	}
-	req.Header.Set("User-Agent", "imgli-update-check/"+Version)
-	res, err := client.Do(req)
-	if err != nil {
-		out.Error = err.Error()
-		return out
-	}
-	defer res.Body.Close()
-	loc := res.Header.Get("Location")
-	if loc == "" && res.StatusCode >= 300 && res.StatusCode < 400 {
-		out.Error = fmt.Sprintf("no Location header (status %d)", res.StatusCode)
-		return out
+	loc, status, err := latestRedirect(ctx, client, http.MethodHead, url)
+	if err != nil || loc == "" {
+		loc2, status2, err2 := latestRedirect(ctx, client, http.MethodGet, url)
+		if err2 != nil {
+			if err != nil {
+				out.Error = err.Error()
+			} else {
+				out.Error = err2.Error()
+			}
+			return out
+		}
+		loc, status, err = loc2, status2, err2
 	}
 	if loc == "" {
-		// some environments return 200 with HTML; try GET Location still empty
-		out.Error = fmt.Sprintf("unexpected status %d", res.StatusCode)
+		out.Error = fmt.Sprintf("unexpected status %d (no Location)", status)
 		return out
 	}
 	// .../releases/tag/v0.5.1
@@ -76,4 +73,20 @@ func CheckLatestRelease(ctx context.Context, repo string, client *http.Client) U
 	}
 	out.UpdateAvailable = CompareSemver(Version, tag) < 0
 	return out
+}
+
+func latestRedirect(ctx context.Context, client *http.Client, method, url string) (loc string, status int, err error) {
+	req, err := http.NewRequestWithContext(ctx, method, url, nil)
+	if err != nil {
+		return "", 0, err
+	}
+	req.Header.Set("User-Agent", "imgli-update-check/"+Version)
+	res, err := client.Do(req)
+	if err != nil {
+		return "", 0, err
+	}
+	defer res.Body.Close()
+	// drain a bit on GET so connections reuse cleanly
+	_, _ = io.Copy(io.Discard, io.LimitReader(res.Body, 64<<10))
+	return res.Header.Get("Location"), res.StatusCode, nil
 }

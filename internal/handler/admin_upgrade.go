@@ -35,6 +35,11 @@ func (h *AdminHandlers) UpgradeSystem(w http.ResponseWriter, r *http.Request) {
 			})
 			return
 		}
+		// 只读根 / 权限：给运营可读说明（含 ReadWritePaths 提示）
+		if errors.Is(err, appver.ErrUpgradeReadOnly) || errors.Is(err, appver.ErrUpgradeNotAllowed) {
+			Fail(w, http.StatusBadRequest, CodeInvalidRequest, err.Error())
+			return
+		}
 		Fail(w, http.StatusBadRequest, CodeInvalidRequest, err.Error())
 		return
 	}

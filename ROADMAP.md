@@ -3,11 +3,15 @@
 > **Planning SSOT is internal** (`imgli/roadmap` in the project knowledge base).  
 > This file is a **public, de-sensitized mirror** for contributors. Prefer GitHub Issues + Milestones for execution.
 
-## Latest shipped — v0.7.1 · Storage probe reliability
+## Latest shipped — v0.7.2 · One-click upgrade + admin shell
+
+Release: https://github.com/yixian-huang/imgli/releases/tag/v0.7.2
+
+Binary upgrade under systemd `ProtectSystem` + re-exec; admin layout sticky nav/title. See [CHANGELOG](CHANGELOG.md#072---2026-08-01).
+
+## Previous — v0.7.1 · Storage probe reliability
 
 Release: https://github.com/yixian-huang/imgli/releases/tag/v0.7.1
-
-Patch on **v0.7.0** Ops Console: local storage test-connection path fix, WebDAV probe `imgli-probe/`, clearer probe errors. See [CHANGELOG](CHANGELOG.md#071---2026-08-01).
 
 ## Previous — v0.7.0 · Ops Console · Health · Deploy
 

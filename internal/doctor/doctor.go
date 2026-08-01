@@ -17,6 +17,7 @@ import (
 	"github.com/yixian-huang/imgli/internal/model"
 	"github.com/yixian-huang/imgli/internal/service/storagesvc"
 	"github.com/yixian-huang/imgli/internal/storage"
+	appver "github.com/yixian-huang/imgli/internal/version"
 )
 
 // Level is the severity of a check result.
@@ -60,6 +61,7 @@ func Run(cfg *config.Config) Report {
 	checkBaseURL(cfg, &r)
 	checkTrustProxy(cfg, &r)
 	checkListen(cfg, &r)
+	checkBinaryUpgradePath(&r)
 
 	db, err := model.Open(cfg)
 	if err != nil {
@@ -222,6 +224,33 @@ func checkTrustProxy(cfg *config.Config, r *Report) {
 	}
 	// listen on all interfaces without trust_proxy is fine for direct access
 	r.add("trust_proxy", OK, "false（直连或未声明反代；若前有 Nginx/Caddy 且需真实 IP，请设 true）")
+}
+
+// checkBinaryUpgradePath 探测可执行文件旁是否可写（systemd ProtectSystem=strict 未放行 bin 时一键升级会失败）。
+func checkBinaryUpgradePath(r *Report) {
+	if appver.IsDockerish() {
+		r.add("binary_upgrade", OK, "容器环境：请用镜像升级，跳过二进制旁写探针")
+		return
+	}
+	exe, err := os.Executable()
+	if err != nil {
+		r.add("binary_upgrade", Warn, fmt.Sprintf("无法解析可执行路径: %v", err))
+		return
+	}
+	exe, err = filepath.EvalSymlinks(exe)
+	if err != nil {
+		r.add("binary_upgrade", Warn, fmt.Sprintf("解析可执行路径: %v", err))
+		return
+	}
+	dir := filepath.Dir(exe)
+	probe := filepath.Join(dir, ".imgli-doctor-upgrade-write")
+	if err := os.WriteFile(probe, []byte("ok"), 0o600); err != nil {
+		r.add("binary_upgrade", Warn,
+			fmt.Sprintf("%s 不可写: %v — 管理端一键升级会失败。systemd ProtectSystem=strict 时请将二进制目录加入 ReadWritePaths（见 deploy/imgli.service.example）", dir, err))
+		return
+	}
+	_ = os.Remove(probe)
+	r.add("binary_upgrade", OK, fmt.Sprintf("%s 可写（一键升级可用）", dir))
 }
 
 func checkListen(cfg *config.Config, r *Report) {

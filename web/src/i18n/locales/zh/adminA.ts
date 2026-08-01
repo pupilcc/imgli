@@ -154,8 +154,8 @@ export default {
   releaseNotes: '发行说明',
   upgradeTo: '一键升级到 {latest}',
   upgradeConfirm: '确认下载并替换当前二进制为 {latest}？请确保可写安装路径；完成后需重启进程。Docker 部署请改用镜像更新。',
-  upgradeDone: '已替换为 {to}，请重启 imgli 进程',
-  upgradeDoneToast: '升级完成，请重启服务',
+  upgradeDone: '已替换为 {to}，进程即将自动加载新版本',
+  upgradeDoneToast: '升级完成，进程将自动切换新版本',
   upgradeFailed: '升级失败',
 
   systemTitle: '系统 / 运维',
@@ -178,7 +178,8 @@ export default {
   checklistDismiss: '我已了解，暂时隐藏',
   checklistDocs: '反代 CSRF 说明 →',
   upgradeSection: '版本与升级',
-  upgradeSectionHint: '探测 GitHub Release；二进制可一键替换（需可写路径）。容器环境请拉镜像重部署。',
+  upgradeSectionHint:
+    '探测 GitHub Release；二进制可一键替换并自动 re-exec。systemd ProtectSystem=strict 时须把二进制目录加入 ReadWritePaths（见 deploy/imgli.service.example）。容器请拉镜像重部署。',
   upgradePreflightFail: '健康检查存在 FAIL，建议先修复再升级。',
   upgradePreflightWarn: '健康检查有 {n} 条 WARN，请确认后再升级。',
   upgradeDockerBlocked: '检测到容器环境：不会替换二进制。',

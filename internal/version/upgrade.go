@@ -14,6 +14,7 @@ import (
 	"path/filepath"
 	"runtime"
 	"strings"
+	"syscall"
 	"time"
 )
 
@@ -23,6 +24,8 @@ var (
 	ErrUpgradeChecksum   = errors.New("version: checksum mismatch")
 	ErrUpgradeNotFound   = errors.New("version: release asset not found")
 	ErrUpgradeNotAllowed = errors.New("version: upgrade not allowed in this environment")
+	// ErrUpgradeReadOnly 二进制目录只读（常见于 systemd ProtectSystem=strict 未放行 bin 路径）。
+	ErrUpgradeReadOnly = errors.New("version: binary directory is read-only")
 )
 
 // UpgradeResult 一键升级结果（无密钥）。
@@ -91,6 +94,10 @@ func UpgradeBinary(ctx context.Context, repo, tag string, confirm bool, client *
 		return out, err
 	}
 	out.Executable = exe
+	// 先探测目录可写，避免下载完整包后才因 systemd 只读挂载失败。
+	if err := assertBinaryDirWritable(exe); err != nil {
+		return out, err
+	}
 
 	goos, goarch, asset, err := releaseAssetName(tag)
 	if err != nil {
@@ -130,8 +137,43 @@ func UpgradeBinary(ctx context.Context, repo, tag string, confirm bool, client *
 	if err := replaceExecutable(extracted, exe); err != nil {
 		return out, err
 	}
-	out.Message = "binary replaced; restart the imgli process to load the new version"
+	out.Message = "binary replaced; process will re-exec shortly to load the new version"
+	out.Restart = "reexec"
+	scheduleReexec(exe)
 	return out, nil
+}
+
+// assertBinaryDirWritable 在二进制旁写探针文件，检测 ProtectSystem=strict 等只读根。
+func assertBinaryDirWritable(exe string) error {
+	dir := filepath.Dir(exe)
+	probe := filepath.Join(dir, ".imgli-upgrade-writetest")
+	if err := os.WriteFile(probe, []byte("ok"), 0o600); err != nil {
+		if isReadOnlyFS(err) || os.IsPermission(err) {
+			return fmt.Errorf("%w: cannot write in %s (%v). systemd ProtectSystem=strict 时请把二进制目录加入 ReadWritePaths，例如：ReadWritePaths=%s %s",
+				ErrUpgradeReadOnly, dir, err, dir, filepath.Join(filepath.Dir(dir), "data"))
+		}
+		return fmt.Errorf("binary dir not writable: %w", err)
+	}
+	_ = os.Remove(probe)
+	return nil
+}
+
+func isReadOnlyFS(err error) bool {
+	if err == nil {
+		return false
+	}
+	if errors.Is(err, syscall.EROFS) {
+		return true
+	}
+	// wrapped path errors
+	var pe *os.PathError
+	if errors.As(err, &pe) && pe != nil {
+		if errors.Is(pe.Err, syscall.EROFS) {
+			return true
+		}
+	}
+	msg := strings.ToLower(err.Error())
+	return strings.Contains(msg, "read-only file system") || strings.Contains(msg, "erofs")
 }
 
 func releaseAssetName(tag string) (goos, goarch, asset string, err error) {
@@ -291,12 +333,18 @@ func replaceExecutable(src, dest string) error {
 	_ = os.Remove(bak)
 	if err := os.Rename(dest, bak); err != nil {
 		os.Remove(tmp)
+		if isReadOnlyFS(err) || os.IsPermission(err) {
+			return fmt.Errorf("%w: backup current binary: %v (add binary dir to systemd ReadWritePaths)", ErrUpgradeReadOnly, err)
+		}
 		return fmt.Errorf("backup current binary: %w", err)
 	}
 	if err := os.Rename(tmp, dest); err != nil {
 		// try restore
 		_ = os.Rename(bak, dest)
 		os.Remove(tmp)
+		if isReadOnlyFS(err) || os.IsPermission(err) {
+			return fmt.Errorf("%w: install new binary: %v", ErrUpgradeReadOnly, err)
+		}
 		return fmt.Errorf("install new binary: %w", err)
 	}
 	return nil

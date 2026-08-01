@@ -7,6 +7,7 @@ import (
 	"os"
 	"path/filepath"
 	"runtime"
+	"syscall"
 	"testing"
 )
 
@@ -55,6 +56,27 @@ func TestUpgradeRequiresConfirm(t *testing.T) {
 	_, err := UpgradeBinary(context.Background(), DefaultReleaseRepo, "v0.0.0", false, nil)
 	if err != ErrUpgradeNoConfirm {
 		t.Fatalf("got %v", err)
+	}
+}
+
+func TestAssertBinaryDirWritable(t *testing.T) {
+	dir := t.TempDir()
+	exe := filepath.Join(dir, "imgli")
+	if err := os.WriteFile(exe, []byte("x"), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := assertBinaryDirWritable(exe); err != nil {
+		t.Fatal(err)
+	}
+}
+
+func TestIsReadOnlyFS(t *testing.T) {
+	if !isReadOnlyFS(syscall.EROFS) && !isReadOnlyFS(&os.PathError{Op: "open", Path: "/x", Err: syscall.EROFS}) {
+		// PathError path is the important one on Linux
+		t.Fatal("want EROFS detected")
+	}
+	if isReadOnlyFS(nil) || isReadOnlyFS(os.ErrNotExist) {
+		t.Fatal("false positive")
 	}
 }
 

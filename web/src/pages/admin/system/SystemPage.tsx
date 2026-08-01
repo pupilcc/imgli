@@ -119,6 +119,11 @@ export function SystemPage() {
           }
           setUpdateMsg(r.message || t('adminA.upgradeDone', { to: r.to ?? latestTag }))
           useGlobal.getState().pushToast(t('adminA.upgradeDoneToast'))
+          // re-exec 后进程会换新二进制；稍后刷新版本信息
+          window.setTimeout(() => {
+            verQ.refetch()
+            healthQ.refetch()
+          }, 1500)
         },
       },
     )

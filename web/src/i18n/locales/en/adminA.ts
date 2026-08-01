@@ -155,8 +155,8 @@ export default {
   upgradeTo: 'Upgrade to {latest}',
   upgradeConfirm:
     'Download and replace the running binary with {latest}? The install path must be writable; restart the process afterward. For Docker, pull a new image instead.',
-  upgradeDone: 'Replaced with {to}; restart the imgli process',
-  upgradeDoneToast: 'Upgrade complete — restart the service',
+  upgradeDone: 'Replaced with {to}; process will re-exec shortly',
+  upgradeDoneToast: 'Upgrade complete — process will load the new binary',
   upgradeFailed: 'Upgrade failed',
 
   systemTitle: 'System / Ops',
@@ -180,7 +180,7 @@ export default {
   checklistDocs: 'Reverse-proxy CSRF notes →',
   upgradeSection: 'Version & upgrade',
   upgradeSectionHint:
-    'Probe GitHub Releases; binary installs can replace in place (writable path). Containers must redeploy images.',
+    'Probe GitHub Releases; binary installs replace in place and re-exec. Under systemd ProtectSystem=strict, add the binary dir to ReadWritePaths (see deploy/imgli.service.example). Containers: redeploy images.',
   upgradePreflightFail: 'Health checks report FAIL — fix before upgrading if possible.',
   upgradePreflightWarn: 'Health checks have {n} WARN item(s). Review before upgrading.',
   upgradeDockerBlocked: 'Container environment detected: binary replace is disabled.',

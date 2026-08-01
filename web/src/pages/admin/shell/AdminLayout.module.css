@@ -1,7 +1,11 @@
+/* App shell: header fixed height, sidebar fixed, only main content scrolls. */
 .root {
-  min-height: 100vh;
+  height: 100vh;
+  height: 100dvh;
   display: flex;
   flex-direction: column;
+  overflow: hidden;
+  background: var(--bg);
 }
 .header {
   display: flex;
@@ -9,11 +13,10 @@
   gap: 16px;
   padding: 0 32px;
   height: 56px;
+  flex: none;
   background: var(--surface);
   border-bottom: 1px solid var(--border);
-  position: sticky;
-  top: 0;
-  z-index: 10;
+  z-index: 20;
 }
 .burger {
   display: none;
@@ -77,17 +80,24 @@
 }
 .body {
   flex: 1;
+  min-height: 0;
   display: flex;
   width: 100%;
   max-width: 1320px;
   margin: 0 auto;
   box-sizing: border-box;
+  overflow: hidden;
 }
 .sidebar {
   width: 196px;
   flex: none;
+  height: 100%;
+  overflow-y: auto;
+  overscroll-behavior: contain;
   border-right: 1px solid var(--border);
   padding: 28px 16px;
+  box-sizing: border-box;
+  background: var(--bg);
 }
 .nav {
   display: flex;
@@ -141,7 +151,10 @@
 .main {
   flex: 1;
   min-width: 0;
-  padding: 36px 36px 80px;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: 28px 36px 80px;
   box-sizing: border-box;
 }
 .drawerWrap {
@@ -153,6 +166,7 @@
 .drawer {
   width: 220px;
   height: 100%;
+  overflow-y: auto;
   background: var(--bg);
   border-right: 1px solid var(--border);
   padding: 28px 16px;

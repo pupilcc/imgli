@@ -1,0 +1,39 @@
+# Example systemd unit for binary installs (not Docker).
+# Copy and edit paths; one-click upgrade needs the *binary directory* writable.
+#
+#   sudo cp deploy/imgli.service.example /etc/systemd/system/imgli.service
+#   sudo systemctl daemon-reload && sudo systemctl enable --now imgli
+#
+# ProtectSystem=strict makes the tree read-only except ReadWritePaths.
+# Without the binary dir in ReadWritePaths, admin "one-click upgrade" fails with EROFS.
+
+[Unit]
+Description=imgli image host
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=imgli
+Group=imgli
+WorkingDirectory=/opt/imgli
+ExecStart=/opt/imgli/bin/imgli serve -config /opt/imgli/imgli.yaml
+Restart=on-failure
+RestartSec=3
+TimeoutStopSec=35
+
+# Harden, but keep upgrade path open:
+ProtectSystem=strict
+ProtectHome=true
+PrivateTmp=true
+NoNewPrivileges=true
+# data_dir + binary dir (required for in-place admin upgrade)
+ReadWritePaths=/opt/imgli/data /opt/imgli/bin
+
+# Optional: bind config read-only
+# ReadOnlyPaths=/opt/imgli/imgli.yaml
+
+Environment=IMGLI_TRUST_PROXY=true
+
+[Install]
+WantedBy=multi-user.target

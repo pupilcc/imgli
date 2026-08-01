@@ -10,6 +10,21 @@ separate version in `go.mod` or `web/package.json`.
 
 ## [Unreleased]
 
+## [0.7.2] - 2026-08-01
+
+Theme: **One-click upgrade + admin shell UX**.
+
+### Fixed
+
+- **One-click binary upgrade under systemd:** preflight checks that the binary directory is writable; clear error when `ProtectSystem=strict` leaves the bin path read-only (was a silent production failure). Successful upgrades **re-exec** the new binary so the version changes without a manual restart.
+- **Update check:** fall back from HTTP `HEAD` to `GET` when resolving GitHub `releases/latest` (some networks omit `Location` on HEAD).
+- **Doctor:** new `binary_upgrade` check reports whether in-place upgrade can write next to the running executable.
+
+### Changed
+
+- **Admin layout:** fixed viewport shell — top header stays put, left nav stays put, only the main content scrolls; page title + filter row (`PageHeader`) sticky within the content pane.
+- **Ops docs:** `deploy/imgli.service.example` documents `ReadWritePaths` for both data dir and binary dir (required for admin upgrade).
+
 ## [0.7.1] - 2026-08-01
 
 Theme: **Storage probe reliability** — fix local test-connection path and clearer remote probe errors.
@@ -238,7 +253,8 @@ Theme: **Workflow & Trust** — CLI/integrations, share landing, privacy
 - Bilingual UI (中文/English), PWA, dark mode, text watermark, admin audit logs.
 - Docker Compose quick start and GitHub Actions CI (Go matrix, web, e2e smoke).
 
-[Unreleased]: https://github.com/yixian-huang/imgli/compare/v0.7.1...HEAD
+[Unreleased]: https://github.com/yixian-huang/imgli/compare/v0.7.2...HEAD
+[0.7.2]: https://github.com/yixian-huang/imgli/compare/v0.7.1...v0.7.2
 [0.7.1]: https://github.com/yixian-huang/imgli/compare/v0.7.0...v0.7.1
 [0.7.0]: https://github.com/yixian-huang/imgli/compare/v0.6.0...v0.7.0
 [0.6.0]: https://github.com/yixian-huang/imgli/compare/v0.5.1...v0.6.0
