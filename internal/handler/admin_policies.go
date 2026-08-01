@@ -3,6 +3,7 @@ package handler
 import (
 	"encoding/json"
 	"errors"
+	"log/slog"
 	"net/http"
 	"strconv"
 	"time"
@@ -217,8 +218,8 @@ func (h *AdminHandlers) DeletePolicy(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-// TestPolicyConn POST /api/v1/admin/policies/{id}/test —— local/s3 写/读/删探针，
-// 返回耗时 ms。不存在策略 404；存在但探测失败（driver 不支持/config 坏/root 不可写等）400。
+// TestPolicyConn POST /api/v1/admin/policies/{id}/test —— 写/读/删探针，返回耗时 ms。
+// 404 策略不存在；400 探测失败（message 为一句可读说明）。
 func (h *AdminHandlers) TestPolicyConn(w http.ResponseWriter, r *http.Request) {
 	id, err := strconv.ParseUint(chi.URLParam(r, "id"), 10, 64)
 	if err != nil {
@@ -232,8 +233,15 @@ func (h *AdminHandlers) TestPolicyConn(w http.ResponseWriter, r *http.Request) {
 	}
 	ok := terr == nil
 	actor := PrincipalFrom(r).User
-	h.D.Adm.Audit(&actor.ID, "admin", "policy_test", map[string]any{"id": id, "ok": ok}, ClientIP(r))
+	audit := map[string]any{"id": id, "ok": ok}
+	if ok {
+		audit["latency_ms"] = latency
+	} else {
+		audit["error"] = terr.Error()
+	}
+	h.D.Adm.Audit(&actor.ID, "admin", "policy_test", audit, ClientIP(r))
 	if !ok {
+		slog.Warn("policy_test failed", "policy_id", id, "err", terr)
 		Fail(w, http.StatusBadRequest, CodeInvalidRequest, terr.Error())
 		return
 	}

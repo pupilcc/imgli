@@ -3,7 +3,13 @@
 > **Planning SSOT is internal** (`imgli/roadmap` in the project knowledge base).  
 > This file is a **public, de-sensitized mirror** for contributors. Prefer GitHub Issues + Milestones for execution.
 
-## Latest shipped — v0.7.0 · Ops Console · Health · Deploy
+## Latest shipped — v0.7.1 · Storage probe reliability
+
+Release: https://github.com/yixian-huang/imgli/releases/tag/v0.7.1
+
+Patch on **v0.7.0** Ops Console: local storage test-connection path fix, WebDAV probe `imgli-probe/`, clearer probe errors. See [CHANGELOG](CHANGELOG.md#071---2026-08-01).
+
+## Previous — v0.7.0 · Ops Console · Health · Deploy
 
 Release: https://github.com/yixian-huang/imgli/releases/tag/v0.7.0  
 Milestone: https://github.com/yixian-huang/imgli/milestone/6

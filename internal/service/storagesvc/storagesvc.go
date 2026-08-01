@@ -5,7 +5,6 @@ import (
 	"crypto/rand"
 	"fmt"
 	"net/url"
-	"path/filepath"
 	"sort"
 	"strconv"
 	"strings"
@@ -86,11 +85,7 @@ func (r *Resolver) Driver(p *model.StoragePolicy) (storage.Driver, error) {
 	var err error
 	switch p.Driver {
 	case "local":
-		root := p.Config["root"]
-		if root == "" {
-			root = "uploads"
-		}
-		d, err = local.New(filepath.Join(r.cfg.DataDir, root))
+		d, err = local.New(storage.LocalRoot(r.cfg.DataDir, p.Config["root"]))
 	case "s3":
 		d, err = s3.New(p.Config)
 	case "webdav":

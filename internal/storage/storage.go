@@ -6,10 +6,25 @@ import (
 	"context"
 	"errors"
 	"io"
+	"path/filepath"
+	"strings"
 	"time"
 )
 
 var ErrNotFound = errors.New("storage: object not found")
+
+// LocalRoot 解析 local 策略 root（storagesvc / admin 探针 / doctor 共用）：
+// 空串默认 "uploads"；绝对路径原样 Clean；相对路径拼到 dataDir 下。
+func LocalRoot(dataDir, root string) string {
+	root = strings.TrimSpace(root)
+	if root == "" {
+		root = "uploads"
+	}
+	if filepath.IsAbs(root) {
+		return filepath.Clean(root)
+	}
+	return filepath.Join(dataDir, root)
+}
 
 type Driver interface {
 	Put(ctx context.Context, key string, r io.Reader) error

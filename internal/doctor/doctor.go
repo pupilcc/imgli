@@ -292,11 +292,7 @@ func checkLocalPolicies(cfg *config.Config, db *gorm.DB, r *Report) {
 	res := storagesvc.New(cfg, db)
 	for i := range policies {
 		p := &policies[i]
-		root := p.Config["root"]
-		if root == "" {
-			root = "uploads"
-		}
-		abs := filepath.Join(cfg.DataDir, root)
+		abs := storage.LocalRoot(cfg.DataDir, p.Config["root"])
 		d, err := res.Driver(p)
 		if err != nil {
 			r.add(fmt.Sprintf("storage_local#%d", p.ID), Fail, fmt.Sprintf("策略 %q 驱动: %v", p.Name, err))

@@ -10,6 +10,20 @@ separate version in `go.mod` or `web/package.json`.
 
 ## [Unreleased]
 
+## [0.7.1] - 2026-08-01
+
+Theme: **Storage probe reliability** — fix local test-connection path and clearer remote probe errors.
+
+### Fixed
+
+- **Local storage “Test connection”:** probe now resolves `config.root` with the same rules as real uploads and doctor (`storage.LocalRoot` under `data_dir`; absolute roots unchanged). Fixes Docker/non-root false failures like `root 不可写: mkdir uploads: permission denied` when `/data/uploads` is actually writable.
+- **WebDAV/S3/FTP probe key:** write probe objects under `imgli-probe/…` so WebDAV exercises parent `MKCOL` (closer to real upload paths; more friendly to OpenList-style servers).
+- **Probe error messages:** one readable sentence with path or endpoint plus a short hint for common cases (permission, auth, unreachable, 404); audit stores `error` text; avoid noisy structured payloads.
+
+### Changed
+
+- Admin `UseDataDir` wires `cfg.DataDir` into policy test probes so local relative roots match production layout.
+
 ## [0.7.0] - 2026-08-01
 
 Theme: **Ops Console · Health · Deploy** — admin-visible self-host diagnostics, reverse-proxy clarity, unified three-step setup UI.
@@ -224,7 +238,8 @@ Theme: **Workflow & Trust** — CLI/integrations, share landing, privacy
 - Bilingual UI (中文/English), PWA, dark mode, text watermark, admin audit logs.
 - Docker Compose quick start and GitHub Actions CI (Go matrix, web, e2e smoke).
 
-[Unreleased]: https://github.com/yixian-huang/imgli/compare/v0.7.0...HEAD
+[Unreleased]: https://github.com/yixian-huang/imgli/compare/v0.7.1...HEAD
+[0.7.1]: https://github.com/yixian-huang/imgli/compare/v0.7.0...v0.7.1
 [0.7.0]: https://github.com/yixian-huang/imgli/compare/v0.6.0...v0.7.0
 [0.6.0]: https://github.com/yixian-huang/imgli/compare/v0.5.1...v0.6.0
 [0.5.1]: https://github.com/yixian-huang/imgli/compare/v0.5.0...v0.5.1

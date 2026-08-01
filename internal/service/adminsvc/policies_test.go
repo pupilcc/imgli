@@ -2,9 +2,13 @@ package adminsvc
 
 import (
 	"errors"
+	"io"
+	"net/http"
+	"net/http/httptest"
 	"os"
 	"path/filepath"
 	"strings"
+	"sync"
 	"testing"
 
 	"github.com/yixian-huang/imgli/internal/model"
@@ -456,8 +460,79 @@ func TestTestPolicyBadRootFails(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	if _, err := svc.TestPolicy(p.ID); err == nil {
-		t.Error("坏 root 应返回描述性 error，got nil")
+	_, err := svc.TestPolicy(p.ID)
+	if err == nil {
+		t.Fatal("坏 root 应返回描述性 error，got nil")
+	}
+	s := err.Error()
+	if !strings.Contains(s, "root 不可写") || !strings.Contains(s, badRoot) {
+		t.Errorf("应含动作与路径: %v", err)
+	}
+}
+
+// TestTestPolicyRelativeRootJoinsDataDir 覆盖默认种子 root=uploads 场景：
+// 探针必须写到 DataDir/uploads，而非进程 CWD 下的 ./uploads。
+func TestTestPolicyRelativeRootJoinsDataDir(t *testing.T) {
+	db := model.TestDB(t)
+	dataDir := t.TempDir()
+	svc := New(db).UseDataDir(dataDir)
+	p := newLocalPolicy("rel-uploads", "uploads")
+	if err := svc.CreatePolicy(p); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := svc.TestPolicy(p.ID); err != nil {
+		t.Fatalf("相对 root 拼 DataDir 后应可写: %v", err)
+	}
+	// MkdirAll 应已创建 DataDir/uploads（探针文件会清理，目录可保留）
+	want := filepath.Join(dataDir, "uploads")
+	if st, err := os.Stat(want); err != nil || !st.IsDir() {
+		t.Fatalf("期望探针目录 %s 存在, err=%v", want, err)
+	}
+	// 不应在 CWD 下误建 uploads（若 CWD 恰好可写会误导；仅断言 DataDir 侧已建）
+	entries, err := os.ReadDir(want)
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, e := range entries {
+		if strings.HasPrefix(e.Name(), ".imgli-probe-") {
+			t.Errorf("探针文件未清理: %s", e.Name())
+		}
+	}
+}
+
+// TestTestPolicyAbsoluteRootIgnoresDataDir 绝对 root 原样探针，不拼进 DataDir。
+func TestTestPolicyAbsoluteRootIgnoresDataDir(t *testing.T) {
+	db := model.TestDB(t)
+	absRoot := t.TempDir()
+	otherData := t.TempDir()
+	svc := New(db).UseDataDir(otherData)
+	p := newLocalPolicy("abs-root", absRoot)
+	if err := svc.CreatePolicy(p); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := svc.TestPolicy(p.ID); err != nil {
+		t.Fatalf("绝对 root 探针应成功: %v", err)
+	}
+	if entries, err := os.ReadDir(otherData); err != nil {
+		t.Fatal(err)
+	} else if len(entries) != 0 {
+		t.Errorf("绝对 root 不应在 DataDir 落文件, got %v", entries)
+	}
+}
+
+func TestLocalProbeRootJoin(t *testing.T) {
+	svc := New(model.TestDB(t)).UseDataDir("/var/imgli-data")
+	if got := svc.localProbeRoot("uploads"); got != filepath.Join("/var/imgli-data", "uploads") {
+		t.Errorf("relative = %q", got)
+	}
+	if got := svc.localProbeRoot("/abs/store"); got != "/abs/store" {
+		t.Errorf("absolute = %q, want /abs/store", got)
+	}
+	if got := svc.localProbeRoot(""); got != filepath.Join("/var/imgli-data", "uploads") {
+		t.Errorf("empty default = %q", got)
+	}
+	if got := svc.localProbeRoot("  "); got != filepath.Join("/var/imgli-data", "uploads") {
+		t.Errorf("blank default = %q", got)
 	}
 }
 
@@ -625,8 +700,12 @@ func TestTestPolicyS3Unreachable(t *testing.T) {
 	if err == nil {
 		t.Fatal("不可达 endpoint 应返回 error")
 	}
-	if !strings.Contains(err.Error(), "探针") {
-		t.Errorf("err 应含「探针」: %v", err)
+	s := err.Error()
+	if !strings.Contains(s, "探针") && !strings.Contains(s, "驱动") {
+		t.Errorf("err 应说明失败: %v", err)
+	}
+	if !strings.Contains(s, "127.0.0.1:1") {
+		t.Errorf("应含 endpoint: %v", err)
 	}
 }
 
@@ -749,8 +828,114 @@ func TestTestPolicyWebDAVUnreachable(t *testing.T) {
 	if err == nil {
 		t.Fatal("不可达 endpoint 应返回 error")
 	}
-	if !strings.Contains(err.Error(), "探针") {
-		t.Errorf("err 应含「探针」: %v", err)
+	s := err.Error()
+	if !strings.Contains(s, "webdav") || !strings.Contains(s, "http://127.0.0.1:1") {
+		t.Errorf("应含 driver/endpoint: %v", err)
+	}
+}
+
+// davProbeMock 最小 WebDAV：根下直接 PUT 返回 404；经 MKCOL 建父后再 PUT 成功。
+// 用来证明 remoteProbePrefix（imgli-probe/…）能触发父集合创建，对齐真实上传路径形态。
+type davProbeMock struct {
+	mu      sync.Mutex
+	objects map[string][]byte
+	dirs    map[string]bool
+	mkcols  []string
+}
+
+func (m *davProbeMock) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	key := strings.TrimPrefix(r.URL.Path, "/")
+	key = strings.TrimSuffix(key, "/")
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	if m.objects == nil {
+		m.objects = map[string][]byte{}
+	}
+	if m.dirs == nil {
+		m.dirs = map[string]bool{}
+	}
+	switch r.Method {
+	case http.MethodPut:
+		if i := strings.LastIndex(key, "/"); i >= 0 {
+			parent := key[:i]
+			if !m.dirs[parent] {
+				// 与「根 PUT 友好度差 / 缺父 404」的对端对齐
+				http.NotFound(w, r)
+				return
+			}
+		}
+		body, _ := io.ReadAll(r.Body)
+		m.objects[key] = body
+		w.WriteHeader(http.StatusCreated)
+	case http.MethodGet, http.MethodHead:
+		data, ok := m.objects[key]
+		if !ok {
+			http.NotFound(w, r)
+			return
+		}
+		w.Header().Set("Content-Length", itoaLen(len(data)))
+		w.WriteHeader(http.StatusOK)
+		if r.Method == http.MethodGet {
+			_, _ = w.Write(data)
+		}
+	case http.MethodDelete:
+		delete(m.objects, key)
+		w.WriteHeader(http.StatusNoContent)
+	case "MKCOL":
+		m.mkcols = append(m.mkcols, key)
+		m.dirs[key] = true
+		w.WriteHeader(http.StatusCreated)
+	default:
+		w.WriteHeader(http.StatusMethodNotAllowed)
+	}
+}
+
+func itoaLen(n int) string {
+	if n == 0 {
+		return "0"
+	}
+	var b [20]byte
+	i := len(b)
+	for n > 0 {
+		i--
+		b[i] = byte('0' + n%10)
+		n /= 10
+	}
+	return string(b[i:])
+}
+
+func TestTestPolicyWebDAVSubdirProbeSucceeds(t *testing.T) {
+	mock := &davProbeMock{}
+	srv := httptest.NewServer(mock)
+	t.Cleanup(srv.Close)
+
+	db := model.TestDB(t)
+	svc := New(db)
+	p := newWebDAVPolicy("webdav-probe-ok", map[string]string{
+		"endpoint": srv.URL,
+		"username": "u",
+		"password": "p",
+	})
+	if err := svc.CreatePolicy(p); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := svc.TestPolicy(p.ID); err != nil {
+		t.Fatalf("带 imgli-probe/ 前缀的探针应成功: %v", err)
+	}
+	mock.mu.Lock()
+	defer mock.mu.Unlock()
+	found := false
+	for _, c := range mock.mkcols {
+		if c == strings.TrimSuffix(remoteProbePrefix, "/") {
+			found = true
+			break
+		}
+	}
+	if !found {
+		t.Errorf("应 MKCOL %q, got %v", strings.TrimSuffix(remoteProbePrefix, "/"), mock.mkcols)
+	}
+	if len(mock.objects) != 0 {
+		t.Errorf("探针对象应已删除, residual=%v", mock.objects)
 	}
 }
 

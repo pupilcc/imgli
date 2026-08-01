@@ -163,7 +163,8 @@ func (s *Server) mountAPI() {
 	albH := &handler.AlbumHandlers{D: handler.AlbumDeps{Alb: albumsvc.New(s.opts.DB)}}
 
 	// 管理端（Task 1+）：与广场/鉴权共用 settings，保证开关即时失效缓存
-	adm := adminsvc.New(s.opts.DB, st)
+	// UseDataDir：local 策略「测试连接」与 storagesvc 同一路径解析（相对 root → data_dir）
+	adm := adminsvc.New(s.opts.DB, st).UseDataDir(s.opts.Cfg.DataDir)
 	mailSvc := mail.New(s.opts.DB)
 	authSvc.Mailer = mailSvc
 	authSvc.BaseURL = s.opts.Cfg.BaseURL

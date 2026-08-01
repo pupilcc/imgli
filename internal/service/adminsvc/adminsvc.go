@@ -16,8 +16,9 @@ import (
 )
 
 type Service struct {
-	db *gorm.DB
-	st *settings.Service
+	db      *gorm.DB
+	st      *settings.Service
+	dataDir string // 与 storagesvc 一致：local 策略相对 root 拼到此目录下
 }
 
 // New 构造管理端服务。可选传入进程内共享的 settings.Service，
@@ -30,6 +31,15 @@ func New(db *gorm.DB, shared ...*settings.Service) *Service {
 		st = settings.New(db)
 	}
 	return &Service{db: db, st: st}
+}
+
+// UseDataDir 设置应用 data_dir，供 local 存储探针解析 root（与 storagesvc 相同语义）。
+// 相对 root 拼到 dataDir 下；绝对 root 经 filepath.Join 后仍为自身。可链式调用。
+func (s *Service) UseDataDir(dir string) *Service {
+	if s != nil {
+		s.dataDir = dir
+	}
+	return s
 }
 
 // settings 返回进程内 settings 服务（与 Discover/upload 共享时 Invalidate 才有效）。

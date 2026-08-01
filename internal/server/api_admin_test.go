@@ -1007,6 +1007,13 @@ func TestAdminPolicyTestProbeOkAndBadRootFails(t *testing.T) {
 	if !strings.Contains(logs[1].Detail, `"ok":false`) {
 		t.Errorf("第二条应 ok:false: %s", logs[1].Detail)
 	}
+	// 失败 audit 只多记一句 error（可读全文），不堆结构化字段
+	if !strings.Contains(logs[1].Detail, `"error"`) {
+		t.Errorf("失败 audit 应含 error: %s", logs[1].Detail)
+	}
+	if !strings.Contains(e.Message, "root 不可写") {
+		t.Errorf("失败 message 应说明问题: %q", e.Message)
+	}
 }
 
 // TestAdminPolicyTestNotFound404 对不存在策略调用 test 探针应 404，不落 audit。

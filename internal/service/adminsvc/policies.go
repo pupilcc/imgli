@@ -7,7 +7,6 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"errors"
-	"fmt"
 	"io"
 	"net/url"
 	"os"
@@ -445,8 +444,19 @@ func (s *Service) DeletePolicy(id uint64) error {
 	return nil
 }
 
-// TestPolicy 对策略做写/读/删探针：local 直接测目录可写；s3/webdav/ftp 走驱动 Put/Open/Delete。
-// 返回耗时(ms)。失败时返回描述性 error。
+// localProbeRoot 解析 local 策略 root，与 storagesvc / storage.LocalRoot 一致。
+func (s *Service) localProbeRoot(cfgRoot string) string {
+	return storage.LocalRoot(s.dataDir, cfgRoot)
+}
+
+// remoteProbeKey 是 s3/webdav/ftp 探针对象键。使用一层目录前缀：
+// 1) 与真实上传路径（多级目录）更接近，WebDAV 会走 MKCOL 建父集合；
+// 2) 避免部分网盘/OpenList 对「根下直接 PUT」或点号隐藏文件不友好。
+// 不清理空父目录（与 doctor 一致，可接受残留空集合）。
+const remoteProbePrefix = "imgli-probe/"
+
+// TestPolicy 对策略做写/读/删探针。成功返回耗时 ms；失败返回一句可读 error（含路径/endpoint 与短建议）。
+// 策略不存在时为 ErrPolicyNotFound。
 func (s *Service) TestPolicy(id uint64) (int64, error) {
 	var p model.StoragePolicy
 	if err := s.db.First(&p, id).Error; err != nil {
@@ -455,77 +465,82 @@ func (s *Service) TestPolicy(id uint64) (int64, error) {
 		}
 		return 0, err
 	}
+
 	switch p.Driver {
 	case "local":
 		root := strings.TrimSpace(p.Config["root"])
 		if root == "" {
 			return 0, ErrBadConfig
 		}
+		absRoot := s.localProbeRoot(root)
 
 		start := time.Now()
-		if err := os.MkdirAll(root, 0o755); err != nil {
-			return 0, fmt.Errorf("root 不可写: %w", err)
+		if err := os.MkdirAll(absRoot, 0o755); err != nil {
+			return 0, formatLocalProbeErr("root 不可写", absRoot, root, s.dataDir, err)
 		}
 		name := ".imgli-probe-" + randSuffix(8)
-		path := filepath.Join(root, name)
+		path := filepath.Join(absRoot, name)
 		content := []byte(randSuffix(16))
 		if err := os.WriteFile(path, content, 0o644); err != nil {
-			return 0, fmt.Errorf("写入探针文件失败: %w", err)
+			return 0, formatLocalProbeErr("写入探针失败", absRoot, root, s.dataDir, err)
 		}
 		got, err := os.ReadFile(path)
 		if err != nil {
 			os.Remove(path)
-			return 0, fmt.Errorf("读回探针文件失败: %w", err)
+			return 0, formatLocalProbeErr("读回探针失败", absRoot, root, s.dataDir, err)
 		}
 		if !bytes.Equal(got, content) {
 			os.Remove(path)
-			return 0, errors.New("探针文件内容比对不一致")
+			return 0, formatProbeMsg("探针内容比对不一致", nil)
 		}
 		if err := os.Remove(path); err != nil {
-			return 0, fmt.Errorf("删除探针文件失败: %w", err)
+			return 0, formatLocalProbeErr("删除探针失败", absRoot, root, s.dataDir, err)
 		}
 		return time.Since(start).Milliseconds(), nil
+
 	case "s3", "webdav", "ftp":
+		ep := remoteEndpoint(p.Driver, p.Config)
 		var d interface {
 			Put(context.Context, string, io.Reader) error
 			Open(context.Context, string) (io.ReadSeekCloser, error)
 			Delete(context.Context, string) error
 		}
-		var err error
+		var nerr error
 		switch p.Driver {
 		case "s3":
-			d, err = s3.New(p.Config)
+			d, nerr = s3.New(p.Config)
 		case "webdav":
-			d, err = webdav.New(p.Config)
+			d, nerr = webdav.New(p.Config)
 		case "ftp":
-			d, err = ftp.New(p.Config)
+			d, nerr = ftp.New(p.Config)
 		}
-		if err != nil {
-			return 0, err
+		if nerr != nil {
+			return 0, formatRemoteProbeErr("初始化驱动失败", p.Driver, ep, nerr)
 		}
 		start := time.Now()
 		ctx, cancel := context.WithTimeout(context.Background(), 20*time.Second)
 		defer cancel()
-		probeKey := ".imgli-probe-" + randSuffix(8)
+		probeKey := remoteProbePrefix + randSuffix(8)
 		content := []byte(randSuffix(16))
 		if err := d.Put(ctx, probeKey, bytes.NewReader(content)); err != nil {
-			return 0, fmt.Errorf("写入探针对象失败: %w", err)
+			return 0, formatRemoteProbeErr("写入探针失败", p.Driver, ep, err)
 		}
 		rc, err := d.Open(ctx, probeKey)
 		if err != nil {
 			_ = d.Delete(ctx, probeKey)
-			return 0, fmt.Errorf("读回探针对象失败: %w", err)
+			return 0, formatRemoteProbeErr("读回探针失败", p.Driver, ep, err)
 		}
 		got, _ := io.ReadAll(rc)
 		rc.Close()
 		if !bytes.Equal(got, content) {
 			_ = d.Delete(ctx, probeKey)
-			return 0, errors.New("探针对象内容比对不一致")
+			return 0, formatProbeMsg("探针内容比对不一致", nil)
 		}
 		if err := d.Delete(ctx, probeKey); err != nil {
-			return 0, fmt.Errorf("删除探针对象失败: %w", err)
+			return 0, formatRemoteProbeErr("删除探针失败", p.Driver, ep, err)
 		}
 		return time.Since(start).Milliseconds(), nil
+
 	default:
 		return 0, ErrDriverUnsupported
 	}
