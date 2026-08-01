@@ -91,7 +91,7 @@ imgli serve
 固定版本或安装路径：
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/yixian-huang/imgli/main/scripts/install.sh | sh -s -- v0.6.0
+curl -fsSL https://raw.githubusercontent.com/yixian-huang/imgli/main/scripts/install.sh | sh -s -- v0.7.0
 PREFIX=/usr/local/bin curl -fsSL https://raw.githubusercontent.com/yixian-huang/imgli/main/scripts/install.sh | sh
 ```
 
@@ -107,7 +107,7 @@ docker run --rm -p 8686:8686 -v imgli-data:/data \
 # → http://localhost:8686（第一个注册用户即管理员）
 ```
 
-固定版本用 `ghcr.io/yixian-huang/imgli:v0.6.0`（见
+固定版本用 `ghcr.io/yixian-huang/imgli:v0.7.0`（见
 [Releases](https://github.com/yixian-huang/imgli/releases)）。
 
 ### Docker Compose
@@ -128,7 +128,7 @@ TLS 反代片段：[`deploy/Caddyfile.example`](deploy/Caddyfile.example)、
 
 ```bash
 make build          # 需要 Go ≥ 1.26、Node ≥ 24
-./imgli version     # ldflags 注入的 git tag，如 v0.6.0
+./imgli version     # ldflags 注入的 git tag，如 v0.7.0
 ./imgli serve       # → http://localhost:8686
 ```
 
