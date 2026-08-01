@@ -101,7 +101,11 @@ export default {
 
   // Tokens
   tokensKicker: 'API TOKENS — 密钥管理',
-  tokensOnboarding: '三步接入：生成 Token → 复制下方 PicGo / CLI 片段 → 在编辑器中配置上传。',
+  tokensOnboardingKicker: '三步接入',
+  tokensOnboardingStep1: '点击右上角生成 API Token（仅显示一次明文，请立即保存）',
+  tokensOnboardingStep2: '复制下方 PicGo / ShareX / CLI / curl 片段',
+  tokensOnboardingStep3: '在编辑器或客户端里粘贴配置并试传一张图',
+
   generateToken: '＋ 生成新 Token',
   freshTokenTitle: '⚠ 新 Token 已生成 — 明文仅显示这一次，请立即保存',
   copy: '复制',

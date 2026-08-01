@@ -1,11 +1,5 @@
 .headRow { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; }
 .headRow > :global(div) { margin-bottom: 0; }
-.onboarding {
-  margin: 0 0 14px;
-  font-size: 12.5px;
-  line-height: 1.55;
-  color: var(--muted);
-}
 .freshBox { border: 1px solid var(--text); border-radius: 3px; background: var(--surface); padding: 14px 16px; margin-bottom: 12px; animation: fadeIn 0.2s; }
 .freshTitle { font-size: 12px; font-weight: 700; margin-bottom: 8px; }
 .freshRow { display: flex; align-items: center; border: 1px solid var(--border); border-radius: 3px; overflow: hidden; }

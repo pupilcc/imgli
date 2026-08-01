@@ -101,7 +101,11 @@ export default {
 
   // Tokens
   tokensKicker: 'API TOKENS — Key management',
-  tokensOnboarding: 'Three steps: create a token → copy the PicGo / CLI snippet below → configure your editor.',
+  tokensOnboardingKicker: 'THREE-STEP SETUP',
+  tokensOnboardingStep1: 'Create an API token (plain text is shown only once — save it now)',
+  tokensOnboardingStep2: 'Copy a PicGo / ShareX / CLI / curl snippet below',
+  tokensOnboardingStep3: 'Paste into your editor or client and upload a test image',
+
   generateToken: '＋ New Token',
   freshTokenTitle: '⚠ New token created — shown in plain text only once; save it now',
   copy: 'Copy',

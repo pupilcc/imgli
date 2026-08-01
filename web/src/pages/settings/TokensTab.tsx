@@ -6,6 +6,7 @@ import { formatDate } from '../../lib/format'
 import { Button } from '../../ui/Button'
 import { InlineConfirm } from '../../ui/InlineConfirm'
 import { Modal } from '../../ui/Modal'
+import { StepGuide } from '../../ui/StepGuide'
 import styles from './SettingsPage.module.css'
 import own from './TokensTab.module.css'
 import { buildIntegrationSnippets, type SnippetKind } from './tokenSnippets'
@@ -68,9 +69,15 @@ export function TokensTab() {
           {t('settings.generateToken')}
         </Button>
       </div>
-      <p className={own.onboarding} data-testid="tokens-onboarding">
-        {t('settings.tokensOnboarding')}
-      </p>
+      <StepGuide
+        data-testid="tokens-onboarding"
+        kicker={t('settings.tokensOnboardingKicker')}
+        steps={[
+          t('settings.tokensOnboardingStep1'),
+          t('settings.tokensOnboardingStep2'),
+          t('settings.tokensOnboardingStep3'),
+        ]}
+      />
 
       {fresh && (
         <div className={own.freshBox}>
