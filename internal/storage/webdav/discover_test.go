@@ -12,17 +12,20 @@ import (
 )
 
 func TestChildNamesFromPropfindOpenListShape(t *testing.T) {
+	// URL-encoded non-ASCII mount segment (e.g. UTF-8 "相册")
+	const enc = "%E7%9B%B8%E5%86%8C" // 相册
+	const name = "相册"
 	xml := `<?xml version="1.0" encoding="UTF-8"?><D:multistatus xmlns:D="DAV:">` +
 		`<D:response><D:href>/dav/</D:href><D:propstat><D:prop><D:resourcetype><D:collection/></D:resourcetype>` +
 		`<D:displayname>root</D:displayname></D:prop></D:propstat></D:response>` +
-		`<D:response><D:href>/dav/%E5%BF%86%E6%A2%A6%E5%AD%98%E5%82%A8/</D:href><D:propstat><D:prop>` +
-		`<D:resourcetype><D:collection/></D:resourcetype><D:displayname>忆梦存储</D:displayname></D:prop></D:propstat></D:response>` +
+		`<D:response><D:href>/dav/` + enc + `/</D:href><D:propstat><D:prop>` +
+		`<D:resourcetype><D:collection/></D:resourcetype><D:displayname>` + name + `</D:displayname></D:prop></D:propstat></D:response>` +
 		`</D:multistatus>`
-	names := childNamesFromPropfind("https://list.yolos.cn/dav", xml)
-	if len(names) != 1 || names[0] != "忆梦存储" {
-		t.Fatalf("names=%v want [忆梦存储]", names)
+	names := childNamesFromPropfind("https://dav.example/dav", xml)
+	if len(names) != 1 || names[0] != name {
+		t.Fatalf("names=%v want [%s]", names, name)
 	}
-	names2 := childNamesFromPropfind("https://list.yolos.cn/dav/忆梦存储", xml)
+	names2 := childNamesFromPropfind("https://dav.example/dav/"+name, xml)
 	if len(names2) != 0 {
 		t.Fatalf("under mount base names=%v want empty", names2)
 	}
@@ -34,9 +37,9 @@ func TestRelativeChildName(t *testing.T) {
 	}{
 		{"/dav", "/dav/", ""},
 		{"/dav", "/dav", ""},
-		{"/dav", "/dav/忆梦存储/", "忆梦存储"},
-		{"/dav", "/dav/%E5%BF%86%E6%A2%A6%E5%AD%98%E5%82%A8/", "忆梦存储"},
-		{"/dav", "https://list.yolos.cn/dav/foo/bar", "foo"},
+		{"/dav", "/dav/photos/", "photos"},
+		{"/dav", "/dav/%E7%9B%B8%E5%86%8C/", "相册"},
+		{"/dav", "https://dav.example/dav/foo/bar", "foo"},
 		{"/dav/foo", "/dav/foo/bar", "bar"},
 		{"/dav", "/other", ""},
 	}

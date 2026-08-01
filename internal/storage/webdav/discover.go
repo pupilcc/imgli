@@ -16,7 +16,7 @@ import (
 
 // WritableHint 是「测试连接」失败时给出的可写挂载建议（无密码）。
 type WritableHint struct {
-	Name     string `json:"name"`     // 路径段（已解码，如「忆梦存储」）
+	Name     string `json:"name"`     // 路径段（已解码）
 	Endpoint string `json:"endpoint"` // 完整 WebDAV 基址
 }
 
@@ -138,7 +138,7 @@ func randHex(n int) string {
 }
 
 func joinEndpoint(base, name string) string {
-	// 展示与配置用未转义挂载名（如「忆梦存储」）；HTTP 请求由 net/url / encodePath 处理编码
+	// 展示与配置用未转义路径段；HTTP 请求由 net/url / encodePath 处理编码
 	return strings.TrimRight(base, "/") + "/" + strings.Trim(name, "/")
 }
 

@@ -16,7 +16,7 @@ Theme: **WebDAV mount discovery on failed probe**.
 
 ### Added
 
-- **WebDAV test-connection mount discovery (P0/P1):** when the write probe fails, imgli PROPFIND Depth:1 lists child collections and write-probes each (max 8), then appends copy-paste endpoint suggestions (e.g. OpenList virtual `/dav` → `…/dav/忆梦存储`). If discovery finds nothing, a short OpenList virtual-root hint is still shown.
+- **WebDAV test-connection mount discovery (P0/P1):** when the write probe fails, imgli PROPFIND Depth:1 lists child collections and write-probes each (max 8), then appends copy-paste endpoint suggestions (e.g. OpenList virtual `/dav` → `…/dav/<mount>`). If discovery finds nothing, a short OpenList virtual-root hint is still shown.
 
 ## [0.7.3] - 2026-08-01
 
