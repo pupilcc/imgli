@@ -29,6 +29,8 @@ AGPL-3.0-only releases for fixes.
   `ALLOW_IPS` and a Bearer `TOKEN`, plus a cloud firewall if available.
 - Run the app behind a reverse proxy with TLS; set `trust_proxy: true` only
   when the proxy is trusted (it controls client-IP attribution for rate
-  limiting).
+  limiting). Set `IMGLI_BASE_URL` to the public HTTPS origin users open — it
+  is also the CSRF Origin allowlist for browser session auth (wrong base →
+  login/register 403 “跨站请求被拒绝”).
 
 Longer checklist: [docs/security-hardening.md](docs/security-hardening.md).

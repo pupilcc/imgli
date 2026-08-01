@@ -10,6 +10,7 @@ import { PoliciesPage } from './policies/PoliciesPage'
 import { ReviewPage } from './review/ReviewPage'
 import { SettingsPage } from './settings/SettingsPage'
 import { AdminLayout } from './shell/AdminLayout'
+import { SystemPage } from './system/SystemPage'
 import { UsersPage } from './users/UsersPage'
 
 function AdminNotFound() {
@@ -28,6 +29,7 @@ export default function AdminApp() {
         <Route path="groups" element={<GroupsPage />} />
         <Route path="invites" element={<InvitesPage />} />
         <Route path="policies" element={<PoliciesPage />} />
+        <Route path="system" element={<SystemPage />} />
         <Route path="settings" element={<SettingsPage />} />
         <Route path="logs" element={<LogsPage />} />
         <Route path="*" element={<AdminNotFound />} />

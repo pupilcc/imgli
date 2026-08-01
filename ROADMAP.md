@@ -22,12 +22,26 @@ Milestone: https://github.com/yixian-huang/imgli/milestone/5
 - **v0.3.0** — Password shares, public albums, width thumbs, import-dir, OIDC, webhooks  
 - **v0.2.x** — CLI upload, doctor, EXIF strip, max views, light admin analytics  
 
-## Next (not a committed schedule)
+## Next — v0.7.0 · Ops Console · Health · Deploy
 
-- **Community:** more S3-compatible vendors in the matrix (#51) — vendor report template + `scripts/s3-vendor-matrix.sh`  
-- **Later candidates (internal SSOT):** single-instance team/org, fuller transform suite, more IdP connectors, async replicas / dual-write  
+Milestone: https://github.com/yixian-huang/imgli/milestone/6  
 
-No open product milestone is required for community PRs — file an Issue or open a PR against `main`.
+Admin-visible self-host diagnostics (not a committed calendar date):
+
+| Track | Issues |
+|-------|--------|
+| Doctor in admin | [#74](https://github.com/yixian-huang/imgli/issues/74) |
+| Runtime summary / base_url mismatch | [#75](https://github.com/yixian-huang/imgli/issues/75) |
+| First-run reverse-proxy checklist | [#76](https://github.com/yixian-huang/imgli/issues/76) |
+| Ops / System IA | [#77](https://github.com/yixian-huang/imgli/issues/77) |
+| Upgrade preflight + Docker guidance | [#78](https://github.com/yixian-huang/imgli/issues/78) |
+| Docs (repo + docs-imgli) | [#79](https://github.com/yixian-huang/imgli/issues/79) |
+
+Also open (community, not blocking v0.7): more S3-compatible vendors in the matrix (#51).
+
+**Later candidates (internal SSOT):** single-instance team/org, fuller transform suite, more IdP connectors, async replicas / dual-write.
+
+No open product milestone is required for community PRs outside this theme — file an Issue or open a PR against `main`.
 
 ## Non-goals (do not open “white-label full” issues expecting Community)
 

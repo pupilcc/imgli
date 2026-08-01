@@ -158,4 +158,47 @@ export default {
   upgradeDone: 'Replaced with {to}; restart the imgli process',
   upgradeDoneToast: 'Upgrade complete — restart the service',
   upgradeFailed: 'Upgrade failed',
+
+  systemTitle: 'System / Ops',
+  runtimeTitle: 'Runtime summary (read-only)',
+  refreshHealth: 'Re-run checks',
+  installShape: 'Install shape',
+  requestHost: 'Request Host',
+  headerPresent: 'set',
+  originMismatch:
+    'Browser origin {browser} does not match IMGLI_BASE_URL ({base}). Behind a reverse proxy, login/register may 403 with “cross-site request rejected”. Set BASE_URL to the public https origin and restart.',
+  originMatch: 'Browser origin matches base_url ({origin}).',
+  doctorTitle: 'Health checks (doctor)',
+  doctorHint: 'Same checks as CLI `imgli doctor`; admin-only.',
+  doctorCheck: 'Check',
+  doctorLevel: 'Level',
+  doctorMessage: 'Message',
+  checklistTitle: 'Production / reverse-proxy checklist',
+  checklistBody:
+    'base_url still looks local, or differs from the browser host. After 1Panel / Nginx / Caddy, set the public origin and trust the proxy:',
+  checklistDismiss: 'Got it — hide for now',
+  checklistDocs: 'Reverse-proxy CSRF notes →',
+  upgradeSection: 'Version & upgrade',
+  upgradeSectionHint:
+    'Probe GitHub Releases; binary installs can replace in place (writable path). Containers must redeploy images.',
+  upgradePreflightFail: 'Health checks report FAIL — fix before upgrading if possible.',
+  upgradePreflightWarn: 'Health checks have {n} WARN item(s). Review before upgrading.',
+  upgradeDockerBlocked: 'Container environment detected: binary replace is disabled.',
+  dockerUpgradeHint: 'Container install: upgrade via image tag; do not use binary replace.',
+  dockerRedeploySnippet:
+    '# Example (adjust to your compose)\ndocker pull ghcr.io/yixian-huang/imgli:latest\ndocker compose up -d',
+  cleanupSection: 'Lifecycle cleanup',
+  cleanupHint:
+    'Preview/run cleanup of expired images and aged trash (default max 200 per kind). Origin cleanup ≠ CDN bill.',
+  cleanupPreview: 'Dry-run preview',
+  cleanupRun: 'Run cleanup',
+  cleanupRunConfirm:
+    'Run cleanup now? Deletes expired images and aged trash (max 200 per kind).',
+  cleanupPreviewResult: 'Preview: {detail}',
+  cleanupRunResult: 'Ran: {detail}',
+  cleanupDoneToast: 'Cleanup finished',
+  opsLinksTitle: 'Related',
+  linkPoliciesMigrate: 'Storage policies / migrate',
+  linkBackupDocs: 'Backup docs',
+  backupHint: 'Back up both the database and object storage roots; see docs/backup.md.',
 }

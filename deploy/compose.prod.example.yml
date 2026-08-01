@@ -16,7 +16,9 @@ services:
     restart: unless-stopped
     environment:
       IMGLI_LISTEN: ":8686"
-      # Public origin used in copied links and emails (must match browser URL)
+      # Public origin: links/emails, Secure cookies, CSRF Origin allowlist.
+      # Must match the browser URL exactly (wrong value → login/register 403
+      # “跨站请求被拒绝”). See docs/security-hardening.md reverse-proxy FAQ.
       IMGLI_BASE_URL: "https://img.example.com"
       IMGLI_DATA_DIR: /data
       # Required when TLS terminator / reverse proxy is in front

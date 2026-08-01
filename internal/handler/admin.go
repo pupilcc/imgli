@@ -3,6 +3,7 @@ package handler
 import (
 	"net/http"
 
+	"github.com/yixian-huang/imgli/internal/config"
 	"github.com/yixian-huang/imgli/internal/mail"
 	"github.com/yixian-huang/imgli/internal/service/adminsvc"
 	"github.com/yixian-huang/imgli/internal/service/imagesvc"
@@ -22,6 +23,7 @@ type AdminDeps struct {
 	Mod     *moderation.Service // 可选；拒绝通知
 	Hooks   *webhook.Service    // 可选；出站 webhook
 	OwnHost string              // BaseURL host，用于 referer suspect 排除自站
+	Cfg     *config.Config      // 运维层只读（doctor / runtime 摘要）
 }
 
 type AdminHandlers struct{ D AdminDeps }

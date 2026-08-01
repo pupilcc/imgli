@@ -1,6 +1,7 @@
 # Example Caddy reverse proxy for imgli (TLS automatic).
 # App assumed on 127.0.0.1:8686 with IMGLI_TRUST_PROXY=true and
-# IMGLI_BASE_URL=https://img.example.com
+# IMGLI_BASE_URL=https://img.example.com (must match this site address;
+# otherwise browser login/register may 403 “跨站请求被拒绝”).
 #
 #   caddy run --config deploy/Caddyfile.example
 

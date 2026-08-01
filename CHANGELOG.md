@@ -10,8 +10,14 @@ separate version in `go.mod` or `web/package.json`.
 
 ## [Unreleased]
 
+### Added
+
+- **Admin system health (v0.7 H1/H2):** `GET /api/v1/admin/system/health` returns doctor checks (same as CLI `imgli doctor`) plus read-only runtime summary (`base_url`, `trust_proxy`, listen, install shape, request Host / forwarded headers). (#74, #75)
+- **Admin System / Ops page:** health table, browser vs `base_url` mismatch banner (reverse-proxy CSRF), first-run checklist, version upgrade with preflight notes, lifecycle cleanup UI, links to migrate/backup. Nav **系统 / 运维**. (#74–#78)
+
 ### Changed
 
+- **Docs:** reverse-proxy CSRF FAQ in README / security-hardening; product FAQ on docs.imgli.com; ROADMAP Next → v0.7.0 milestone.
 - **Docs:** README (en/zh) features + docs map for v0.6 ops (migrate, version upgrade, cleanup); design migrate draft marks M1/M3 shipped; product site imgli.com SEO/identity refreshed.
 
 ## [0.6.0] - 2026-07-31

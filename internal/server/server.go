@@ -170,6 +170,7 @@ func (s *Server) mountAPI() {
 	admH := &handler.AdminHandlers{D: handler.AdminDeps{
 		Adm: adm, Res: storageRes, Img: imgSvc, Mail: mailSvc, Stats: s.stats, Mod: modSvc, Hooks: hooks,
 		OwnHost: baseHost(s.opts.Cfg.BaseURL),
+		Cfg:     s.opts.Cfg,
 	}}
 
 	uh := &handler.UserHandlers{
@@ -280,6 +281,7 @@ func (s *Server) mountAPI() {
 				ar.Post("/storage/migrate", admH.StartStorageMigrate)
 				ar.Get("/storage/migrate/{id}", admH.GetStorageMigrate)
 				ar.Get("/system/version", admH.GetSystemVersion)
+				ar.Get("/system/health", admH.GetSystemHealth)
 				ar.Post("/system/check-update", admH.CheckSystemUpdate)
 				ar.Post("/system/upgrade", admH.UpgradeSystem)
 				ar.Post("/cleanup/preview", admH.PreviewCleanup)

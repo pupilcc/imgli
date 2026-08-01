@@ -6,9 +6,10 @@ services:
     ports:
       - "8686:8686"
     environment:
-      # 对外访问地址,决定复制链/邮件里的 URL
+      # 浏览器实际访问的公网源；外链/邮件、Secure Cookie、CSRF Origin 白名单均依赖它。
+      # 反代到域名时务必改为 https://你的域名，否则登录注册可能 403「跨站请求被拒绝」。
       IMGLI_BASE_URL: http://localhost:8686
-      # 反代(nginx/caddy)后面部署时打开:
+      # 反代(nginx/caddy/1Panel)后面部署时打开:
       # IMGLI_TRUST_PROXY: "true"
       # 用 Postgres 替代默认 SQLite 时:
       # IMGLI_DATABASE_DRIVER: postgres

@@ -24,6 +24,7 @@ export default {
   groups: 'User groups',
   invites: 'Invite codes',
   policies: 'Storage policies',
+  systemOps: 'System / Ops',
   systemSettings: 'System settings',
   logs: 'Audit logs',
   tabUpload: 'Upload',

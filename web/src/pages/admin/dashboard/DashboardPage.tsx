@@ -88,6 +88,9 @@ export function DashboardPage() {
             {t('adminA.upgradeTo', { latest: latestTag })}
           </Button>
         )}
+        <Link className={styles.versionMsg} to="/admin/system">
+          {t('adminA.systemTitle')} →
+        </Link>
         {updateMsg && (
           <span className={styles.versionMsg}>
             {updateMsg}
