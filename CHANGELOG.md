@@ -10,6 +10,18 @@ separate version in `go.mod` or `web/package.json`.
 
 ## [Unreleased]
 
+## [0.7.3] - 2026-08-01
+
+Theme: **OpenList WebDAV read via 302**.
+
+### Fixed
+
+- **WebDAV Open/Exists against OpenList (and similar netdisk proxies):** write could succeed while "Test connection" failed on read-back because the peer returns **302** to a presigned object URL, and **HEAD on that URL often 403**. imgli now treats HEAD 302 as "exists / use buffered GET", follows **GET** redirects only (strips Basic auth), and leaves PUT/DELETE unfollowed. Verified against a live OpenList mount that fronts China Mobile EOS.
+
+### Changed
+
+- Clearer PUT 404 wording when the path is missing or the WebDAV root is not writable (e.g. OpenList virtual `/dav` root).
+
 ## [0.7.2] - 2026-08-01
 
 Theme: **One-click upgrade + admin shell UX**.
@@ -253,7 +265,8 @@ Theme: **Workflow & Trust** — CLI/integrations, share landing, privacy
 - Bilingual UI (中文/English), PWA, dark mode, text watermark, admin audit logs.
 - Docker Compose quick start and GitHub Actions CI (Go matrix, web, e2e smoke).
 
-[Unreleased]: https://github.com/yixian-huang/imgli/compare/v0.7.2...HEAD
+[Unreleased]: https://github.com/yixian-huang/imgli/compare/v0.7.3...HEAD
+[0.7.3]: https://github.com/yixian-huang/imgli/compare/v0.7.2...v0.7.3
 [0.7.2]: https://github.com/yixian-huang/imgli/compare/v0.7.1...v0.7.2
 [0.7.1]: https://github.com/yixian-huang/imgli/compare/v0.7.0...v0.7.1
 [0.7.0]: https://github.com/yixian-huang/imgli/compare/v0.6.0...v0.7.0

@@ -550,6 +550,105 @@ func TestNewInvalidEndpoint(t *testing.T) {
 	}
 }
 
+// TestOpenFollowsGETRedirect 模拟 OpenList 网盘代理：
+// WebDAV HEAD/GET 302 到无鉴权直链；直链拒 HEAD、允 GET。PUT 不跟随 3xx。
+func TestOpenFollowsGETRedirect(t *testing.T) {
+	blobPayload := []byte("from-presigned-blob")
+	var blobSawAuth string
+	var blobMethods []string
+	blob := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		blobSawAuth = r.Header.Get("Authorization")
+		blobMethods = append(blobMethods, r.Method)
+		// 模拟 EOS：HEAD 403，GET 200
+		if r.Method == http.MethodHead {
+			w.WriteHeader(http.StatusForbidden)
+			return
+		}
+		w.Header().Set("Content-Length", strconv.Itoa(len(blobPayload)))
+		w.WriteHeader(http.StatusOK)
+		_, _ = w.Write(blobPayload)
+	}))
+	t.Cleanup(blob.Close)
+
+	var putStatus int
+	dav := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		switch r.Method {
+		case http.MethodPut:
+			w.WriteHeader(http.StatusCreated)
+		case http.MethodHead, http.MethodGet:
+			w.Header().Set("Location", blob.URL+"/obj")
+			w.WriteHeader(http.StatusFound)
+		case http.MethodDelete:
+			w.WriteHeader(http.StatusNoContent)
+		default:
+			w.WriteHeader(http.StatusMethodNotAllowed)
+		}
+	}))
+	t.Cleanup(dav.Close)
+
+	davPut302 := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.Method == http.MethodPut {
+			putStatus = http.StatusFound
+			w.Header().Set("Location", blob.URL+"/should-not-put")
+			w.WriteHeader(http.StatusFound)
+			return
+		}
+		w.WriteHeader(http.StatusOK)
+	}))
+	t.Cleanup(davPut302.Close)
+
+	d, err := New(map[string]string{
+		"endpoint": dav.URL,
+		"username": "u",
+		"password": "p",
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	d.Client = &http.Client{Timeout: 10 * time.Second, CheckRedirect: webdavCheckRedirect}
+
+	ctx := context.Background()
+	ok, err := d.Exists(ctx, "a/b.bin")
+	if err != nil || !ok {
+		t.Fatalf("Exists via HEAD 302: ok=%v err=%v", ok, err)
+	}
+
+	rsc, err := d.Open(ctx, "a/b.bin")
+	if err != nil {
+		t.Fatalf("Open via GET 302: %v", err)
+	}
+	got, err := io.ReadAll(rsc)
+	rsc.Close()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !bytes.Equal(got, blobPayload) {
+		t.Fatalf("body = %q", got)
+	}
+	if blobSawAuth != "" {
+		t.Fatalf("blob must not receive Basic auth, got %q", blobSawAuth)
+	}
+	// Open 应走 GET 缓冲，不应对直链发 HEAD
+	for _, m := range blobMethods {
+		if m == http.MethodHead {
+			t.Fatalf("blob methods include HEAD (should GET only): %v", blobMethods)
+		}
+	}
+
+	d2, err := New(map[string]string{"endpoint": davPut302.URL, "username": "u", "password": "p"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	d2.Client = &http.Client{Timeout: 10 * time.Second, CheckRedirect: webdavCheckRedirect}
+	err = d2.Put(ctx, "x.bin", bytes.NewReader([]byte("n")))
+	if err == nil {
+		t.Fatal("PUT 302 should not succeed as write")
+	}
+	if putStatus != http.StatusFound {
+		t.Fatalf("putStatus=%d", putStatus)
+	}
+}
+
 // Live surface: IMGLI_TEST_WEBDAV_LIVE=1 + ENDPOINT (+ optional USER/PASS).
 // Prefer self-hosted Docker/OpenList — no SaaS signup required for a matrix row.
 func TestDriverSurfaceLive(t *testing.T) {

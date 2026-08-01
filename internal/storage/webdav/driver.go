@@ -52,14 +52,24 @@ func (d *Driver) httpClient() *http.Client {
 		return d.Client
 	}
 	return &http.Client{
-		Timeout: 30 * time.Second,
-		// 禁自动重定向:WebDAV 的 3xx 不应被静默改成 GET 致误报写/删成功,也防
-		// https→http 降级携带 Basic 凭据(codex 终审)。ErrUseLastResponse 让驱动
-		// 看到原始 3xx 自行判定。
-		CheckRedirect: func(*http.Request, []*http.Request) error {
-			return http.ErrUseLastResponse
-		},
+		Timeout:       30 * time.Second,
+		CheckRedirect: webdavCheckRedirect,
 	}
+}
+
+// webdavCheckRedirect 控制跟随策略：
+//   - 仅 GET 跟随（OpenList 网盘代理常 302 到预签名直链；直链上 HEAD 常 403）
+//   - HEAD/PUT/DELETE/MKCOL 不跟随（HEAD 302 由 headSize/Exists 本地解释；写 3xx 不当成功）
+//   - 跟随前去掉 Authorization，避免 Basic 泄漏到对象存储（含同 host 不同端口）
+func webdavCheckRedirect(req *http.Request, via []*http.Request) error {
+	if len(via) >= 10 {
+		return fmt.Errorf("webdav: stopped after %d redirects", len(via))
+	}
+	if via[0].Method != http.MethodGet {
+		return http.ErrUseLastResponse
+	}
+	req.Header.Del("Authorization")
+	return nil
 }
 
 // encodePath 按 / 分段 url.PathEscape,保留层级分隔。
@@ -206,7 +216,13 @@ func statusError(op string, code int, snippet []byte) error {
 		}
 		return fmt.Errorf("webdav: %s %d 认证或权限失败: %s", op, code, msg)
 	case http.StatusNotFound:
+		// OpenList 虚根不可写、挂载路径不存在时 PUT 也常返 404（并非「对象丢了」）
+		if op == "PUT" {
+			return fmt.Errorf("%w: 路径不存在或该 WebDAV 根不可写（OpenList 请用具体挂载路径，勿用 /dav 虚根）", storage.ErrNotFound)
+		}
 		return storage.ErrNotFound
+	case http.StatusFound, http.StatusMovedPermanently, http.StatusTemporaryRedirect, http.StatusPermanentRedirect:
+		return fmt.Errorf("webdav: %s %d 未跟随重定向（写操作不跟 3xx；若读失败请升级或检查代理）", op, code)
 	case http.StatusMethodNotAllowed, http.StatusNotImplemented:
 		return fmt.Errorf("webdav: %s %d 方法不被对端支持", op, code)
 	default:
@@ -244,6 +260,10 @@ func (d *Driver) headSize(ctx context.Context, key string) (int64, bool, error) 
 		return 0, false, storage.ErrNotFound
 	case resp.StatusCode == http.StatusMethodNotAllowed || resp.StatusCode == http.StatusNotImplemented:
 		return 0, false, nil // buffer via GET
+	// OpenList：HEAD 302 到直链，直链常拒 HEAD → 改走 GET 缓冲（可跟随 302）
+	case resp.StatusCode == http.StatusFound || resp.StatusCode == http.StatusMovedPermanently ||
+		resp.StatusCode == http.StatusTemporaryRedirect || resp.StatusCode == http.StatusPermanentRedirect:
+		return 0, false, nil
 	case resp.StatusCode < 200 || resp.StatusCode >= 300:
 		return 0, false, statusError("HEAD", resp.StatusCode, nil)
 	}
@@ -303,6 +323,9 @@ func (d *Driver) Exists(ctx context.Context, key string) (bool, error) {
 		return true, nil
 	case http.StatusNotFound:
 		return false, nil
+	// 302 等到直链：对象存在（内容在 Location）
+	case http.StatusFound, http.StatusMovedPermanently, http.StatusTemporaryRedirect, http.StatusPermanentRedirect:
+		return true, nil
 	case http.StatusMethodNotAllowed, http.StatusNotImplemented:
 		// Some servers disallow HEAD — treat as unknown, probe with GET size 0 range or Exists via Open.
 		// Light probe: GET with Range bytes=0-0
