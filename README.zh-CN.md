@@ -68,9 +68,13 @@
   ([指南](docs/picgo.md))、[ShareX](docs/integrations/sharex.md) /
   [uPic](docs/integrations/upic.md)（[索引](docs/integrations/README.md)）。
 - **变换**:受控缩略 `/t/{key}?w=200|400|800`。
-- **运维（v0.6）**:管理后台 **跨策略存储搬迁**（进度/续跑/size 校验；见
+- **运维（v0.6+）**:管理后台 **跨策略存储搬迁**（进度/续跑/size 校验；见
   [docs/storage-migrate.md](docs/storage-migrate.md)）；**版本展示 + 探测更新 +
   一键二进制升级**（Docker 请换镜像）；**过期图 / 旧回收站清理**（dry-run + 确认执行）。
+- **运维控制台（v0.7）**:管理后台 **系统 / 运维**——内嵌 **doctor 健康检查**
+  （`GET /admin/system/health`）、运行时摘要、浏览器 vs `base_url` 错配（反代 CSRF）、
+  升级 preflight；设置页 **三步接入** UI 与上传页首次引导统一。反代 FAQ：
+  [docs/security-hardening.md](docs/security-hardening.md#faq-reverse-proxy-loginregister-cross-site-rejected)。
 - **细节**:中英双语界面、PWA、浅色/深色/**跟随系统**主题、文字水印(内嵌中文字体子集)、
   带审计日志与轻量运营统计的管理后台。
 
@@ -205,7 +209,8 @@ imgli doctor -config /path/to/imgli.yaml
 ```
 
 检查 data 目录可写、数据库连通、`base_url` 形态、`trust_proxy` 提示、监听地址，
-以及对已启用的 **local** 存储策略做写/读/删探针。亦见
+以及对已启用的 **local** 存储策略做写/读/删探针。**v0.7+** 管理后台 **系统 / 运维**
+页提供同源健康报告（`GET /admin/system/health`）。亦见
 [docs/security-hardening.md](docs/security-hardening.md)。
 
 ## 开发
@@ -227,11 +232,12 @@ cd web && npm run e2e   # Playwright,会先构建二进制
 - 存储矩阵：[S3](docs/s3-compatibility.md) · [WebDAV](docs/webdav-compatibility.md) · [FTP 双轨](docs/storage-ftp.md)
 - **跨策略搬迁**：[docs/storage-migrate.md](docs/storage-migrate.md)（CLI + Admin 任务）
 - **清理与 CDN 边界**：[docs/ops-cleanup-cdn-boundary.md](docs/ops-cleanup-cdn-boundary.md)
+- **反代 / CSRF**：[docs/security-hardening.md](docs/security-hardening.md#faq-reverse-proxy-loginregister-cross-site-rejected)（v0.7+ 亦可在后台「系统 / 运维」自检）
 - **OIDC 运维排错**：[docs/oidc-operator.md](docs/oidc-operator.md)
 - 迁入 imgli：`imgli import-dir`（本地目录 → 上传 API）
 - 机审抽检路径：[docs/moderation-spot-check.md](docs/moderation-spot-check.md)
 - 公开 Roadmap 镜像：[ROADMAP.md](ROADMAP.md)（执行面 = GitHub Issues）
-- 产品站 / 演示：[imgli.com](https://imgli.com) · [img.li](https://img.li)
+- 产品文档：[docs.imgli.com](https://docs.imgli.com) · 产品站 / 演示：[imgli.com](https://imgli.com) · [img.li](https://img.li)
 - 截图：[docs/screenshots/](docs/screenshots/)
 
 ## 许可

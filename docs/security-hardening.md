@@ -110,7 +110,9 @@ Origin and Host both stay `http://IP:port`.
    forwarded headers).
 
 Optional check: `imgli doctor` warns when `base_url` is still localhost-shaped;
-it does not print this exact error string.
+it does not print this exact error string. **v0.7+** admins can also open
+**System / Ops** in the console (`GET /api/v1/admin/system/health`) for the same
+checks plus a browser vs `base_url` mismatch banner.
 
 ## Content safety
 

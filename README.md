@@ -75,11 +75,16 @@ verify upstream docs before migrating.
   [ShareX](docs/integrations/sharex.md) / [uPic](docs/integrations/upic.md)
   ([index](docs/integrations/README.md)).
 - **Transforms** — controlled thumbnails via `/t/{key}?w=200|400|800`.
-- **Ops (v0.6)** — admin **cross-policy storage migrate** (progress / resume /
+- **Ops (v0.6+)** — admin **cross-policy storage migrate** (progress / resume /
   size check; [docs/storage-migrate.md](docs/storage-migrate.md)); **version
   display + GitHub update probe + one-click binary upgrade** (Docker = image
   redeploy); **lifecycle cleanup** dry-run + confirm for expired images and
   aged trash.
+- **Ops console (v0.7)** — admin **System / Ops** page: in-app **doctor** health
+  report (`GET /admin/system/health`), runtime summary, browser vs `base_url`
+  mismatch (reverse-proxy CSRF), upgrade preflight; unified **three-step setup**
+  UI for API Token onboarding. Reverse-proxy FAQ:
+  [docs/security-hardening.md](docs/security-hardening.md#faq-reverse-proxy-loginregister-cross-site-rejected).
 - **Polish** — bilingual UI (中文/English), PWA, light/dark/**system** theme,
   text watermark (embedded CJK font subset), admin dashboard with audit logs
   and light ops analytics.
@@ -215,7 +220,9 @@ imgli doctor -config /path/to/imgli.yaml
 
 Checks data directory writability, database connectivity, `base_url` shape,
 `trust_proxy` guidance, listen address, and enabled **local** storage policies
-(write/read/delete probe). See also [docs/security-hardening.md](docs/security-hardening.md).
+(write/read/delete probe). **v0.7+** also surfaces the same doctor report in
+admin **System / Ops** (`GET /admin/system/health`). See also
+[docs/security-hardening.md](docs/security-hardening.md).
 
 ## Development
 
@@ -236,11 +243,12 @@ Changelog: [CHANGELOG.md](CHANGELOG.md). Security: [SECURITY.md](SECURITY.md) ·
 - Storage matrices: [S3](docs/s3-compatibility.md) · [WebDAV](docs/webdav-compatibility.md) · [FTP dual-track](docs/storage-ftp.md)
 - **Storage migrate (ops):** [docs/storage-migrate.md](docs/storage-migrate.md) — CLI + Admin job
 - **Cleanup vs CDN:** [docs/ops-cleanup-cdn-boundary.md](docs/ops-cleanup-cdn-boundary.md)
+- **Reverse proxy / CSRF:** [docs/security-hardening.md](docs/security-hardening.md#faq-reverse-proxy-loginregister-cross-site-rejected) (admin System/Ops health in v0.7+)
 - **OIDC troubleshooting:** [docs/oidc-operator.md](docs/oidc-operator.md)
 - Migration into imgli: `imgli import-dir` (folder → upload API)
 - Moderation operator path: [docs/moderation-spot-check.md](docs/moderation-spot-check.md)
 - Public roadmap mirror: [ROADMAP.md](ROADMAP.md) (execution = GitHub Issues)
-- Product site / demo: [imgli.com](https://imgli.com) · [img.li](https://img.li)
+- Product docs: [docs.imgli.com](https://docs.imgli.com) · site / demo: [imgli.com](https://imgli.com) · [img.li](https://img.li)
 - Screenshots: [docs/screenshots/](docs/screenshots/)
 
 ## License
