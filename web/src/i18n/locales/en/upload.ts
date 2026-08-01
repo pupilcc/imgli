@@ -89,7 +89,7 @@ export default {
   errResponseFormat: 'Invalid response format',
   errNetwork: 'Network error, please check your connection',
   errAborted: 'Cancelled',
-  onboardingKicker: 'Three steps',
+  onboardingKicker: 'THREE-STEP SETUP',
   onboardingStep1: 'Create an API token in Settings',
   onboardingStep2: 'Copy the PicGo / ShareX / CLI snippet',
   onboardingStep3: 'Come back here and upload a test image',
