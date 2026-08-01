@@ -25,6 +25,7 @@
   border-radius: 2px;
   margin: 8px 0 12px;
   overflow-x: auto;
+  white-space: pre-wrap;
 }
 .bannerActions {
   display: flex;
