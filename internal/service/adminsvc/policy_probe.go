@@ -1,10 +1,13 @@
 package adminsvc
 
 import (
+	"context"
 	"errors"
 	"strings"
+	"time"
 
 	"github.com/yixian-huang/imgli/internal/storage"
+	"github.com/yixian-huang/imgli/internal/storage/webdav"
 )
 
 // 探针错误只做「可读的一句话」：动作 + 关键路径/地址 + 底层原因 + 可选短建议。
@@ -74,6 +77,28 @@ func formatRemoteProbeErr(action, driver, endpoint string, cause error) error {
 		b.WriteString(h)
 	}
 	return &probeMsgError{msg: b.String(), cause: cause}
+}
+
+// formatWebDAVWriteProbeErr 写入失败时尝试 Depth:1 探测可写挂载（P0 文案 + P1 枚举）。
+func formatWebDAVWriteProbeErr(endpoint string, cfg map[string]string, cause error) error {
+	base := formatRemoteProbeErr("写入探针失败", "webdav", endpoint, cause)
+	msg := base.Error()
+
+	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
+	defer cancel()
+	hints, derr := webdav.DiscoverWritableMounts(ctx, cfg, 8)
+	if derr == nil && len(hints) > 0 {
+		if s := webdav.FormatWritableHints(hints); s != "" {
+			msg = msg + "。" + s
+			return &probeMsgError{msg: msg, cause: cause}
+		}
+	}
+	// 无建议时补 OpenList 虚根说明（避免只有 object not found）
+	if errors.Is(cause, storage.ErrNotFound) ||
+		(cause != nil && (strings.Contains(cause.Error(), "404") || strings.Contains(cause.Error(), "不可写") || strings.Contains(cause.Error(), "虚根"))) {
+		msg = msg + "。" + webdav.HintVirtualRoot()
+	}
+	return &probeMsgError{msg: msg, cause: cause}
 }
 
 func formatProbeMsg(action string, cause error) error {

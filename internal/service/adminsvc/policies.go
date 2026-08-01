@@ -523,6 +523,9 @@ func (s *Service) TestPolicy(id uint64) (int64, error) {
 		probeKey := remoteProbePrefix + randSuffix(8)
 		content := []byte(randSuffix(16))
 		if err := d.Put(ctx, probeKey, bytes.NewReader(content)); err != nil {
+			if p.Driver == "webdav" {
+				return 0, formatWebDAVWriteProbeErr(ep, p.Config, err)
+			}
 			return 0, formatRemoteProbeErr("写入探针失败", p.Driver, ep, err)
 		}
 		rc, err := d.Open(ctx, probeKey)

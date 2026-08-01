@@ -51,3 +51,20 @@ func TestFormatRemoteProbeErr(t *testing.T) {
 		t.Fatalf("unwrap: %v", err)
 	}
 }
+
+func TestFormatWebDAVWriteProbeErrVirtualRootHint(t *testing.T) {
+	// 不可达 endpoint：无挂载建议，但 404/not found 应带虚根说明
+	err := formatWebDAVWriteProbeErr("https://example.invalid/dav", map[string]string{
+		"endpoint": "http://127.0.0.1:1",
+		"username": "u",
+		"password": "p",
+	}, storage.ErrNotFound)
+	s := err.Error()
+	if !strings.Contains(s, "写入探针失败") {
+		t.Fatalf("msg=%s", s)
+	}
+	// Discover 失败时仍应有 OpenList 虚根提示
+	if !strings.Contains(s, "OpenList") && !strings.Contains(s, "虚根") && !strings.Contains(s, "挂载") {
+		t.Fatalf("want virtual-root hint, got %s", s)
+	}
+}
