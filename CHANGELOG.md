@@ -10,15 +10,19 @@ separate version in `go.mod` or `web/package.json`.
 
 ## [Unreleased]
 
+## [0.7.0] - 2026-08-01
+
+Theme: **Ops Console · Health · Deploy** — admin-visible self-host diagnostics, reverse-proxy clarity, unified three-step setup UI.
+
 ### Added
 
-- **Admin system health (v0.7 H1/H2):** `GET /api/v1/admin/system/health` returns doctor checks (same as CLI `imgli doctor`) plus read-only runtime summary (`base_url`, `trust_proxy`, listen, install shape, request Host / forwarded headers). (#74, #75)
-- **Admin System / Ops page:** health table, browser vs `base_url` mismatch banner (reverse-proxy CSRF), first-run checklist, version upgrade with preflight notes, lifecycle cleanup UI, links to migrate/backup. Nav **系统 / 运维**. (#74–#78)
+- **Admin system health (H1/H2):** `GET /api/v1/admin/system/health` returns doctor checks (same as CLI `imgli doctor`) plus read-only runtime summary (`base_url`, `trust_proxy`, listen, install shape, request Host / forwarded headers). (#74, #75, #80)
+- **Admin System / Ops page:** health table, browser vs `base_url` mismatch banner (reverse-proxy CSRF), first-run checklist, version upgrade with preflight notes, lifecycle cleanup UI, links to migrate/backup. Nav **系统 / 运维**. (#74–#78, #80)
 
 ### Changed
 
-- **Docs:** reverse-proxy CSRF FAQ in README / security-hardening; product FAQ on docs.imgli.com; ROADMAP Next → v0.7.0 milestone.
-- **Docs:** README (en/zh) features + docs map for v0.6 ops (migrate, version upgrade, cleanup); design migrate draft marks M1/M3 shipped; product site imgli.com SEO/identity refreshed.
+- **Onboarding UI:** shared `StepGuide` for upload first-run and Settings → API Token “three-step setup” (console design language: mono kicker, numbered steps, shared buttons). (#81)
+- **Docs:** reverse-proxy CSRF FAQ in README / security-hardening and product FAQ (docs.imgli.com); ROADMAP points at v0.7.0 milestone.
 
 ## [0.6.0] - 2026-07-31
 
@@ -220,7 +224,8 @@ Theme: **Workflow & Trust** — CLI/integrations, share landing, privacy
 - Bilingual UI (中文/English), PWA, dark mode, text watermark, admin audit logs.
 - Docker Compose quick start and GitHub Actions CI (Go matrix, web, e2e smoke).
 
-[Unreleased]: https://github.com/yixian-huang/imgli/compare/v0.6.0...HEAD
+[Unreleased]: https://github.com/yixian-huang/imgli/compare/v0.7.0...HEAD
+[0.7.0]: https://github.com/yixian-huang/imgli/compare/v0.6.0...v0.7.0
 [0.6.0]: https://github.com/yixian-huang/imgli/compare/v0.5.1...v0.6.0
 [0.5.1]: https://github.com/yixian-huang/imgli/compare/v0.5.0...v0.5.1
 [0.5.0]: https://github.com/yixian-huang/imgli/compare/v0.4.1...v0.5.0
