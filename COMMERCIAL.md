@@ -37,7 +37,7 @@ or enterprise agreement — not in this file.
 
 ## How to inquire
 
-Contact: **issen.dev@gmail.com**  
+Contact: **yixian.huang.cn@gmail.com**  
 Subject: `imgli commercial license`
 
 Please include:
