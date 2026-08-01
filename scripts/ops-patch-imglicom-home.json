@@ -1,22 +1,58 @@
 {
   "hero": {
-    "eyebrow": { "zh": "开源图床", "en": "Open source" },
+    "eyebrow": { "zh": "开源图床 · v0.7", "en": "Open source · v0.7" },
+    "badge": { "zh": "AGPL · 自托管", "en": "AGPL · self-hosted" },
     "title": {
       "zh": "自托管图床，一跃成链",
       "en": "Self-hosted image hosting — one leap to a link"
     },
     "subtitle": {
-      "zh": "imgli 是 Go 单二进制多用户图床，内嵌 React。公共实例 img.li 供轻量试用（约 1GB 存储 / 5GB 月流量，非无限 CDN）；主路径是你自己部署。",
-      "en": "imgli is a single-binary multi-user image host in Go with embedded React. img.li is a limited public trial (~1GB storage / 5GB monthly bandwidth — not free CDN); the main path is self-hosting."
+      "zh": "imgli 是 Go 单二进制多用户图床，内嵌 React。支持本地/S3/WebDAV、机审、口令分享，以及 v0.7 管理后台「系统 / 运维」健康检查。公共实例 img.li 供轻量试用（约 1GB 存储 / 5GB 月流量，非无限 CDN）；主路径是你自己部署。",
+      "en": "imgli is a single-binary multi-user image host in Go with embedded React. Local/S3/WebDAV, moderation, password shares, and a v0.7 admin System/Ops health console. img.li is a capped public trial (~1GB storage / 5GB monthly bandwidth — not free CDN); the main path is self-hosting."
     },
     "primaryCta": {
       "label": { "zh": "打开演示 img.li", "en": "Open demo img.li" },
       "href": "https://img.li"
     },
     "secondaryCta": {
-      "label": { "zh": "GitHub 源码", "en": "GitHub" },
-      "href": "https://github.com/yixian-huang/imgli"
+      "label": { "zh": "阅读文档", "en": "Read the docs" },
+      "href": "https://docs.imgli.com"
+    },
+    "media": {
+      "url": "/uploads/1785558465466551358-01-upload.png",
+      "alt": { "zh": "imgli 上传界面", "en": "imgli upload UI" },
+      "caption": { "zh": "上传与直链一站完成", "en": "Upload and get links in one place" }
     }
+  },
+  "showcase": {
+    "title": { "zh": "产品界面", "en": "Product interface" },
+    "items": [
+      {
+        "url": "/uploads/1785558475184867393-02-library.png",
+        "alt": { "zh": "图库", "en": "Library" },
+        "caption": { "zh": "图库与批量管理", "en": "Library & batch actions" }
+      },
+      {
+        "url": "/uploads/1785558484963228607-03-share.png",
+        "alt": { "zh": "分享页", "en": "Share page" },
+        "caption": { "zh": "分享与口令访问", "en": "Share & password access" }
+      },
+      {
+        "url": "/uploads/1785558485357477414-04-api-tokens.png",
+        "alt": { "zh": "API Token", "en": "API tokens" },
+        "caption": { "zh": "三步接入客户端", "en": "Three-step client setup" }
+      },
+      {
+        "url": "/uploads/1785558668690714933-05-admin.png",
+        "alt": { "zh": "管理后台", "en": "Admin console" },
+        "caption": { "zh": "系统 / 运维健康台", "en": "System / Ops health" }
+      },
+      {
+        "url": "/uploads/1785558669119700723-06-image-detail.png",
+        "alt": { "zh": "图片详情", "en": "Image detail" },
+        "caption": { "zh": "详情与链接格式", "en": "Detail & link formats" }
+      }
+    ]
   },
   "features": {
     "title": { "zh": "为什么选 imgli", "en": "Why imgli" },
@@ -48,6 +84,20 @@
           "zh": "干净上传 API + Token；PicGo / ShareX / uPic / CLI 开箱。",
           "en": "Clean upload API + tokens; PicGo / ShareX / uPic / CLI ready."
         }
+      },
+      {
+        "title": { "zh": "运维控制台", "en": "Ops console" },
+        "description": {
+          "zh": "v0.7 管理后台「系统 / 运维」：doctor 健康检查、base_url / 反代错配提示、升级与清理入口。",
+          "en": "v0.7 admin System/Ops: doctor health checks, base_url / reverse-proxy mismatch hints, upgrade & cleanup."
+        }
+      },
+      {
+        "title": { "zh": "搬迁与升级", "en": "Migrate & upgrade" },
+        "description": {
+          "zh": "跨策略存储搬迁任务、版本探测与一键二进制升级（Docker 请换镜像）。",
+          "en": "Cross-policy storage migrate jobs, version probe, one-click binary upgrade (Docker: redeploy image)."
+        }
       }
     ]
   },
@@ -57,39 +107,39 @@
       {
         "title": { "zh": "一键安装二进制", "en": "Install the binary" },
         "description": {
-          "zh": "Linux / macOS 用 install.sh 拉最新 Release。详见文档「安装」。",
-          "en": "Linux / macOS: install.sh pulls the latest Release. See docs → Install."
+          "zh": "Linux / macOS 用 install.sh 拉 v0.7.0 Release。详见文档「安装」。",
+          "en": "Linux / macOS: install.sh pulls the v0.7.0 Release. See docs → Install."
         }
       },
       {
         "title": { "zh": "启动服务", "en": "Serve" },
         "description": {
-          "zh": "imgli serve 后打开本机端口；首位注册用户即管理员。见文档「配置」。",
-          "en": "Run imgli serve; first registered user is admin. See docs → Configuration."
+          "zh": "imgli serve 后打开本机端口；首位注册用户即管理员。生产请设 IMGLI_BASE_URL 为公网 https 源。",
+          "en": "Run imgli serve; first registered user is admin. In production set IMGLI_BASE_URL to your public https origin."
         }
       },
       {
         "title": { "zh": "对接客户端", "en": "Connect clients" },
         "description": {
-          "zh": "创建 API Token，用 PicGo 等上传。对接说明见文档。",
-          "en": "Create an API token and upload via PicGo. See docs for integrations."
+          "zh": "设置 → API Token 按「三步接入」生成 Token，复制 PicGo / CLI 片段并试传。",
+          "en": "Settings → API Token: follow three-step setup, copy PicGo / CLI snippets, upload a test image."
         }
       }
     ]
   },
   "install": {
     "title": { "zh": "快速开始", "en": "Quick start" },
-    "code": "curl -fsSL https://raw.githubusercontent.com/yixian-huang/imgli/main/scripts/install.sh | sh\nimgli serve\n# → http://localhost:8686",
+    "code": "curl -fsSL https://raw.githubusercontent.com/yixian-huang/imgli/main/scripts/install.sh | sh -s -- v0.7.0\nimgli serve\n# → http://localhost:8686",
     "caption": {
-      "zh": "完整安装、升级与配置见 docs.imgli.com；也可用 Docker：ghcr.io/yixian-huang/imgli:latest。",
-      "en": "Full install, upgrade, and config: docs.imgli.com. Docker: ghcr.io/yixian-huang/imgli:latest."
+      "zh": "完整安装、升级与配置见 docs.imgli.com；Docker：ghcr.io/yixian-huang/imgli:v0.7.0。",
+      "en": "Full install, upgrade, and config: docs.imgli.com. Docker: ghcr.io/yixian-huang/imgli:v0.7.0."
     }
   },
   "bottomCta": {
     "title": { "zh": "先试用，再自托管", "en": "Try the demo, then self-host" },
     "subtitle": {
-      "zh": "img.li 是限额公共实例（约 1GB / 5GB 月流）；安装与配置文档在 docs.imgli.com；代码在 GitHub（欢迎 Star）。",
-      "en": "img.li is a capped public instance (~1GB / 5GB monthly bandwidth); docs at docs.imgli.com; code on GitHub (stars welcome)."
+      "zh": "img.li 是限额公共实例（约 1GB / 5GB 月流）；文档在 docs.imgli.com；代码在 GitHub。商业授权咨询：yixian.huang.cn@gmail.com。",
+      "en": "img.li is a capped public instance (~1GB / 5GB monthly bandwidth); docs at docs.imgli.com; code on GitHub. Commercial licensing: yixian.huang.cn@gmail.com."
     },
     "primaryCta": {
       "label": { "zh": "打开 img.li", "en": "Open img.li" },
