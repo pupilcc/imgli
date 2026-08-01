@@ -24,6 +24,7 @@ export default {
   groups: '用户组',
   invites: '邀请码',
   policies: '存储策略',
+  systemOps: '系统 / 运维',
   systemSettings: '系统设置',
   logs: '操作日志',
   tabUpload: '上传',

@@ -58,6 +58,62 @@ export function useSystemUpgrade() {
   })
 }
 
+export type DoctorLevel = 'ok' | 'warn' | 'fail' | string
+
+export interface SystemHealth {
+  doctor: {
+    hard_fail: boolean
+    checks: { name: string; level: DoctorLevel; message: string }[]
+  }
+  runtime: {
+    version: string
+    base_url: string
+    trust_proxy: boolean
+    listen: string
+    data_dir: string
+    install: 'binary' | 'docker' | string
+    request_host: string
+    forwarded_proto?: string
+    forwarded_for_set?: boolean
+  }
+}
+
+export function useSystemHealth() {
+  return useQuery({
+    queryKey: queryKeys.admin.systemHealth,
+    queryFn: () => api<SystemHealth>('/admin/system/health'),
+    staleTime: 15_000,
+  })
+}
+
+export interface CleanupPreviewItem {
+  kind: string
+  count: number
+  samples?: string[]
+}
+
+export interface CleanupRunItem {
+  kind: string
+  deleted?: number
+  errors?: number
+}
+
+export function useCleanupPreview() {
+  return useMutation({
+    mutationFn: (body: { kinds: string[] }) =>
+      post<{ items: CleanupPreviewItem[] }>('/admin/cleanup/preview', body),
+    onError: toastApiError,
+  })
+}
+
+export function useCleanupRun() {
+  return useMutation({
+    mutationFn: (body: { kinds: string[]; limit?: number; confirm: boolean }) =>
+      post<{ items: CleanupRunItem[] }>('/admin/cleanup/run', body),
+    onError: toastApiError,
+  })
+}
+
 export function useAdminRefererImages(host: string | null, days = 30) {
   const p = new URLSearchParams()
   if (host) p.set('host', host)

@@ -16,6 +16,7 @@ const NAV = [
   { to: '/admin/groups', glyph: '◫', key: 'groups' as const },
   { to: '/admin/invites', glyph: '◇', key: 'invites' as const },
   { to: '/admin/policies', glyph: '▤', key: 'policies' as const },
+  { to: '/admin/system', glyph: '◎', key: 'systemOps' as const },
   { to: '/admin/settings', glyph: '⚙', key: 'systemSettings' as const },
   { to: '/admin/logs', glyph: '≡', key: 'logs' as const },
 ]
