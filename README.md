@@ -152,12 +152,27 @@ Precedence: defaults → YAML file (`imgli serve -config imgli.yaml`, see
 | Env | Default | Meaning |
 |---|---|---|
 | `IMGLI_LISTEN` | `:8686` | Listen address |
-| `IMGLI_BASE_URL` | `http://localhost:8686` | Public base URL used in generated links |
+| `IMGLI_BASE_URL` | `http://localhost:8686` | Public origin (generated links/emails, `Secure` cookies, CSRF Origin allowlist for browser cookie auth); must match the browser URL |
 | `IMGLI_DATA_DIR` | `./data` | Local storage + SQLite directory |
 | `IMGLI_DATABASE_DRIVER` | `sqlite` | `sqlite` \| `postgres` |
 | `IMGLI_DATABASE_DSN` | `<data_dir>/imgli.db` | DSN when using postgres |
 | `IMGLI_TRUST_PROXY` | `false` | Trust `X-Forwarded-For` (behind a trusted reverse proxy only) |
 | `IMGLI_FETCH_ALLOW` | *(empty)* | Extra hosts/CIDRs allowed for URL-fetch upload |
+
+### Reverse proxy: login/register rejected as cross-site
+
+If registration/login returns 403 with `跨站请求被拒绝` (cross-site request
+rejected) after Nginx / Caddy / Traefik / 1Panel reverse proxy, but
+`http://IP:port` works, set `IMGLI_BASE_URL` to the **exact public origin**
+users open (not the default localhost or the backend IP:port):
+
+```bash
+IMGLI_BASE_URL=https://img.example.com
+IMGLI_TRUST_PROXY=true
+```
+
+Details:
+[docs/security-hardening.md](docs/security-hardening.md#faq-reverse-proxy-loginregister-cross-site-rejected).
 
 ## Upload API
 

@@ -69,8 +69,48 @@ bucket/CDN layer.
 
 - Terminate TLS at the proxy; set `IMGLI_TRUST_PROXY=true` **only** when the
   proxy is trusted (rate limits and audit IPs depend on it).
+- Set `IMGLI_BASE_URL` (or YAML `base_url`) to the **exact public origin** users
+  type in the browser (`https://img.example.com`, no trailing path). This is
+  used for generated links/emails, `Secure` session cookies, **and** the CSRF
+  Origin allowlist for browser cookie auth.
+- Forward the original `Host` (or equivalent) and prefer
+  `X-Forwarded-Proto` / `X-Forwarded-For`. Examples:
+  [`deploy/Caddyfile.example`](../deploy/Caddyfile.example),
+  [`deploy/traefik.labels.example.yml`](../deploy/traefik.labels.example.yml),
+  [`deploy/compose.prod.example.yml`](../deploy/compose.prod.example.yml).
 - Do not expose the OCR / NSFW sidecars to the internet without IP allowlist
   and bearer token (`deploy/ocr-paddle/`).
+
+### FAQ: reverse proxy login/register (cross-site rejected)
+
+**Symptom:** After putting Nginx / Caddy / Traefik / **1Panel** (or similar) in
+front, registration and login fail with HTTP 403 and message
+`跨站请求被拒绝` (cross-site request rejected). Accessing the app via raw
+`http://IP:port` works.
+
+**Cause:** Browser POSTs send an `Origin` header (e.g. `https://your.domain`).
+imgli’s `OriginCheck` allows the write only if Origin matches either:
+
+1. `scheme://` + request `Host` (scheme is `https` only when the app itself
+   terminates TLS — **not** when TLS ends at the reverse proxy), or
+2. the origin derived from **`IMGLI_BASE_URL`**.
+
+Behind HTTPS reverse proxy the first check is often
+`http://your.domain` vs browser `https://your.domain`, so it fails. If
+`IMGLI_BASE_URL` is still the default (`http://localhost:8686`) or an IP:port
+URL, the second check fails too → 403. Direct IP:port access works because
+Origin and Host both stay `http://IP:port`.
+
+**Fix:**
+
+1. Set `IMGLI_BASE_URL=https://your.domain` (same scheme + host users open).
+2. Set `IMGLI_TRUST_PROXY=true` when the proxy is trusted.
+3. Restart the process/container.
+4. Confirm the proxy preserves the public host (and does not strip needed
+   forwarded headers).
+
+Optional check: `imgli doctor` warns when `base_url` is still localhost-shaped;
+it does not print this exact error string.
 
 ## Content safety
 

@@ -143,12 +143,27 @@ make build          # 需要 Go ≥ 1.26、Node ≥ 24
 | 环境变量 | 默认 | 含义 |
 |---|---|---|
 | `IMGLI_LISTEN` | `:8686` | 监听地址 |
-| `IMGLI_BASE_URL` | `http://localhost:8686` | 生成外链的基础地址 |
+| `IMGLI_BASE_URL` | `http://localhost:8686` | 公网访问源（生成外链/邮件、`Secure` Cookie、浏览器写请求的 CSRF Origin 白名单）；须与浏览器地址一致 |
 | `IMGLI_DATA_DIR` | `./data` | 本地存储与 SQLite 目录 |
 | `IMGLI_DATABASE_DRIVER` | `sqlite` | `sqlite` \| `postgres` |
 | `IMGLI_DATABASE_DSN` | `<data_dir>/imgli.db` | postgres 时的 DSN |
 | `IMGLI_TRUST_PROXY` | `false` | 信任 `X-Forwarded-For`(仅在可信反代后开) |
 | `IMGLI_FETCH_ALLOW` | *(空)* | URL 抓取上传额外放行的 host/CIDR |
+
+### 反代后无法注册/登录（「跨站请求被拒绝」）
+
+用 1Panel / Nginx / Caddy 等反代到域名后，登录注册 403 提示「跨站请求被拒绝」，
+而 `http://IP:端口` 正常——通常是 **`IMGLI_BASE_URL` 仍是 localhost 或 IP 端口**，
+与浏览器里的 `https://你的域名` 不一致。TLS 在反代终止时，应用侧无法仅靠
+`Host` 判定 HTTPS 同源，**必须**把 base 设成用户实际访问的公网源，例如：
+
+```bash
+IMGLI_BASE_URL=https://img.example.com
+IMGLI_TRUST_PROXY=true
+```
+
+原因与检查清单见
+[docs/security-hardening.md](docs/security-hardening.md#faq-reverse-proxy-loginregister-cross-site-rejected)。
 
 ## 上传 API
 
