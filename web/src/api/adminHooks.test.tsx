@@ -145,7 +145,9 @@ it('useDeleteAdminImage 成功后同时失效 images 与 review-count', async ()
 })
 
 it('usePurgeAdminImage 请求 permanent=1', async () => {
-  const fetchMock = vi.fn(() => Promise.resolve(jsonRes(env({ key: 'k1', deleted: true, permanent: true }))))
+  const fetchMock = vi.fn((_url: RequestInfo | URL, _init?: RequestInit) =>
+    Promise.resolve(jsonRes(env({ key: 'k1', deleted: true, permanent: true }))),
+  )
   vi.stubGlobal('fetch', fetchMock)
   const { Wrapper } = wrap()
   const { result } = renderHook(() => usePurgeAdminImage(), { wrapper: Wrapper })
