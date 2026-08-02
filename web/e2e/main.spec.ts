@@ -47,8 +47,8 @@ test('主干：注册→上传→复制→删除→回收站恢复→彻底删�
   // 再删 → 彻底删除 → 空态
   const card2 = page.locator('main [class*=card]').first()
   await card2.hover()
-  await card2.getByTitle('删除').click()
-  await card2.getByTitle('确认删除').click()
+  await card2.getByTitle('移入回收站').click()
+  await card2.getByTitle('确认移入回收站').click()
   await page.goto('/trash')
   await page.getByRole('button', { name: '彻底删除' }).click()
   await page.getByRole('button', { name: '确认删除？' }).click()
