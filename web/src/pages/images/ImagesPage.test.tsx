@@ -117,9 +117,9 @@ it('hover 删除是两击确认，PATCH 可见性走接口', async () => {
     expect(patchCall).toBeTruthy()
     expect(JSON.parse((patchCall![1] as RequestInit).body as string)).toEqual({ visibility: 'private' })
   })
-  fireEvent.click(screen.getByTitle('删除'))
+  fireEvent.click(screen.getByTitle('移入回收站'))
   expect(f.mock.calls.find((c) => (c[1] as RequestInit)?.method === 'DELETE')).toBeFalsy()
-  fireEvent.click(screen.getByTitle('确认删除'))
+  fireEvent.click(screen.getByTitle('确认移入回收站'))
   await waitFor(() => {
     expect(f.mock.calls.find((c) => (c[1] as RequestInit)?.method === 'DELETE')).toBeTruthy()
   })

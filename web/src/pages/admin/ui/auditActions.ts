@@ -8,6 +8,7 @@ const ACTION_I18N: Record<string, string> = {
   review_approve: 'adminB.actReviewApprove',
   review_reject: 'adminB.actReviewReject',
   image_admin_delete: 'adminB.actImageAdminDelete',
+  image_admin_purge: 'adminB.actImageAdminPurge',
   image_whitelist: 'adminB.actImageWhitelist',
   group_create: 'adminB.actGroupCreate',
   group_update: 'adminB.actGroupUpdate',
@@ -49,7 +50,7 @@ export const ACTION_LABELS: Record<string, string> = new Proxy({} as Record<stri
   },
 })
 
-const RED = new Set(['review_reject', 'image_admin_delete', 'group_delete', 'policy_delete', 'user_ban', 'invite_revoke'])
+const RED = new Set(['review_reject', 'image_admin_delete', 'image_admin_purge', 'group_delete', 'policy_delete', 'user_ban', 'invite_revoke'])
 const GREEN = new Set(['review_approve', 'group_create', 'policy_create', 'invite_create'])
 const WARN = new Set(['moderation_flag'])
 

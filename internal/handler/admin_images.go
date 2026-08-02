@@ -8,6 +8,7 @@ import (
 	"github.com/go-chi/chi/v5"
 
 	"github.com/yixian-huang/imgli/internal/service/adminsvc"
+	"github.com/yixian-huang/imgli/internal/service/imagesvc"
 )
 
 const (
@@ -21,7 +22,8 @@ func (h *AdminHandlers) adminImageItemDTO(row *adminsvc.ImageRow) AdminImageItem
 	return adminImageItemDTOFrom(row, h.D.Res.LinkBase(&row.Policy))
 }
 
-// Images GET /api/v1/admin/images?user=&status=&policy=&page=&limit=
+// Images GET /api/v1/admin/images?user=&status=&policy=&deleted=&page=&limit=
+// deleted: 空|live=在线；trash=回收站；all=全部。
 func (h *AdminHandlers) Images(w http.ResponseWriter, r *http.Request) {
 	query := r.URL.Query()
 	page, limit := ParsePage(r, imagesDefaultPage, imagesDefaultLimit, imagesMaxLimit)
@@ -44,7 +46,14 @@ func (h *AdminHandlers) Images(w http.ResponseWriter, r *http.Request) {
 			policyID = n
 		}
 	}
-	rows, total, err := h.D.Adm.ListImages(userID, status, policyID, page, limit)
+	deleted := query.Get("deleted")
+	switch deleted {
+	case "", "live", "trash", "all":
+	default:
+		Fail(w, http.StatusBadRequest, CodeInvalidRequest, "deleted 仅支持 live|trash|all")
+		return
+	}
+	rows, total, err := h.D.Adm.ListImages(userID, status, policyID, deleted, page, limit)
 	if err != nil {
 		Fail(w, http.StatusInternalServerError, CodeInternal, "服务器内部错误")
 		return
@@ -56,16 +65,64 @@ func (h *AdminHandlers) Images(w http.ResponseWriter, r *http.Request) {
 	OK(w, map[string]any{"items": items, "total": total, "page": page, "limit": limit})
 }
 
-// DeleteImage DELETE /api/v1/admin/images/{key} —— 软删进属主回收站，原直链转 410。
+// DeleteImage DELETE /api/v1/admin/images/{key}[?permanent=1]
+//
+// 默认软删进属主回收站（原直链 410，物理对象仍保留，30 天内可恢复）。
+// 游客图（无属主）没有回收站，默认即彻底删除。
+// permanent=1|true：彻底删除（硬删 DB + 引用归零后投递 delete_file 清存储）。
 func (h *AdminHandlers) DeleteImage(w http.ResponseWriter, r *http.Request) {
 	key := chi.URLParam(r, "key")
+	permanent := r.URL.Query().Get("permanent") == "1" || r.URL.Query().Get("permanent") == "true"
+	actor := PrincipalFrom(r).User
+
+	// 游客 live 图：无属主回收站，强制彻底删除（即使未传 permanent）。
+	if !permanent && h.D.Img != nil {
+		if row, err := h.D.Adm.GetImageRow(key); err == nil && row.Img.UserID == nil {
+			permanent = true
+		}
+	}
+
+	if permanent {
+		if h.D.Img == nil {
+			Fail(w, http.StatusInternalServerError, CodeInternal, "服务器内部错误")
+			return
+		}
+		res, err := h.D.Img.AdminPurge(key)
+		switch {
+		case err == nil:
+			h.D.Adm.Audit(&actor.ID, "admin", "image_admin_purge",
+				map[string]any{
+					"key":             key,
+					"permanent":       true,
+					"owner_id":        res.OwnerID,
+					"policy_id":       res.PolicyID,
+					"path":            res.Path,
+					"physical_queued": res.PhysicalQueued,
+					"object_retained": res.ObjectRetained,
+				}, ClientIP(r))
+			OK(w, map[string]any{
+				"key":             key,
+				"deleted":         true,
+				"permanent":       true,
+				"physical_queued": res.PhysicalQueued,
+				"object_retained": res.ObjectRetained,
+				"policy_id":       res.PolicyID,
+				"path":            res.Path,
+			})
+		case errors.Is(err, imagesvc.ErrNotFound):
+			Fail(w, http.StatusNotFound, CodeNotFound, "图片不存在")
+		default:
+			Fail(w, http.StatusInternalServerError, CodeInternal, "服务器内部错误")
+		}
+		return
+	}
+
 	img, err := h.D.Adm.AdminSoftDelete(key)
 	switch {
 	case err == nil:
-		actor := PrincipalFrom(r).User
 		h.D.Adm.Audit(&actor.ID, "admin", "image_admin_delete",
-			map[string]any{"key": key, "owner_id": img.UserID}, ClientIP(r))
-		OK(w, map[string]any{"key": key, "deleted": true})
+			map[string]any{"key": key, "owner_id": img.UserID, "permanent": false}, ClientIP(r))
+		OK(w, map[string]any{"key": key, "deleted": true, "permanent": false})
 	case errors.Is(err, adminsvc.ErrImageNotFound):
 		Fail(w, http.StatusNotFound, CodeNotFound, "图片不存在")
 	default:

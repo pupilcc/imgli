@@ -63,11 +63,14 @@ func (s *Service) purgeOne(tx *gorm.DB, img *model.Image) (*physicalDelete, erro
 	return nil, nil
 }
 
-func (s *Service) enqueuePhysical(pd *physicalDelete) {
+// enqueuePhysical 投递原图 + 缩略键的 delete_file 任务。
+// 返回 true 表示至少成功入队一条；pd==nil 或 runner 未注入时 false。
+func (s *Service) enqueuePhysical(pd *physicalDelete) bool {
 	if pd == nil || s.run == nil {
-		return
+		return false
 	}
 	keys := append([]string{pd.path}, pd.thumbs...)
+	queued := false
 	for _, key := range keys {
 		if key == "" {
 			continue
@@ -75,14 +78,22 @@ func (s *Service) enqueuePhysical(pd *physicalDelete) {
 		payload, _ := json.Marshal(map[string]any{"policy_id": pd.policyID, "key": key})
 		if err := s.run.Enqueue("delete_file", string(payload)); err != nil {
 			slog.Error("投递物理删除失败", "policy_id", pd.policyID, "key", key, "err", err)
+			continue
 		}
+		queued = true
 	}
+	return queued
 }
 
-// DeleteUserData 注销级联:单事务硬删该用户全部图片(先把 live 图软删,复用
-// purgeOne 的幂等门禁与引用计数)、相册、API token、auth token、session、用户行。
-// 物理文件删除在事务提交后投递(归零 file 才删,秒传共享文件安全)。
-// 不依赖 DB 级 CASCADE——存量 SQLite 库无外键约束(⑤a 裁决),关联表显式删。
+// PurgeResult 管理端/运维彻底删除结果（API 与 audit 共用）。
+type PurgeResult struct {
+	Key            string
+	OwnerID        *uint64
+	PolicyID       uint64
+	Path           string
+	PhysicalQueued bool // 至少一条 delete_file 入队
+	ObjectRetained bool // 秒传共享：引用未归零，物理对象保留
+}
 
 // DeleteUserData 注销级联:单事务硬删该用户全部图片(先把 live 图软删,复用
 // purgeOne 的幂等门禁与引用计数)、相册、API token、auth token、session、用户行。
@@ -132,7 +143,90 @@ func (s *Service) DeleteUserData(userID uint64) error {
 	return nil
 }
 
-// PurgePermanent 彻底删除属主的一张软删图。非属主/不在回收站→ErrNotFound。
+// AdminPurge 管理端彻底删除任意图片（不限属主；live 或已在回收站均可）。
+// live 图先软删再复用 purgeOne；物理对象在事务提交后经 delete_file 任务删除。
+// 不存在→ErrNotFound。
+func (s *Service) AdminPurge(key string) (*PurgeResult, error) {
+	var img model.Image
+	err := s.db.Unscoped().Where("key = ?", key).First(&img).Error
+	if errors.Is(err, gorm.ErrRecordNotFound) {
+		return nil, ErrNotFound
+	}
+	if err != nil {
+		return nil, err
+	}
+	// 删前快照（purgeOne 会硬删 image/file 行）
+	result := &PurgeResult{Key: key, OwnerID: img.UserID}
+	var fileSnap model.File
+	if err := s.db.First(&fileSnap, img.FileID).Error; err == nil {
+		result.PolicyID = fileSnap.StoragePolicyID
+		result.Path = fileSnap.Path
+	}
+
+	var pd *physicalDelete
+	if err := s.db.Transaction(func(tx *gorm.DB) error {
+		// live 图先条件软删，满足 purgeOne 的 deleted_at IS NOT NULL 门禁。
+		// 若并发导致 0 行且重取后仍 live（软删↔恢复竞态），再试一次软删；仍失败则报错，避免假成功。
+		if !img.DeletedAt.Valid {
+			if e := softDeleteForPurge(tx, &img); e != nil {
+				return e
+			}
+			if !img.DeletedAt.Valid {
+				// 已硬删（并发 purge）→ 幂等成功
+				return nil
+			}
+		}
+		var e error
+		pd, e = s.purgeOne(tx, &img)
+		return e
+	}); err != nil {
+		return nil, err
+	}
+	if pd != nil {
+		result.PhysicalQueued = s.enqueuePhysical(pd)
+		result.ObjectRetained = false
+	} else if fileSnap.ID != 0 {
+		// 无 physicalDelete：秒传共享未归零，或并发已 purge
+		var cnt int64
+		s.db.Model(&model.File{}).Where("id = ?", fileSnap.ID).Count(&cnt)
+		result.ObjectRetained = cnt > 0
+	}
+	return result, nil
+}
+
+// softDeleteForPurge 在 purge 事务内把 live 图置为软删并刷新 img。
+// 若行已不存在返回 nil 且 img.DeletedAt 仍 invalid（调用方当幂等 no-op）。
+// 若短暂仍 live，重试一次软删；再失败返回 error。
+func softDeleteForPurge(tx *gorm.DB, img *model.Image) error {
+	try := func() error {
+		res := tx.Where("id = ? AND deleted_at IS NULL", img.ID).Delete(&model.Image{})
+		if res.Error != nil {
+			return res.Error
+		}
+		if e := tx.Unscoped().Where("id = ?", img.ID).First(img).Error; e != nil {
+			if errors.Is(e, gorm.ErrRecordNotFound) {
+				*img = model.Image{} // 已硬删
+				return nil
+			}
+			return e
+		}
+		return nil
+	}
+	if err := try(); err != nil {
+		return err
+	}
+	if img.ID == 0 || img.DeletedAt.Valid {
+		return nil
+	}
+	// 仍 live（恢复竞态）：再试一次
+	if err := try(); err != nil {
+		return err
+	}
+	if img.ID != 0 && !img.DeletedAt.Valid {
+		return errors.New("imagesvc: 软删竞态，请重试")
+	}
+	return nil
+}
 
 // PurgePermanent 彻底删除属主的一张软删图。非属主/不在回收站→ErrNotFound。
 func (s *Service) PurgePermanent(userID uint64, key string) error {
@@ -157,8 +251,6 @@ func (s *Service) PurgePermanent(userID uint64, key string) error {
 	s.enqueuePhysical(pd)
 	return nil
 }
-
-// EmptyTrash 彻底删除属主回收站全部，返回清理张数。
 
 // EmptyTrash 彻底删除属主回收站全部，返回清理张数。
 func (s *Service) EmptyTrash(userID uint64) (int, error) {
@@ -187,8 +279,6 @@ func (s *Service) EmptyTrash(userID uint64) (int, error) {
 }
 
 // PurgeExpiredTrash 全站清理 deleted_at 超过 30 天的软删图（server 定时调用）。
-
-// PurgeExpiredTrash 全站清理 deleted_at 超过 30 天的软删图（server 定时调用）。
 func (s *Service) PurgeExpiredTrash(ctx context.Context) (int, error) {
 	cutoff := time.Now().Add(-30 * 24 * time.Hour)
 	var imgs []model.Image
@@ -212,9 +302,6 @@ func (s *Service) PurgeExpiredTrash(ctx context.Context) (int, error) {
 	}
 	return n, nil
 }
-
-// PurgeExpiredImages 物理清理到期(expires_at<now)的 live 图。过期即永久删除、回收配额,
-// 不进回收站(否则延迟 30 天回收违背回收存储初衷)。server 每小时调用。
 
 // PurgeExpiredImages 物理清理到期(expires_at<now)的 live 图。过期即永久删除、回收配额,
 // 不进回收站(否则延迟 30 天回收违背回收存储初衷)。server 每小时调用。

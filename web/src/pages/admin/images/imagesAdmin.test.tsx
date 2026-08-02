@@ -15,7 +15,9 @@ const links = {
 const img = (over: Record<string, unknown> = {}) => ({
   key: 'k1', name: 'cat.png', ext: 'png', size: 2048, visibility: 'public', status: 'normal',
   is_whitelisted: false, nsfw_score: null, username: 'ling', user_id: 2,
-  created_at: '2026-07-17T10:00:00Z', links, ...over,
+  created_at: '2026-07-17T10:00:00Z',
+  policy_id: 1, policy_name: '本地', policy_driver: 'local', surface: 'public',
+  path: 'public/2026/cat.png', in_trash: false, links, ...over,
 })
 
 let lastReq: { url: string; method: string; body: unknown } | null = null
@@ -31,8 +33,13 @@ function mockBackend(items: unknown[], opts: { pageEmptiedTotal?: number } = {})
         return Promise.resolve(jsonRes(env({ items: [{ id: 1, name: '本地', driver: 'local', config: '{}', cdn_domain: '', path_template: '', enabled: true, created_at: '', file_count: 0, used_bytes: 0 }] })))
       if (u.includes('/admin/images/') && method === 'PATCH')
         return Promise.resolve(jsonRes(env(img({ is_whitelisted: true }))))
-      if (u.includes('/admin/images/') && method === 'DELETE')
-        return Promise.resolve(jsonRes(env({ key: 'k1', deleted: true })))
+      if (u.includes('/admin/images/') && method === 'DELETE') {
+        const permanent = u.includes('permanent=1')
+        return Promise.resolve(jsonRes(env({
+          key: 'k1', deleted: true, permanent,
+          physical_queued: permanent, object_retained: false,
+        })))
+      }
       if (u.includes('/admin/images') && opts.pageEmptiedTotal != null && u.includes('page=2'))
         return Promise.resolve(jsonRes(env({ items: [], total: opts.pageEmptiedTotal, page: 2, limit: 50 })))
       if (u.includes('/admin/images'))
@@ -87,24 +94,54 @@ it('加白:hover 按钮两击确认后 PATCH is_whitelisted', async () => {
   await waitFor(() => expect(lastReq).toEqual({ url: '/api/v1/admin/images/k1', method: 'PATCH', body: { is_whitelisted: true } }))
 })
 
-it('删除:两击确认 DELETE', async () => {
+it('删除:两击确认软删 DELETE（无 permanent）', async () => {
   mockBackend([img()])
   renderPage()
   await screen.findByText('cat.png')
-  await userEvent.click(screen.getByTitle('删除'))
-  await userEvent.click(screen.getByTitle('确认删除'))
-  await waitFor(() => expect(lastReq?.method).toBe('DELETE'))
+  await userEvent.click(screen.getByTitle('移入回收站'))
+  await userEvent.click(screen.getByTitle('确认移入回收站'))
+  await waitFor(() => {
+    expect(lastReq?.method).toBe('DELETE')
+    expect(lastReq?.url).toBe('/api/v1/admin/images/k1')
+  })
 })
 
-it('详情:点卡片开 Modal 展示元信息', async () => {
+it('详情:点卡片开 Modal 展示元信息与存储定位', async () => {
   mockBackend([img({ nsfw_score: 0.42 })])
   renderPage()
   await userEvent.click(await screen.findByText('cat.png'))
   const dialog = await screen.findByRole('dialog')
   expect(dialog).toBeInTheDocument()
-  // 网格卡片仍挂载在 Modal 之下,「2 KB」在卡片 meta 与详情 dd 中各出现一次,故限定在弹窗内断言
   expect(within(dialog).getByText('0.42')).toBeInTheDocument()
   expect(within(dialog).getByText('2 KB')).toBeInTheDocument()
+  expect(within(dialog).getByText(/本地 \(#1\)/)).toBeInTheDocument()
+  expect(within(dialog).getByText('local')).toBeInTheDocument()
+  expect(within(dialog).getByText('public/2026/cat.png')).toBeInTheDocument()
+  expect(within(dialog).getByRole('button', { name: '移入回收站' })).toBeInTheDocument()
+  expect(within(dialog).getByRole('button', { name: '彻底删除' })).toBeInTheDocument()
+})
+
+it('详情:彻底删除带 permanent=1', async () => {
+  mockBackend([img()])
+  renderPage()
+  await userEvent.click(await screen.findByText('cat.png'))
+  const dialog = await screen.findByRole('dialog')
+  await userEvent.click(within(dialog).getByRole('button', { name: '彻底删除' }))
+  await userEvent.click(within(dialog).getByRole('button', { name: '确认彻底删除（不可恢复）' }))
+  await waitFor(() => {
+    expect(lastReq?.method).toBe('DELETE')
+    expect(lastReq?.url).toContain('/api/v1/admin/images/k1?permanent=1')
+  })
+})
+
+it('详情:游客图仅彻底删除', async () => {
+  mockBackend([img({ user_id: null, username: '' })])
+  renderPage()
+  await userEvent.click(await screen.findByText('cat.png'))
+  const dialog = await screen.findByRole('dialog')
+  expect(within(dialog).getByText('游客')).toBeInTheDocument()
+  expect(within(dialog).queryByRole('button', { name: '移入回收站' })).not.toBeInTheDocument()
+  expect(within(dialog).getByRole('button', { name: '彻底删除' })).toBeInTheDocument()
 })
 
 it('空态', async () => {

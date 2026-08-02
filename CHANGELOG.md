@@ -10,6 +10,30 @@ separate version in `go.mod` or `web/package.json`.
 
 ## [Unreleased]
 
+## [0.8.0] - 2026-08-02
+
+Theme: **Admin image ops · delete clarity** — storage locate, trash vs permanent delete, guest purge.
+
+### Added
+
+- **Admin image storage locate:** list/detail expose `policy_id`, `policy_name`, `policy_driver`, `surface`, and object `path` (copy in detail) so operators can find WebDAV/S3/local objects.
+- **Admin permanent delete:** `DELETE /api/v1/admin/images/{key}?permanent=1` hard-deletes DB rows and enqueues `delete_file` for storage cleanup; response includes `physical_queued` / `object_retained` (instant-upload shared refs).
+- **Admin trash scope:** `GET /api/v1/admin/images?deleted=live|trash|all` (default live); UI filter + trash badge.
+- **Guest upload delete:** guests have no owner trash — admin default delete is permanent purge.
+- **Audit:** `image_admin_purge` with owner/policy/path and physical-delete flags.
+
+### Fixed
+
+- **Library delete two-click UX:** card/list quick-delete arms with a visible **确认 / OK** label (was easy to miss as “no reaction”).
+- **Trash cache after soft-delete:** user delete / batch delete invalidates the trash query so the recycle bin updates immediately.
+- **AdminPurge race:** soft-delete-then-restore race no longer returns a silent success without purging.
+
+### Changed
+
+- User-facing copy treats soft-delete as **move to trash** (card, batch bar, toasts); detail already used “add to trash”.
+- Admin list hover: clearer trash vs permanent labels; success toasts for soft vs hard delete (including shared-object retained / queue failure).
+- Whitelist armed button shows a short confirm label.
+
 ## [0.7.4] - 2026-08-01
 
 Theme: **WebDAV mount discovery on failed probe**.
@@ -273,7 +297,8 @@ Theme: **Workflow & Trust** — CLI/integrations, share landing, privacy
 - Bilingual UI (中文/English), PWA, dark mode, text watermark, admin audit logs.
 - Docker Compose quick start and GitHub Actions CI (Go matrix, web, e2e smoke).
 
-[Unreleased]: https://github.com/yixian-huang/imgli/compare/v0.7.4...HEAD
+[Unreleased]: https://github.com/yixian-huang/imgli/compare/v0.8.0...HEAD
+[0.8.0]: https://github.com/yixian-huang/imgli/compare/v0.7.4...v0.8.0
 [0.7.4]: https://github.com/yixian-huang/imgli/compare/v0.7.3...v0.7.4
 [0.7.3]: https://github.com/yixian-huang/imgli/compare/v0.7.2...v0.7.3
 [0.7.2]: https://github.com/yixian-huang/imgli/compare/v0.7.1...v0.7.2

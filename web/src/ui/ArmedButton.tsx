@@ -1,4 +1,4 @@
-import { useEffect, useState, type CSSProperties, type ReactNode } from 'react'
+import { useEffect, useState, type ReactNode } from 'react'
 
 /** Two-click confirm control (first click arms for 2.5s, second confirms). */
 export function ArmedButton({
@@ -8,6 +8,7 @@ export function ArmedButton({
   className,
   armedClassName,
   children,
+  armedChildren,
   stopPropagation = true,
 }: {
   title: string
@@ -16,6 +17,8 @@ export function ArmedButton({
   className?: string
   armedClassName?: string
   children?: ReactNode
+  /** Visible label while armed; defaults to children (prefer a short confirm word for icon buttons). */
+  armedChildren?: ReactNode
   stopPropagation?: boolean
 }) {
   const [armed, setArmed] = useState(false)
@@ -25,13 +28,12 @@ export function ArmedButton({
     return () => clearTimeout(t)
   }, [armed])
 
-  const style: CSSProperties | undefined = undefined
   return (
     <button
       type="button"
       title={armed ? armedTitle : title}
+      aria-label={armed ? armedTitle : title}
       className={[className, armed && armedClassName].filter(Boolean).join(' ') || undefined}
-      style={style}
       onClick={(e) => {
         if (stopPropagation) e.stopPropagation()
         if (armed) {
@@ -40,7 +42,7 @@ export function ArmedButton({
         } else setArmed(true)
       }}
     >
-      {children}
+      {armed ? (armedChildren ?? children) : children}
     </button>
   )
 }

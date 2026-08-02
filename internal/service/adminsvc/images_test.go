@@ -55,8 +55,8 @@ func TestListImagesFiltersAndTotal(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	// 全量：4 条（软删的 k5 被排除）
-	rows, total, err := svc.ListImages(0, "", 0, 1, 50)
+	// 全量 live：4 条（软删的 k5 被排除）
+	rows, total, err := svc.ListImages(0, "", 0, "live", 1, 50)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -82,8 +82,26 @@ func TestListImagesFiltersAndTotal(t *testing.T) {
 		}
 	}
 
+	// trash 筛选：仅 k5
+	rows, total, err = svc.ListImages(0, "", 0, "trash", 1, 50)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if total != 1 || len(rows) != 1 || rows[0].Img.Key != "k5" {
+		t.Errorf("trash total=%d rows=%+v, want k5", total, rows)
+	}
+
+	// all：live+trash = 5
+	_, total, err = svc.ListImages(0, "", 0, "all", 1, 50)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if total != 5 {
+		t.Errorf("all total=%d, want 5", total)
+	}
+
 	// user 筛选
-	rows, total, err = svc.ListImages(alice.ID, "", 0, 1, 50)
+	rows, total, err = svc.ListImages(alice.ID, "", 0, "live", 1, 50)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -92,7 +110,7 @@ func TestListImagesFiltersAndTotal(t *testing.T) {
 	}
 
 	// status 筛选
-	rows, total, err = svc.ListImages(0, "pending", 0, 1, 50)
+	rows, total, err = svc.ListImages(0, "pending", 0, "live", 1, 50)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -101,7 +119,7 @@ func TestListImagesFiltersAndTotal(t *testing.T) {
 	}
 
 	// policy 筛选
-	rows, total, err = svc.ListImages(0, "", pol2.ID, 1, 50)
+	rows, total, err = svc.ListImages(0, "", pol2.ID, "live", 1, 50)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -113,7 +131,7 @@ func TestListImagesFiltersAndTotal(t *testing.T) {
 	}
 
 	// 分页
-	rows, total, err = svc.ListImages(0, "", 0, 1, 2)
+	rows, total, err = svc.ListImages(0, "", 0, "live", 1, 2)
 	if err != nil {
 		t.Fatal(err)
 	}

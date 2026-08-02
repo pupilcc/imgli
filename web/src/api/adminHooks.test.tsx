@@ -2,7 +2,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { renderHook, waitFor } from '@testing-library/react'
 import type { ReactNode } from 'react'
 import {
-  useAdminLogs, useAdminStats, useReviewCount, useAdminUsers, useUpdateAdminUser, useSetImageWhitelist, useResetAdminPassword, useDeleteAdminImage,
+  useAdminLogs, useAdminStats, useReviewCount, useAdminUsers, useUpdateAdminUser, useSetImageWhitelist, useResetAdminPassword, useDeleteAdminImage, usePurgeAdminImage,
   useAdminReview, useReviewDecide, useReviewBatch,
   useCreateGroup, useUpdateGroup, useDeleteGroup,
   useTestPolicy,
@@ -142,6 +142,16 @@ it('useDeleteAdminImage 成功后同时失效 images 与 review-count', async ()
   const keys = spy.mock.calls.map((c) => JSON.stringify(c[0]?.queryKey))
   expect(keys).toContain(JSON.stringify(['admin', 'images']))
   expect(keys).toContain(JSON.stringify(['admin', 'review-count']))
+})
+
+it('usePurgeAdminImage 请求 permanent=1', async () => {
+  const fetchMock = vi.fn(() => Promise.resolve(jsonRes(env({ key: 'k1', deleted: true, permanent: true }))))
+  vi.stubGlobal('fetch', fetchMock)
+  const { Wrapper } = wrap()
+  const { result } = renderHook(() => usePurgeAdminImage(), { wrapper: Wrapper })
+  result.current.mutate('k1')
+  await waitFor(() => expect(result.current.isSuccess).toBe(true))
+  expect(String(fetchMock.mock.calls[0][0])).toContain('/api/v1/admin/images/k1?permanent=1')
 })
 
 it('useAdminReview:page>1 才带 page 参数', async () => {

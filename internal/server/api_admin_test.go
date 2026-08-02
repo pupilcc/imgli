@@ -364,13 +364,27 @@ func TestAdminImagesListFilters(t *testing.T) {
 	}
 	for _, it := range page.Items {
 		for _, field := range []string{"key", "name", "ext", "size", "visibility", "status",
-			"is_whitelisted", "nsfw_score", "username", "user_id", "created_at", "links"} {
+			"is_whitelisted", "nsfw_score", "username", "user_id", "created_at", "links",
+			"policy_id", "policy_name", "policy_driver", "surface", "path", "in_trash"} {
 			if _, ok := it[field]; !ok {
 				t.Errorf("item 缺字段 %s: %+v", field, it)
 			}
 		}
 		if it["username"] != "pleb" {
 			t.Errorf("username = %v, want pleb", it["username"])
+		}
+		// seedAdminImage 默认 StoragePolicyID=1, Path="p/"+key
+		if n, ok := it["policy_id"].(float64); !ok || n != 1 {
+			t.Errorf("policy_id = %v, want 1", it["policy_id"])
+		}
+		if path, _ := it["path"].(string); path == "" || !strings.HasPrefix(path, "p/") {
+			t.Errorf("path = %v, want p/<key>", it["path"])
+		}
+		if name, _ := it["policy_name"].(string); name == "" {
+			t.Errorf("policy_name 应非空: %+v", it)
+		}
+		if it["in_trash"] != false {
+			t.Errorf("live 列表 in_trash 应为 false, got %v", it["in_trash"])
 		}
 	}
 
@@ -398,6 +412,101 @@ func TestAdminImagesListFilters(t *testing.T) {
 	json.Unmarshal(e.Data, &page)
 	if page.Total != 2 {
 		t.Errorf("user filter total=%d, want 2", page.Total)
+	}
+}
+
+// TestAdminGuestDeleteIsPermanent 游客图无回收站：默认 DELETE 即彻底删除。
+func TestAdminGuestDeleteIsPermanent(t *testing.T) {
+	s, admin, _ := adminTestServer(t)
+	// userID=0 在 seed 里会写成 &0；改用直接插入 nil UserID
+	f := &model.File{Hash: "guesthash0001", StoragePolicyID: 1, Path: "p/guestkey00001", Size: 100, MIME: "image/png", RefCount: 1}
+	if err := s.opts.DB.Create(f).Error; err != nil {
+		t.Fatal(err)
+	}
+	img := &model.Image{Key: "guestkey00001", UserID: nil, FileID: f.ID, Name: "g", Ext: "png", Visibility: "public", Status: "normal"}
+	if err := s.opts.DB.Create(img).Error; err != nil {
+		t.Fatal(err)
+	}
+
+	rec, e := doJSON(t, s, "DELETE", "/api/v1/admin/images/guestkey00001", "", []*http.Cookie{admin})
+	if rec.Code != http.StatusOK {
+		t.Fatalf("delete guest = %d: %s", rec.Code, rec.Body.String())
+	}
+	var d struct {
+		Permanent bool `json:"permanent"`
+		Deleted   bool `json:"deleted"`
+	}
+	json.Unmarshal(e.Data, &d)
+	if !d.Deleted || !d.Permanent {
+		t.Errorf("游客删除应 permanent: %+v", d)
+	}
+	var cnt int64
+	s.opts.DB.Unscoped().Model(&model.Image{}).Where("key = ?", "guestkey00001").Count(&cnt)
+	if cnt != 0 {
+		t.Errorf("游客图应硬删, still %d", cnt)
+	}
+}
+
+// TestAdminPermanentDeletePurgesFile 管理端 permanent=1 硬删 image+file 行（物理 delete_file 任务异步）。
+func TestAdminPermanentDeletePurgesFile(t *testing.T) {
+	s, admin, user := adminTestServer(t)
+	pleb := userIDFromSession(t, s, user)
+	seedAdminImage(t, s, "prgekey000001", pleb, "normal")
+
+	var beforeFiles int64
+	s.opts.DB.Model(&model.File{}).Where("path = ?", "p/prgekey000001").Count(&beforeFiles)
+	if beforeFiles != 1 {
+		t.Fatalf("seed file count = %d", beforeFiles)
+	}
+
+	rec, e := doJSON(t, s, "DELETE", "/api/v1/admin/images/prgekey000001?permanent=1", "", []*http.Cookie{admin})
+	if rec.Code != http.StatusOK {
+		t.Fatalf("purge = %d: %s", rec.Code, rec.Body.String())
+	}
+	var d struct {
+		Key       string `json:"key"`
+		Deleted   bool   `json:"deleted"`
+		Permanent bool   `json:"permanent"`
+	}
+	json.Unmarshal(e.Data, &d)
+	if !d.Deleted || !d.Permanent || d.Key != "prgekey000001" {
+		t.Errorf("响应 = %+v", d)
+	}
+
+	var imgCnt, fileCnt int64
+	s.opts.DB.Unscoped().Model(&model.Image{}).Where("key = ?", "prgekey000001").Count(&imgCnt)
+	s.opts.DB.Model(&model.File{}).Where("path = ?", "p/prgekey000001").Count(&fileCnt)
+	if imgCnt != 0 {
+		t.Errorf("image 行应硬删, still %d", imgCnt)
+	}
+	if fileCnt != 0 {
+		t.Errorf("file 行应删(ref 归零), still %d", fileCnt)
+	}
+
+	// 属主回收站也不应再有
+	_, e = doJSON(t, s, "GET", "/api/v1/trash", "", []*http.Cookie{user})
+	var tr struct {
+		Items []struct {
+			Key string `json:"key"`
+		} `json:"items"`
+	}
+	json.Unmarshal(e.Data, &tr)
+	for _, it := range tr.Items {
+		if it.Key == "prgekey000001" {
+			t.Error("彻底删除后回收站不应再有该图")
+		}
+	}
+
+	var logs []model.AuditLog
+	s.opts.DB.Where("action = ?", "image_admin_purge").Find(&logs)
+	if len(logs) != 1 {
+		t.Fatalf("audit purge 行数 = %d, want 1", len(logs))
+	}
+
+	// 重复彻底删除 → 404
+	rec, _ = doJSON(t, s, "DELETE", "/api/v1/admin/images/prgekey000001?permanent=1", "", []*http.Cookie{admin})
+	if rec.Code != http.StatusNotFound {
+		t.Errorf("重复 purge = %d, want 404", rec.Code)
 	}
 }
 

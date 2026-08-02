@@ -59,16 +59,16 @@ it('批量删除两击确认后 POST batch 并按 results toast', async () => {
   })
   vi.stubGlobal('fetch', f)
   const onClear = renderBar()
-  await user.click(screen.getByRole('button', { name: '删除' }))
+  await user.click(screen.getByRole('button', { name: '移入回收站' }))
   expect(f.mock.calls.filter((c) => String(c[0]).includes('/images/batch'))).toHaveLength(0)
   // Reset mock to track only batch calls
   f.mockClear()
-  await user.click(screen.getByRole('button', { name: '确认删除？' }))
+  await user.click(screen.getByRole('button', { name: '确认移入回收站？' }))
   await waitFor(() => expect(f).toHaveBeenCalled())
   const call = f.mock.calls[0]
   expect(String(call[0])).toContain('/images/batch')
   expect(JSON.parse(((call[1] as unknown) as RequestInit).body as string)).toEqual({ action: 'delete', keys: ['a', 'b'] })
-  await waitFor(() => expect(useGlobal.getState().toasts.at(-1)?.message).toBe('已删除 1 张，1 张失败'))
+  await waitFor(() => expect(useGlobal.getState().toasts.at(-1)?.message).toBe('已移入回收站 1 张，1 张失败'))
   expect(onClear).toHaveBeenCalled()
 })
 
@@ -122,8 +122,8 @@ it('超过 100 键分两批发送并合并统计', async () => {
       <BatchBar selected={new Set(bigItems.map((i) => i.key))} items={bigItems} onClear={vi.fn()} />
     </QueryClientProvider>,
   )
-  await user.click(screen.getByRole('button', { name: '删除' }))
-  await user.click(screen.getByRole('button', { name: '确认删除？' }))
+  await user.click(screen.getByRole('button', { name: '移入回收站' }))
+  await user.click(screen.getByRole('button', { name: '确认移入回收站？' }))
   await waitFor(() => {
     const calls = f.mock.calls.filter((c) => String(c[0]).includes('/images/batch'))
     expect(calls).toHaveLength(2)

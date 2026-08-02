@@ -26,7 +26,7 @@ const maxReviewBatchKeys = 100
 // ListReview 待审队列：status=pending 的全站图片，复用 Task 3 的 ImageRow/hydrate 基建
 // （含属主/分数/物理文件），按 id 倒序。
 func (s *Service) ListReview(page, limit int) ([]ImageRow, int64, error) {
-	return s.ListImages(0, "pending", 0, page, limit)
+	return s.ListImages(0, "pending", 0, "live", page, limit)
 }
 
 // reviewTargetStatus 把 approve|reject 映射为目标 status；action 非法返回空字符串。

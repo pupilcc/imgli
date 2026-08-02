@@ -272,11 +272,35 @@ export interface AdminImageItem {
   is_whitelisted: boolean
   nsfw_score: number | null
   username: string
-  user_id: number
+  /** 游客图为 null */
+  user_id: number | null
   created_at: string
+  /** 存储策略 id（管理端定位物理对象） */
+  policy_id: number
+  policy_name: string
+  /** local | s3 | webdav | … */
+  policy_driver: string
+  /** public | private */
+  surface: string
+  /** 存储对象键 / 路径 */
+  path: string
+  /** 是否已在回收站（软删） */
+  in_trash: boolean
+  deleted_at?: string
   links: Links
   /** 仅审核队列可选返回 */
   triggers?: ModerationTrigger[]
+}
+
+/** DELETE /admin/images/{key} 响应 */
+export interface AdminImageDeleteResult {
+  key: string
+  deleted: boolean
+  permanent: boolean
+  physical_queued?: boolean
+  object_retained?: boolean
+  policy_id?: number
+  path?: string
 }
 
 export interface AdminImagesPage {

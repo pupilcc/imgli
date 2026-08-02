@@ -1,10 +1,27 @@
 import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
+import { ArmedButton } from './ArmedButton'
 import { Button } from './Button'
 import { Input } from './Input'
 import { Segmented } from './Segmented'
 import { Tag } from './Tag'
 import { Toggle } from './Toggle'
+
+it('ArmedButton 第一击 armed 显示 armedChildren，第二击才 onConfirm', async () => {
+  const onConfirm = vi.fn()
+  render(
+    <ArmedButton title="删除" armedTitle="确认删除" armedChildren="确认" onConfirm={onConfirm}>
+      ×
+    </ArmedButton>,
+  )
+  const btn = screen.getByRole('button', { name: '删除' })
+  expect(btn).toHaveTextContent('×')
+  await userEvent.click(btn)
+  expect(onConfirm).not.toHaveBeenCalled()
+  expect(screen.getByRole('button', { name: '确认删除' })).toHaveTextContent('确认')
+  await userEvent.click(screen.getByRole('button', { name: '确认删除' }))
+  expect(onConfirm).toHaveBeenCalledOnce()
+})
 
 it('Button 变体渲染并可点击', async () => {
   const onClick = vi.fn()

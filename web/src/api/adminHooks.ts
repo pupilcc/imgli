@@ -4,7 +4,7 @@ import { errorText } from '../i18n/errorText'
 import { useGlobal } from '../store'
 import { api, ApiError, del, patch, post, put } from './client'
 import { queryKeys } from './queryKeys'
-import type { AdminGroup, AdminImageItem, AdminImagesPage, AdminInvitesPage, AdminLogsPage, AdminPolicy, AdminSettings, AdminStats, AdminUser, AdminUsersPage, RefererImageRow, ReviewBatchResult } from './types'
+import type { AdminGroup, AdminImageDeleteResult, AdminImageItem, AdminImagesPage, AdminInvitesPage, AdminLogsPage, AdminPolicy, AdminSettings, AdminStats, AdminUser, AdminUsersPage, RefererImageRow, ReviewBatchResult } from './types'
 
 export function useAdminStats() {
   return useQuery({ queryKey: queryKeys.admin.stats, queryFn: () => api<AdminStats>('/admin/stats') })
@@ -219,6 +219,8 @@ export interface AdminImagesFilter {
   user?: number
   status?: string
   policy?: number
+  /** live（默认）| trash | all */
+  deleted?: string
   page?: number
 }
 
@@ -227,6 +229,7 @@ export function useAdminImages(f: AdminImagesFilter = {}) {
   if (f.user) p.set('user', String(f.user))
   if (f.status) p.set('status', f.status)
   if (f.policy) p.set('policy', String(f.policy))
+  if (f.deleted && f.deleted !== 'live') p.set('deleted', f.deleted)
   if (f.page && f.page > 1) p.set('page', String(f.page))
   const qs = p.toString()
   return useQuery({
@@ -309,10 +312,24 @@ export function useSetImageWhitelist() {
   })
 }
 
+/** 管理端软删：进属主回收站，不立刻清存储。游客图服务端会自动改为彻底删除。 */
 export function useDeleteAdminImage() {
   const qc = useQueryClient()
   return useMutation({
-    mutationFn: (key: string) => del(`/admin/images/${key}`),
+    mutationFn: (key: string) => del<AdminImageDeleteResult>(`/admin/images/${key}`),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: queryKeys.admin.imagesRoot })
+      qc.invalidateQueries({ queryKey: queryKeys.admin.reviewCount })
+    },
+    onError: toastApiError,
+  })
+}
+
+/** 管理端彻底删除：硬删 DB 并投递物理删除任务（WebDAV/S3/本地）。 */
+export function usePurgeAdminImage() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: (key: string) => del<AdminImageDeleteResult>(`/admin/images/${key}?permanent=1`),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: queryKeys.admin.imagesRoot })
       qc.invalidateQueries({ queryKey: queryKeys.admin.reviewCount })

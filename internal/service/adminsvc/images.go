@@ -26,13 +26,21 @@ type imageScan struct {
 	Username string `gorm:"column:username"`
 }
 
-// imagesBaseQuery 构造全站图片查询的公共 JOIN/WHERE（默认 scope 排除软删，
-// LEFT JOIN users 容纳游客图）。不含 Select/Order/Limit，供 Count 与列表分别追加。
-func (s *Service) imagesBaseQuery(userID uint64, status string, policyID uint64) *gorm.DB {
+// imagesBaseQuery 构造全站图片查询的公共 JOIN/WHERE（LEFT JOIN users 容纳游客图）。
+// deleted: ""|"live"=仅未软删（默认）；"trash"=仅回收站；"all"=含软删。
+// 不含 Select/Order/Limit，供 Count 与列表分别追加。
+func (s *Service) imagesBaseQuery(userID uint64, status string, policyID uint64, deleted string) *gorm.DB {
 	q := s.db.Table("images").
 		Joins("JOIN files ON files.id = images.file_id").
-		Joins("LEFT JOIN users ON users.id = images.user_id").
-		Where("images.deleted_at IS NULL")
+		Joins("LEFT JOIN users ON users.id = images.user_id")
+	switch deleted {
+	case "trash":
+		q = q.Where("images.deleted_at IS NOT NULL")
+	case "all":
+		// 不筛 deleted_at
+	default: // live / ""
+		q = q.Where("images.deleted_at IS NULL")
+	}
 	if userID > 0 {
 		q = q.Where("images.user_id = ?", userID)
 	}
@@ -46,8 +54,9 @@ func (s *Service) imagesBaseQuery(userID uint64, status string, policyID uint64)
 }
 
 // ListImages 全站图片列表（不限属主，含游客图）。status 空=不筛，否则 ∈ normal|pending|rejected
-// （非法取值由 handler 层 400 校验）；policyID>0 按文件所属存储策略筛。按 images.id 倒序。
-func (s *Service) ListImages(userID uint64, status string, policyID uint64, page, limit int) ([]ImageRow, int64, error) {
+// （非法取值由 handler 层 400 校验）；policyID>0 按文件所属存储策略筛；
+// deleted ∈ ""|live|trash|all。按 images.id 倒序。
+func (s *Service) ListImages(userID uint64, status string, policyID uint64, deleted string, page, limit int) ([]ImageRow, int64, error) {
 	if page < 1 {
 		page = 1
 	}
@@ -58,11 +67,11 @@ func (s *Service) ListImages(userID uint64, status string, policyID uint64, page
 		limit = maxListLimit
 	}
 	var total int64
-	if err := s.imagesBaseQuery(userID, status, policyID).Count(&total).Error; err != nil {
+	if err := s.imagesBaseQuery(userID, status, policyID, deleted).Count(&total).Error; err != nil {
 		return nil, 0, err
 	}
 	var scans []imageScan
-	err := s.imagesBaseQuery(userID, status, policyID).
+	err := s.imagesBaseQuery(userID, status, policyID, deleted).
 		Select("images.*, users.username AS username").
 		Order("images.id DESC").
 		Offset((page - 1) * limit).Limit(limit).

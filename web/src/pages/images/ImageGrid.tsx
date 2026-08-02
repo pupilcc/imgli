@@ -25,7 +25,7 @@ interface Props extends CardActions {
   loadingMore: boolean
 }
 
-/** 卡内删除钮：第一击转红「确认删除」，2.5s 未确认还原。 */
+/** 卡内删除钮：第一击转红并显示「确认」，2.5s 未确认还原；第二击才真正删除。 */
 function QuickDel({ onConfirm }: { onConfirm(): void }) {
   const { t } = useT()
   return (
@@ -34,6 +34,7 @@ function QuickDel({ onConfirm }: { onConfirm(): void }) {
       armedTitle={t('images.confirmDelete')}
       className={[styles.quickBtn, styles.quickDel].join(' ')}
       armedClassName={styles.quickDelArmed}
+      armedChildren={t('images.confirmShort')}
       onConfirm={onConfirm}
     >
       ×

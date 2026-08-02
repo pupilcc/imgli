@@ -26,6 +26,42 @@ func setupPurge(t *testing.T) (*Service, uint64, string, uint64) {
 	return New(db, storagesvc.New(&config.Config{DataDir: t.TempDir()}, db), nil), u.ID, img.Key, f.ID
 }
 
+func TestAdminPurgeLiveImage(t *testing.T) {
+	db := model.TestDB(t)
+	u := &model.User{Username: "ap", Email: "ap@img.li", GroupID: 1, UsedStorage: 300}
+	db.Create(u)
+	f := &model.File{Hash: "hadmin", StoragePolicyID: 1, Path: "adm/x", Size: 300, MIME: "image/png", RefCount: 1}
+	db.Create(f)
+	img := &model.Image{Key: "adminpurge001", UserID: &u.ID, FileID: f.ID, Name: "n", Ext: "png", Visibility: "public", Status: "normal"}
+	db.Create(img)
+	s := New(db, storagesvc.New(&config.Config{DataDir: t.TempDir()}, db), nil)
+
+	if _, err := s.AdminPurge(img.Key); err != nil {
+		t.Fatal(err)
+	}
+	var cnt int64
+	db.Unscoped().Model(&model.Image{}).Where("key = ?", img.Key).Count(&cnt)
+	if cnt != 0 {
+		t.Errorf("AdminPurge 应硬删 image, still %d", cnt)
+	}
+	db.Model(&model.File{}).Where("id = ?", f.ID).Count(&cnt)
+	if cnt != 0 {
+		t.Errorf("AdminPurge 应删 file, still %d", cnt)
+	}
+	var user model.User
+	db.First(&user, u.ID)
+	if user.UsedStorage != 0 {
+		t.Errorf("应退配额, used=%d", user.UsedStorage)
+	}
+}
+
+func TestAdminPurgeNotFound(t *testing.T) {
+	s, _, _, _ := setupPurge(t)
+	if _, err := s.AdminPurge("nosuchkey0001"); !errors.Is(err, ErrNotFound) {
+		t.Errorf("want ErrNotFound, got %v", err)
+	}
+}
+
 func TestPurgeReturnsQuotaAndDropsRefCount(t *testing.T) {
 	s, uid, key, fileID := setupPurge(t)
 	if err := s.PurgePermanent(uid, key); err != nil {

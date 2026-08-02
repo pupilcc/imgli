@@ -236,6 +236,7 @@ export function useDeleteImage() {
       qc.invalidateQueries({ queryKey: queryKeys.imagesRoot })
       qc.invalidateQueries({ queryKey: queryKeys.quota })
       qc.invalidateQueries({ queryKey: queryKeys.albums })
+      qc.invalidateQueries({ queryKey: queryKeys.trash })
     },
   })
 }
@@ -249,6 +250,7 @@ export function useBatchImages() {
       qc.invalidateQueries({ queryKey: queryKeys.imagesRoot })
       qc.invalidateQueries({ queryKey: queryKeys.quota })
       qc.invalidateQueries({ queryKey: queryKeys.albums })
+      qc.invalidateQueries({ queryKey: queryKeys.trash })
     },
     // BatchBar 的 run() 自行 try/catch 并按分块结果 toast；hook 级存根让全局兜底识别并跳过，避免双 toast。
     onError: () => {},

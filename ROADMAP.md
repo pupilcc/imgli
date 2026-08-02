@@ -3,27 +3,19 @@
 > **Planning SSOT is internal** (`imgli/roadmap` in the project knowledge base).  
 > This file is a **public, de-sensitized mirror** for contributors. Prefer GitHub Issues + Milestones for execution.
 
-## Latest shipped — v0.7.2 · One-click upgrade + admin shell
+## Latest shipped — v0.8.0 · Admin image ops · delete clarity
 
-Release: https://github.com/yixian-huang/imgli/releases/tag/v0.7.2
+Release: https://github.com/yixian-huang/imgli/releases/tag/v0.8.0
 
-Binary upgrade under systemd `ProtectSystem` + re-exec; admin layout sticky nav/title. See [CHANGELOG](CHANGELOG.md#072---2026-08-01).
+Admin storage locate (policy/driver/path), permanent purge vs trash, guest auto-purge, clearer delete UX. See [CHANGELOG](CHANGELOG.md#080---2026-08-02).
 
-## Previous — v0.7.1 · Storage probe reliability
+## Previous — v0.7.x · Ops console · WebDAV · upgrade
 
-Release: https://github.com/yixian-huang/imgli/releases/tag/v0.7.1
-
-## Previous — v0.7.0 · Ops Console · Health · Deploy
-
-Release: https://github.com/yixian-huang/imgli/releases/tag/v0.7.0  
-Milestone: https://github.com/yixian-huang/imgli/milestone/6
-
-| Theme | Highlights |
-|-------|------------|
-| Health | Admin `GET /system/health` (doctor + runtime summary) |
-| Deploy clarity | Browser vs `base_url` mismatch, reverse-proxy checklist, CSRF docs |
-| Ops IA | System / Ops page: upgrade preflight, cleanup UI, migrate/backup links |
-| Onboarding | Unified three-step setup UI (upload + API Token) |
+- **v0.7.4** — WebDAV mount discovery on failed probe  
+- **v0.7.3** — OpenList WebDAV read via 302  
+- **v0.7.2** — One-click upgrade + admin shell UX  
+- **v0.7.1** — Storage probe reliability  
+- **v0.7.0** — Ops Console · Health · Deploy  
 
 ## Shipped earlier
 
