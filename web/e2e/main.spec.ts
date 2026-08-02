@@ -32,8 +32,8 @@ test('主干：注册→上传→复制→删除→回收站恢复→彻底删�
   await expect(page.getByText('e2e-shot.png')).toBeVisible()
   const card = page.locator('main [class*=card]').first()
   await card.hover()
-  await card.getByTitle('删除').click()
-  await card.getByTitle('确认删除').click()
+  await card.getByTitle('移入回收站').click()
+  await card.getByTitle('确认移入回收站').click()
   await expect(page.getByText('还没有图片')).toBeVisible()
 
   // 回收站恢复

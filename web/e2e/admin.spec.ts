@@ -82,8 +82,8 @@ test('管理后台:用户管理与图片管理链路', async ({ page }) => {
   // 删除(两击)→ 空态或不再可见
   const card2 = page.locator('main [class*=card]').first()
   await card2.hover()
-  await card2.getByTitle('删除').click()
-  await card2.getByTitle('确认删除').click()
+  await card2.getByTitle('移入回收站').click()
+  await card2.getByTitle('确认移入回收站').click()
   await expect(page.getByText('admin-e2e.png')).toHaveCount(0)
 
   // 用户管理:搜 pleb → 封禁 → 已封禁 → 解封
