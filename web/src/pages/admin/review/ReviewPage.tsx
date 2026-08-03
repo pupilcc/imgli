@@ -1,4 +1,4 @@
-import { useAdminReview, useReviewBatch, useReviewDecide } from '../../../api/adminHooks'
+import { useAdminImagesBatch, useAdminReview, useReviewBatch, useReviewDecide } from '../../../api/adminHooks'
 import { useT } from '../../../i18n'
 import { formatBytes } from '../../../lib/format'
 import { useAdminSearchParam } from '../../../lib/useAdminSearchParam'
@@ -25,10 +25,12 @@ export function ReviewPage() {
   const q = useAdminReview(page)
   const decide = useReviewDecide()
   const batch = useReviewBatch()
+  const purgeBatch = useAdminImagesBatch()
 
   const setPage = (p: number) => setParam('page', p > 1 ? String(p) : '')
 
-  const busy = decide.isPending || batch.isPending
+  const busy = decide.isPending || batch.isPending || purgeBatch.isPending
+  const pageKeys = (q.data?.items ?? []).map((i) => i.key)
 
   return (
     <div>
@@ -36,25 +38,50 @@ export function ReviewPage() {
         kicker="REVIEW QUEUE"
         title={t('adminA.reviewTitle')}
         extra={
-          (q.data?.items.length ?? 0) > 0 ? (
-            <Button
-              variant="primary"
-              disabled={busy}
-              onClick={() =>
-                batch.mutate(
-                  { keys: (q.data?.items ?? []).map((i) => i.key), action: 'approve' },
-                  {
-                    onSuccess: (data) => {
-                      const ok = data.results.filter((r) => r.ok).length
-                      const failed = data.results.length - ok
-                      if (failed > 0) useGlobal.getState().pushToast(t('adminA.batchPartial', { ok, failed }))
+          pageKeys.length > 0 ? (
+            <div className={styles.headerActs}>
+              <Button
+                variant="primary"
+                disabled={busy}
+                onClick={() =>
+                  batch.mutate(
+                    { keys: pageKeys, action: 'approve' },
+                    {
+                      onSuccess: (data) => {
+                        const ok = data.results.filter((r) => r.ok).length
+                        const failed = data.results.length - ok
+                        if (failed > 0) useGlobal.getState().pushToast(t('adminA.batchPartial', { ok, failed }))
+                      },
                     },
-                  },
-                )
-              }
-            >
-              {t('adminA.approveAll', { count: q.data?.items.length ?? 0 })}
-            </Button>
+                  )
+                }
+              >
+                {t('adminA.approveAll', { count: pageKeys.length })}
+              </Button>
+              <Button
+                variant="danger"
+                disabled={busy}
+                onClick={() => {
+                  if (!window.confirm(t('adminA.reviewPurgeConfirm', { count: pageKeys.length }))) return
+                  purgeBatch.mutate(
+                    { keys: pageKeys, action: 'purge' },
+                    {
+                      onSuccess: (data) => {
+                        const ok = data.results.filter((r) => r.ok).length
+                        const failed = data.results.length - ok
+                        useGlobal.getState().pushToast(
+                          failed === 0
+                            ? t('adminA.batchImagesDone', { ok, action: t('adminA.verbPurge') })
+                            : t('adminA.batchImagesPartial', { ok, failed }),
+                        )
+                      },
+                    },
+                  )
+                }}
+              >
+                {t('adminA.reviewPurgePage', { count: pageKeys.length })}
+              </Button>
+            </div>
           ) : undefined
         }
       />

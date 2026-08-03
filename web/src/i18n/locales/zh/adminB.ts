@@ -22,6 +22,7 @@ export default {
   actGroupCreate: '创建用户组',
   actGroupUpdate: '更新用户组',
   actGroupDelete: '删除用户组',
+  actGroupLifecycleApply: '组生命周期钳制存量',
   actPolicyCreate: '创建存储策略',
   actPolicyUpdate: '更新存储策略',
   actPolicyDelete: '删除存储策略',

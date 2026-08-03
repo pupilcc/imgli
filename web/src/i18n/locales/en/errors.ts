@@ -18,4 +18,6 @@ export default {
   adminRevoked: 'Admin access revoked',
   responseFormat: 'Invalid response format',
   requestFailed: 'Request failed',
+  expires_over_group: 'Expiry exceeds your group limit (permanent not allowed or over max)',
+  max_views_over_group: 'Max views exceeds your group limit (unlimited not allowed or over max)',
 }

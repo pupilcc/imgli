@@ -338,6 +338,29 @@ export function usePurgeAdminImage() {
   })
 }
 
+export interface AdminImagesBatchResult {
+  key: string
+  ok: boolean
+  error?: string
+  permanent?: boolean
+  physical_queued?: boolean
+  object_retained?: boolean
+}
+
+/** 管理端批量：trash=软删（游客升格 purge），purge=彻底删除。 */
+export function useAdminImagesBatch() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: ({ keys, action }: { keys: string[]; action: 'trash' | 'purge' }) =>
+      post<{ results: AdminImagesBatchResult[] }>('/admin/images/batch', { keys, action }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: queryKeys.admin.imagesRoot })
+      qc.invalidateQueries({ queryKey: queryKeys.admin.reviewCount })
+    },
+    onError: toastApiError,
+  })
+}
+
 /* ---------- 审核队列 ---------- */
 
 export function useAdminReview(page = 1) {
@@ -389,6 +412,12 @@ export interface GroupWriteBody {
   rate_per_day?: number
   allowed_exts?: string[]
   allowed_policy_ids?: number[]
+  default_expires_in?: number
+  max_expires_in?: number
+  default_max_views?: number
+  max_max_views?: number
+  retention_days?: number
+  force_max_age_days?: number
 }
 
 export function useCreateGroup() {
@@ -415,6 +444,46 @@ export function useDeleteGroup() {
   return useMutation({
     mutationFn: (id: number) => del(`/admin/groups/${id}`),
     onSuccess: () => qc.invalidateQueries({ queryKey: queryKeys.admin.groups }),
+    onError: toastApiError,
+  })
+}
+
+export interface GroupLifecyclePreview {
+  group_id: number
+  cap_sec: number
+  permanent_count: number
+  over_cap_count: number
+  total: number
+  samples?: string[]
+  note?: string
+}
+
+export interface GroupLifecycleApplyResult {
+  group_id: number
+  updated: number
+  skipped: number
+  cap_sec: number
+}
+
+export function usePreviewGroupLifecycle() {
+  return useMutation({
+    mutationFn: (id: number) =>
+      post<GroupLifecyclePreview>(`/admin/groups/${id}/lifecycle/preview`, {}),
+    onError: toastApiError,
+  })
+}
+
+export function useApplyGroupLifecycle() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: ({ id, limit }: { id: number; limit?: number }) =>
+      post<GroupLifecycleApplyResult>(`/admin/groups/${id}/lifecycle/apply`, {
+        confirm: true,
+        limit: limit ?? 500,
+      }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: queryKeys.admin.imagesRoot })
+    },
     onError: toastApiError,
   })
 }

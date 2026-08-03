@@ -111,6 +111,11 @@ export default {
   maxViewsHint:
     'Counts successful /i serves for non-owners only. Limited images never use public CDN 302. Multi-instance relies on atomic DB counters.',
   expiryWarn: 'Permanently deleted on expiry, not recoverable',
+  expiryOutOfPolicy: 'Current expiry exceeds your group policy (cap: {max})',
+  maxViewsOutOfPolicy: 'Current max views exceeds your group policy (cap: {max})',
+  applyGroupMaxExpiry: 'Apply group max expiry',
+  applyGroupMaxViews: 'Apply group max views',
+  maxViewsNoStorage: 'Hitting max views only blocks access; it does not free storage.',
   accessNotes: 'Notes',
   fieldHelp: 'More info',
   copy: 'Copy',

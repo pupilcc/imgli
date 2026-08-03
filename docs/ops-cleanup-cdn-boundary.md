@@ -6,8 +6,10 @@ the **origin** database and storage drivers.
 ## What cleanup does
 
 - Deletes `images` rows and enqueues physical object deletes on the configured
-  storage policy.
-- Frees **origin** storage quota accounting for affected users.
+  storage policy (kinds `expired`, `trash`, `group_force_age`).
+- Soft-deletes by group `retention_days` (`group_retention`) without immediate
+  physical delete (trash age then hard-purges).
+- Frees **origin** storage quota accounting for affected users after hard purge.
 
 ## What cleanup does not do
 
@@ -22,3 +24,5 @@ the **origin** database and storage drivers.
 - After large public cutovers or mass deletes, plan a CDN purge for high-traffic
   prefixes if visitors still see old content.
 - Prefer dry-run (`/admin/cleanup/preview`) before `/admin/cleanup/run`.
+- Default kinds include group lifecycle: `expired`, `trash`, `group_retention`,
+  `group_force_age`. See [user-groups-lifecycle.md](user-groups-lifecycle.md).

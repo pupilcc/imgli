@@ -211,6 +211,10 @@ func (h *ImageHandlers) Update(w http.ResponseWriter, r *http.Request) {
 		Fail(w, http.StatusNotFound, CodeNotFound, "图片不存在")
 	case errors.Is(err, imagesvc.ErrAlbumNotFound):
 		Fail(w, http.StatusNotFound, CodeNotFound, "相册不存在")
+	case errors.Is(err, imagesvc.ErrExpiresOverGroup):
+		Fail(w, http.StatusBadRequest, CodeExpiresOverGroup, "有效期超出用户组限制")
+	case errors.Is(err, imagesvc.ErrMaxViewsOverGroup):
+		Fail(w, http.StatusBadRequest, CodeMaxViewsOverGroup, "访问次数超出用户组限制")
 	case errors.Is(err, imagesvc.ErrInvalidVisibility), errors.Is(err, imagesvc.ErrInvalidName),
 		errors.Is(err, imagesvc.ErrInvalidSlug), errors.Is(err, imagesvc.ErrSlugTaken),
 		errors.Is(err, imagesvc.ErrInvalidMaxViews), errors.Is(err, imagesvc.ErrInvalidAccessPassword):

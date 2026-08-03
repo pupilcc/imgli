@@ -87,5 +87,6 @@ curl -sfS https://img.li/healthz
 
 - 存储搬迁：[`storage-migrate.md`](storage-migrate.md)
 - 清理 vs CDN：[`ops-cleanup-cdn-boundary.md`](ops-cleanup-cdn-boundary.md)
+- 用户组生命周期 / 有效期策略：[`user-groups-lifecycle.md`](user-groups-lifecycle.md)
 - OIDC 排错：[`oidc-operator.md`](oidc-operator.md)
 - 统计/CDN 计量：`deploy/ops/admin-stats-metering.md`

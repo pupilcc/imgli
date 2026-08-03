@@ -18,4 +18,6 @@ export default {
   adminRevoked: '管理员权限已失效',
   responseFormat: '响应格式错误',
   requestFailed: '请求失败',
+  expires_over_group: '有效期超出用户组限制（不允许永久或超过上限）',
+  max_views_over_group: '访问次数超出用户组限制（不允许不限或超过上限）',
 }

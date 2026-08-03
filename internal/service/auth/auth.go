@@ -711,6 +711,13 @@ type QuotaInfo struct {
 	BandwidthUsed   int64  // 本月出站已用（字节，账期见 BandwidthPeriod）
 	BandwidthQuota  int64  // 组月硬顶；0=不限
 	BandwidthPeriod string // YYYY-MM Asia/Shanghai
+	// 组级上传选项 / 生命周期（0=不限或关闭，语义同 UserGroup 字段）。
+	DefaultExpiresIn int
+	MaxExpiresIn     int
+	DefaultMaxViews  int
+	MaxMaxViews      int
+	RetentionDays    int
+	ForceMaxAgeDays  int
 }
 
 // QuotaInfo 返回用户已用/总配额与所属组的上传限制。
@@ -730,6 +737,9 @@ func (s *Service) QuotaInfo(userID uint64) (*QuotaInfo, error) {
 		BandwidthUsed:   bandwidth.EffectiveUsed(&u, period),
 		BandwidthQuota:  g.BandwidthQuotaMonth,
 		BandwidthPeriod: period,
+		DefaultExpiresIn: g.DefaultExpiresIn, MaxExpiresIn: g.MaxExpiresIn,
+		DefaultMaxViews: g.DefaultMaxViews, MaxMaxViews: g.MaxMaxViews,
+		RetentionDays: g.RetentionDays, ForceMaxAgeDays: g.ForceMaxAgeDays,
 	}, nil
 }
 

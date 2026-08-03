@@ -55,9 +55,14 @@ func (h *ConfigHandler) Config(w http.ResponseWriter, r *http.Request) {
 	var g model.UserGroup
 	if err := h.DB.Where("is_guest = ?", true).First(&g).Error; err == nil {
 		guest = map[string]any{
-			"max_file_size": g.MaxFileSize,
-			"allowed_exts":  g.AllowedExts,
-			"per_day":       g.RatePerDay,
+			"max_file_size":        g.MaxFileSize,
+			"allowed_exts":         g.AllowedExts,
+			"per_day":              g.RatePerDay,
+			"default_expires_in":   g.DefaultExpiresIn,
+			"max_expires_in":       g.MaxExpiresIn,
+			"default_max_views":    g.DefaultMaxViews,
+			"max_max_views":        g.MaxMaxViews,
+			"force_max_age_days":   g.ForceMaxAgeDays,
 		}
 	}
 

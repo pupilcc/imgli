@@ -29,6 +29,13 @@ type UpdatePatch struct {
 	AccessPassword *string
 }
 
+var (
+	// ErrExpiresOverGroup 改期超出用户组有效期限制。
+	ErrExpiresOverGroup = errors.New("imagesvc: 有效期超出用户组限制")
+	// ErrMaxViewsOverGroup 访问次数超出用户组限制。
+	ErrMaxViewsOverGroup = errors.New("imagesvc: 访问次数超出用户组限制")
+)
+
 // Update 部分更新单图（见 UpdatePatch）。
 func (s *Service) Update(userID uint64, key string, p UpdatePatch) (*Row, error) {
 	var img model.Image
@@ -38,6 +45,16 @@ func (s *Service) Update(userID uint64, key string, p UpdatePatch) (*Row, error)
 	}
 	if err != nil {
 		return nil, err
+	}
+	var group model.UserGroup
+	if p.SetExpires || p.MaxViews != nil {
+		var u model.User
+		if err := s.db.First(&u, userID).Error; err != nil {
+			return nil, err
+		}
+		if err := s.db.First(&group, u.GroupID).Error; err != nil {
+			return nil, err
+		}
 	}
 	updates := map[string]any{}
 	if p.Name != nil {
@@ -69,12 +86,18 @@ func (s *Service) Update(userID uint64, key string, p UpdatePatch) (*Row, error)
 		}
 	}
 	if p.SetExpires {
+		if err := checkGroupExpires(&group, p.ExpiresAt, time.Now()); err != nil {
+			return nil, err
+		}
 		// map 中显式写 nil → GORM Updates 写 NULL（与 album_id 清出同模式）
 		updates["expires_at"] = p.ExpiresAt
 	}
 	if p.MaxViews != nil {
 		if *p.MaxViews < 0 || *p.MaxViews > MaxViewsMax {
 			return nil, ErrInvalidMaxViews
+		}
+		if err := checkGroupMaxViews(&group, *p.MaxViews); err != nil {
+			return nil, err
 		}
 		updates["max_views"] = *p.MaxViews
 	}

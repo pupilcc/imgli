@@ -43,6 +43,10 @@ export default {
   maxViews1: '阅后即焚',
   maxViews3: '3 次',
   maxViews10: '10 次',
+  expiryCapDays: '最长 {days} 天',
+  expiryCapHours: '最长 {hours} 小时',
+  expiryCapSec: '最长 {sec} 秒',
+  maxViewsCap: '最多 {n} 次',
 
   copyAllLinks: '复制全部链接',
   clearDone: '清除已完成',
