@@ -11,8 +11,9 @@
 }
 .row {
   display: flex;
-  align-items: center;
-  gap: 8px;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 6px;
   padding: 10px 12px;
   border: 1px solid var(--border);
   border-radius: 8px;
@@ -23,8 +24,17 @@
 .rowActive {
   border-color: var(--text);
 }
+.rowMain {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
 .rowName {
   font-weight: 600;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 .builtin {
   font-size: 11px;
@@ -32,6 +42,12 @@
   border-radius: 4px;
   background: var(--soft);
   color: var(--muted);
+  flex: none;
+}
+.badgeRow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
 }
 .lifeBadge {
   font-family: var(--font-mono);
@@ -47,13 +63,50 @@
   flex-wrap: wrap;
   align-items: center;
   gap: 8px;
-  padding-top: 4px;
-  border-top: 1px dashed var(--border);
 }
 .rowCount {
   margin-left: auto;
   font-size: 12px;
   color: var(--muted);
+  flex: none;
+}
+.section {
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--bg);
+  overflow: hidden;
+}
+.sectionSum {
+  list-style: none;
+  cursor: pointer;
+  font-size: 12.5px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  padding: 10px 12px;
+  color: var(--text);
+  user-select: none;
+}
+.sectionSum::-webkit-details-marker {
+  display: none;
+}
+.sectionSum::before {
+  content: '▸ ';
+  color: var(--muted);
+  font-weight: 400;
+}
+.section[open] > .sectionSum::before {
+  content: '▾ ';
+}
+.sectionSum:hover {
+  background: var(--soft);
+}
+.sectionBody {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 0 12px 12px;
+  border-top: 1px solid var(--border);
+  padding-top: 12px;
 }
 .detail {
   border: 1px solid var(--border);

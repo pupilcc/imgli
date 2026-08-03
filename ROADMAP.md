@@ -3,7 +3,14 @@
 > **Planning SSOT is internal** (`imgli/roadmap` in the project knowledge base).  
 > This file is a **public, de-sensitized mirror** for contributors. Prefer GitHub Issues + Milestones for execution.
 
-## Latest shipped — v0.9.0 · Group lifecycle ops · stock clamp
+## Latest shipped — v0.9.1 · Admin groups UX polish
+
+Release: https://github.com/yixian-huang/imgli/releases/tag/v0.9.1
+
+Groups save toasts, lifecycle badges (max vs force separate), collapsible form,
+expiry UI in days. See [CHANGELOG](CHANGELOG.md#091---2026-08-03).
+
+## Previous — v0.9.0 · Group lifecycle ops · stock clamp
 
 Release: https://github.com/yixian-huang/imgli/releases/tag/v0.9.0
 
