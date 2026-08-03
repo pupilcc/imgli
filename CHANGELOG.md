@@ -10,6 +10,20 @@ separate version in `go.mod` or `web/package.json`.
 
 ## [Unreleased]
 
+## [0.9.1] - 2026-08-03
+
+Theme: **Admin groups UX polish**.
+
+### Fixed
+
+- **Groups save feedback:** toast on create/save/no-op (no silent save).
+- **Lifecycle list badges:** `max_expires_in` and `force_max_age_days` shown separately (no longer min-collapsed into a single `≤7d` when force is shorter).
+
+### Changed
+
+- **Groups form layout:** collapsible sections (quota, rate, formats, lifecycle, policies, stock).
+- **Expiry fields in UI:** default/max expiry entered in **days** (API still seconds).
+
 ## [0.9.0] - 2026-08-03
 
 Theme: **Group lifecycle ops · admin stock clamp · cleanup observability**.
@@ -312,7 +326,8 @@ Theme: **Workflow & Trust** — CLI/integrations, share landing, privacy
 - Bilingual UI (中文/English), PWA, dark mode, text watermark, admin audit logs.
 - Docker Compose quick start and GitHub Actions CI (Go matrix, web, e2e smoke).
 
-[Unreleased]: https://github.com/yixian-huang/imgli/compare/v0.9.0...HEAD
+[Unreleased]: https://github.com/yixian-huang/imgli/compare/v0.9.1...HEAD
+[0.9.1]: https://github.com/yixian-huang/imgli/compare/v0.9.0...v0.9.1
 [0.9.0]: https://github.com/yixian-huang/imgli/compare/v0.8.0...v0.9.0
 [0.8.0]: https://github.com/yixian-huang/imgli/compare/v0.7.4...v0.8.0
 [0.7.4]: https://github.com/yixian-huang/imgli/compare/v0.7.3...v0.7.4

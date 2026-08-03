@@ -2,7 +2,8 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { MemoryRouter } from 'react-router'
-import { GroupsPage } from './GroupsPage'
+import { GroupsPage, daysFieldToSec, lifecycleBadges, secToDaysField } from './GroupsPage'
+import { useGlobal } from '../../../store'
 
 function jsonRes(body: unknown, status = 200): Response {
   return { ok: status < 400, status, json: () => Promise.resolve(body) } as unknown as Response
@@ -12,8 +13,8 @@ const GB = 1024 ** 3
 const MB = 1024 ** 2
 
 const groups = [
-  { id: 1, name: '默认组', is_default: true, is_guest: false, storage_quota: 10 * GB, max_file_size: 20 * MB, bandwidth_quota_month: 5 * GB, rate_per_minute: 20, rate_per_hour: 200, rate_per_day: 1000, allowed_exts: ['png', 'jpg'], allowed_policy_ids: [1], created_at: '', user_count: 2 },
-  { id: 2, name: 'VIP', is_default: false, is_guest: false, storage_quota: 100 * GB, max_file_size: 50 * MB, bandwidth_quota_month: 50 * GB, rate_per_minute: 60, rate_per_hour: 600, rate_per_day: 5000, allowed_exts: ['png'], allowed_policy_ids: [1], created_at: '', user_count: 0 },
+  { id: 1, name: '默认组', is_default: true, is_guest: false, storage_quota: 10 * GB, max_file_size: 20 * MB, bandwidth_quota_month: 5 * GB, rate_per_minute: 20, rate_per_hour: 200, rate_per_day: 1000, allowed_exts: ['png', 'jpg'], allowed_policy_ids: [1], max_expires_in: 7 * 86400, force_max_age_days: 7, created_at: '', user_count: 2 },
+  { id: 2, name: 'VIP', is_default: false, is_guest: false, storage_quota: 100 * GB, max_file_size: 50 * MB, bandwidth_quota_month: 50 * GB, rate_per_minute: 60, rate_per_hour: 600, rate_per_day: 5000, allowed_exts: ['png'], allowed_policy_ids: [1], max_expires_in: 30 * 86400, force_max_age_days: 7, created_at: '', user_count: 0 },
 ]
 const policies = [{ id: 1, name: '本地默认', driver: 'local', config: '{"root":"/data"}', cdn_domain: '', path_template: '', enabled: true, created_at: '', file_count: 0, used_bytes: 0 }]
 
@@ -74,6 +75,7 @@ it('内置组:名称锁定,无删除按钮', async () => {
 })
 
 it('编辑 VIP:差异提交只发改动字段', async () => {
+  useGlobal.setState({ toasts: [] })
   mockBackend()
   renderPage()
   await userEvent.click(await screen.findByText('VIP'))
@@ -82,18 +84,45 @@ it('编辑 VIP:差异提交只发改动字段', async () => {
   await userEvent.type(quota, '200')
   await userEvent.click(screen.getByRole('button', { name: '保存' }))
   await waitFor(() => expect(patched).toEqual({ id: '2', body: { storage_quota: 200 * GB } }))
+  await waitFor(() => expect(useGlobal.getState().toasts.some((x) => x.message === '用户组已保存')).toBe(true))
 })
 
-it('未改动点保存:空差异不发 PATCH', async () => {
+it('未改动点保存:空差异不发 PATCH，toast 提示无更改', async () => {
+  useGlobal.setState({ toasts: [] })
   mockBackend()
   renderPage()
   await userEvent.click(await screen.findByText('VIP'))
   await userEvent.click(screen.getByRole('button', { name: '保存' }))
   await new Promise((r) => setTimeout(r, 50))
-  const patched = (fetch as ReturnType<typeof vi.fn>).mock.calls.filter(
+  const patchedCalls = (fetch as ReturnType<typeof vi.fn>).mock.calls.filter(
     (c) => /\/admin\/groups\/\d+/.test(String(c[0])) && (c[1] as RequestInit)?.method === 'PATCH',
   )
-  expect(patched).toHaveLength(0)
+  expect(patchedCalls).toHaveLength(0)
+  expect(useGlobal.getState().toasts.some((x) => x.message === '没有需要保存的更改')).toBe(true)
+})
+
+it('lifecycleBadges: max 与 force 分开展示，不用 min 盖住 max', () => {
+  const t = (k: string, v?: Record<string, string | number>) => {
+    if (k === 'adminA.lifecycleBadgeMax') return `≤${v?.days}d`
+    if (k === 'adminA.lifecycleBadgeForce') return `force ${v?.days}d`
+    if (k === 'adminA.lifecycleBadgeRetention') return `trash ${v?.days}d`
+    return k
+  }
+  const badges = lifecycleBadges(
+    { max_expires_in: 30 * 86400, force_max_age_days: 7, retention_days: 0 } as never,
+    t,
+  )
+  expect(badges).toEqual(['≤30d', 'force 7d'])
+  expect(secToDaysField(7 * 86400)).toBe('7')
+  expect(daysFieldToSec('30')).toBe(30 * 86400)
+})
+
+it('列表: max 30d 显示 ≤30d 而非被 force 压成 ≤7d', async () => {
+  mockBackend()
+  renderPage()
+  await screen.findByText('VIP')
+  expect(screen.getByText('≤30d')).toBeInTheDocument()
+  expect(screen.getAllByText('force 7d').length).toBeGreaterThan(0)
 })
 
 it('新建组:全量 body POST', async () => {

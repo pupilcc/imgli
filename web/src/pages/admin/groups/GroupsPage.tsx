@@ -1,4 +1,4 @@
-import { useState, useId } from 'react'
+import { useState, useId, type ReactNode } from 'react'
 import {
   useAdminGroups,
   useAdminPolicies,
@@ -21,24 +21,51 @@ import { AdminQueryGate } from '../ui/AdminQueryGate'
 import forms from '../ui/adminForms.module.css'
 import styles from './GroupsPage.module.css'
 
-function lifecycleBadges(g: AdminGroup, t: (k: string, v?: Record<string, string | number>) => string): string[] {
-  const badges: string[] = []
-  const maxSec = g.max_expires_in ?? 0
-  const force = g.force_max_age_days ?? 0
-  const ret = g.retention_days ?? 0
-  let capDays = 0
-  if (maxSec > 0) capDays = Math.ceil(maxSec / 86400)
-  if (force > 0 && (capDays === 0 || force < capDays)) capDays = force
-  if (capDays > 0) badges.push(t('adminA.lifecycleBadgeMax', { days: capDays }))
-  if (force > 0) badges.push(t('adminA.lifecycleBadgeForce', { days: force }))
-  if (ret > 0) badges.push(t('adminA.lifecycleBadgeRetention', { days: ret }))
-  return badges
-}
-
+const DAY = 86400
 const GB = 1024 ** 3
 const MB = 1024 ** 2
 const toGB = (b: number) => String(+(b / GB).toFixed(2))
 const toMB = (b: number) => String(+(b / MB).toFixed(2))
+
+/** 秒 → 表单「天」：整除用整数，否则保留最多 2 位小数。 */
+export function secToDaysField(sec: number): string {
+  if (!sec || sec <= 0) return '0'
+  const d = sec / DAY
+  if (Number.isInteger(d)) return String(d)
+  return String(+(d.toFixed(2)))
+}
+
+/** 表单「天」→ 秒（API）；非法/负 → 0。 */
+export function daysFieldToSec(raw: string): number {
+  const n = Number(raw)
+  if (!Number.isFinite(n) || n <= 0) return 0
+  return Math.round(n * DAY)
+}
+
+/**
+ * 列表徽章：max_expires 与 force 分开展示，不用 min 合并
+ * （否则 max=30d + force=7d 会误显示 ≤7d 掩盖上限）。
+ */
+export function lifecycleBadges(
+  g: AdminGroup,
+  t: (k: string, v?: Record<string, string | number>) => string,
+): string[] {
+  const badges: string[] = []
+  const maxSec = g.max_expires_in ?? 0
+  const force = g.force_max_age_days ?? 0
+  const ret = g.retention_days ?? 0
+  if (maxSec > 0) {
+    if (maxSec < DAY) {
+      badges.push(t('adminA.lifecycleBadgeMaxH', { hours: Math.max(1, Math.ceil(maxSec / 3600)) }))
+    } else {
+      const days = maxSec % DAY === 0 ? maxSec / DAY : Math.ceil(maxSec / DAY)
+      badges.push(t('adminA.lifecycleBadgeMax', { days }))
+    }
+  }
+  if (force > 0) badges.push(t('adminA.lifecycleBadgeForce', { days: force }))
+  if (ret > 0) badges.push(t('adminA.lifecycleBadgeRetention', { days: ret }))
+  return badges
+}
 
 interface FormState {
   name: string
@@ -51,8 +78,9 @@ interface FormState {
   perDay: string
   exts: string[]
   policyIds: number[]
-  defaultExpires: string
-  maxExpires: string
+  /** 默认/上限有效期：天（写入 API 时 ×86400） */
+  defaultExpiresDays: string
+  maxExpiresDays: string
   defaultMaxViews: string
   maxMaxViews: string
   retentionDays: string
@@ -62,7 +90,7 @@ interface FormState {
 const NEW_FORM: FormState = {
   name: '', quotaGB: '10', maxMB: '20', bwGB: '5', perMin: '20', perHour: '200', perDay: '1000',
   exts: ['png', 'jpg', 'jpeg', 'gif', 'webp'], policyIds: [],
-  defaultExpires: '0', maxExpires: '0', defaultMaxViews: '0', maxMaxViews: '0',
+  defaultExpiresDays: '0', maxExpiresDays: '0', defaultMaxViews: '0', maxMaxViews: '0',
   retentionDays: '0', forceMaxAgeDays: '0',
 }
 
@@ -77,8 +105,8 @@ function formOf(g: AdminGroup): FormState {
     perDay: String(g.rate_per_day),
     exts: g.allowed_exts ?? [],
     policyIds: g.allowed_policy_ids ?? [],
-    defaultExpires: String(g.default_expires_in ?? 0),
-    maxExpires: String(g.max_expires_in ?? 0),
+    defaultExpiresDays: secToDaysField(g.default_expires_in ?? 0),
+    maxExpiresDays: secToDaysField(g.max_expires_in ?? 0),
     defaultMaxViews: String(g.default_max_views ?? 0),
     maxMaxViews: String(g.max_max_views ?? 0),
     retentionDays: String(g.retention_days ?? 0),
@@ -97,8 +125,8 @@ function createBody(f: FormState): GroupWriteBody {
     rate_per_day: Number(f.perDay),
     allowed_exts: f.exts,
     allowed_policy_ids: f.policyIds,
-    default_expires_in: Number(f.defaultExpires) || 0,
-    max_expires_in: Number(f.maxExpires) || 0,
+    default_expires_in: daysFieldToSec(f.defaultExpiresDays),
+    max_expires_in: daysFieldToSec(f.maxExpiresDays),
     default_max_views: Number(f.defaultMaxViews) || 0,
     max_max_views: Number(f.maxMaxViews) || 0,
     retention_days: Number(f.retentionDays) || 0,
@@ -118,13 +146,32 @@ function patchBody(o: AdminGroup, f: FormState): GroupWriteBody {
   if (Number(f.perDay) !== o.rate_per_day) b.rate_per_day = Number(f.perDay)
   if (JSON.stringify(f.exts) !== JSON.stringify(o.allowed_exts ?? [])) b.allowed_exts = f.exts
   if (JSON.stringify(f.policyIds) !== JSON.stringify(o.allowed_policy_ids ?? [])) b.allowed_policy_ids = f.policyIds
-  if (Number(f.defaultExpires) !== (o.default_expires_in ?? 0)) b.default_expires_in = Number(f.defaultExpires) || 0
-  if (Number(f.maxExpires) !== (o.max_expires_in ?? 0)) b.max_expires_in = Number(f.maxExpires) || 0
+  const defExp = daysFieldToSec(f.defaultExpiresDays)
+  const maxExp = daysFieldToSec(f.maxExpiresDays)
+  if (defExp !== (o.default_expires_in ?? 0)) b.default_expires_in = defExp
+  if (maxExp !== (o.max_expires_in ?? 0)) b.max_expires_in = maxExp
   if (Number(f.defaultMaxViews) !== (o.default_max_views ?? 0)) b.default_max_views = Number(f.defaultMaxViews) || 0
   if (Number(f.maxMaxViews) !== (o.max_max_views ?? 0)) b.max_max_views = Number(f.maxMaxViews) || 0
   if (Number(f.retentionDays) !== (o.retention_days ?? 0)) b.retention_days = Number(f.retentionDays) || 0
   if (Number(f.forceMaxAgeDays) !== (o.force_max_age_days ?? 0)) b.force_max_age_days = Number(f.forceMaxAgeDays) || 0
   return b
+}
+
+function FormSection({
+  title,
+  open = true,
+  children,
+}: {
+  title: string
+  open?: boolean
+  children: ReactNode
+}) {
+  return (
+    <details className={styles.section} open={open}>
+      <summary className={styles.sectionSum}>{title}</summary>
+      <div className={styles.sectionBody}>{children}</div>
+    </details>
+  )
 }
 
 function ExtInput({ exts, onChange }: { exts: string[]; onChange(v: string[]): void }) {
@@ -199,12 +246,33 @@ export function GroupsPage() {
 
   const submit = () => {
     if (sel === 'new') {
-      create.mutate(createBody(form), { onSuccess: () => setSel(null) })
-    } else if (current) {
-      const body = patchBody(current, form)
-      if (Object.keys(body).length === 0) return
-      update.mutate({ id: current.id, body })
+      create.mutate(createBody(form), {
+        onSuccess: () => {
+          pushToast(t('adminA.toastGroupCreated'))
+          setSel(null)
+        },
+      })
+      return
     }
+    if (!current) return
+    const body = patchBody(current, form)
+    if (Object.keys(body).length === 0) {
+      pushToast(t('adminA.toastGroupNoChanges'))
+      return
+    }
+    const id = current.id
+    update.mutate(
+      { id, body },
+      {
+        onSuccess: (g) => {
+          pushToast(t('adminA.toastGroupSaved'))
+          // 用返回体合并当前行，列表 invalidate 前徽章/表单先一致
+          if (g) {
+            setForm(formOf({ ...current, ...g, id } as AdminGroup))
+          }
+        },
+      },
+    )
   }
 
   const onLifecyclePreview = () => {
@@ -258,14 +326,20 @@ export function GroupsPage() {
                   className={[styles.row, sel === g.id && styles.rowActive].filter(Boolean).join(' ')}
                   onClick={() => selectGroup(g)}
                 >
-                  <span className={styles.rowName}>{g.name}</span>
-                  {(g.is_default || g.is_guest) && (
-                    <span className={styles.builtin}>{g.is_guest ? t('adminA.guest') : t('adminA.defaultGroup')}</span>
+                  <span className={styles.rowMain}>
+                    <span className={styles.rowName}>{g.name}</span>
+                    {(g.is_default || g.is_guest) && (
+                      <span className={styles.builtin}>{g.is_guest ? t('adminA.guest') : t('adminA.defaultGroup')}</span>
+                    )}
+                    <span className={styles.rowCount}>{t('adminA.memberCount', { count: g.user_count })}</span>
+                  </span>
+                  {lifecycleBadges(g, t).length > 0 && (
+                    <span className={styles.badgeRow}>
+                      {lifecycleBadges(g, t).map((b) => (
+                        <span key={b} className={styles.lifeBadge}>{b}</span>
+                      ))}
+                    </span>
                   )}
-                  {lifecycleBadges(g, t).map((b) => (
-                    <span key={b} className={styles.lifeBadge}>{b}</span>
-                  ))}
-                  <span className={styles.rowCount}>{t('adminA.memberCount', { count: g.user_count })}</span>
                 </button>
               ))}
             </div>
@@ -281,154 +355,172 @@ export function GroupsPage() {
                     extra={builtin ? <span className={forms.hint}>{t('adminA.builtinNameLocked')}</span> : undefined}
                     onChange={(e) => set('name', e.target.value)}
                   />
-                  <div className={styles.grid2}>
+
+                  <FormSection title={t('adminA.sectionQuota')} open>
+                    <div className={styles.grid2}>
+                      <Input
+                        label={t('adminA.quotaGB')}
+                        type="number"
+                        min={0}
+                        value={form.quotaGB}
+                        onChange={(e) => set('quotaGB', e.target.value)}
+                      />
+                      <Input
+                        label={t('adminA.maxFileMB')}
+                        type="number"
+                        min={0}
+                        value={form.maxMB}
+                        onChange={(e) => set('maxMB', e.target.value)}
+                      />
+                    </div>
                     <Input
-                      label={t('adminA.quotaGB')}
+                      label={t('adminA.bandwidthQuotaGB')}
                       type="number"
                       min={0}
-                      value={form.quotaGB}
-                      onChange={(e) => set('quotaGB', e.target.value)}
+                      value={form.bwGB}
+                      extra={<span className={forms.hint}>{t('adminA.bandwidthQuotaHint')}</span>}
+                      onChange={(e) => set('bwGB', e.target.value)}
                     />
-                    <Input
-                      label={t('adminA.maxFileMB')}
-                      type="number"
-                      min={0}
-                      value={form.maxMB}
-                      onChange={(e) => set('maxMB', e.target.value)}
-                    />
-                  </div>
-                  <Input
-                    label={t('adminA.bandwidthQuotaGB')}
-                    type="number"
-                    min={0}
-                    value={form.bwGB}
-                    extra={<span className={forms.hint}>{t('adminA.bandwidthQuotaHint')}</span>}
-                    onChange={(e) => set('bwGB', e.target.value)}
-                  />
-                  <div className={styles.grid3}>
-                    <Input
-                      label={t('adminA.ratePerMin')}
-                      type="number"
-                      min={0}
-                      value={form.perMin}
-                      onChange={(e) => set('perMin', e.target.value)}
-                    />
-                    <Input
-                      label={t('adminA.ratePerHour')}
-                      type="number"
-                      min={0}
-                      value={form.perHour}
-                      onChange={(e) => set('perHour', e.target.value)}
-                    />
-                    <Input
-                      label={t('adminA.ratePerDay')}
-                      type="number"
-                      min={0}
-                      value={form.perDay}
-                      onChange={(e) => set('perDay', e.target.value)}
-                    />
-                  </div>
-                  <ExtInput exts={form.exts} onChange={(v) => set('exts', v)} />
-                  <div className={forms.field}>
-                    <span className={forms.label}>{t('adminA.lifecycleSection')}</span>
+                  </FormSection>
+
+                  <FormSection title={t('adminA.sectionRate')} open>
+                    <div className={styles.grid3}>
+                      <Input
+                        label={t('adminA.ratePerMin')}
+                        type="number"
+                        min={0}
+                        value={form.perMin}
+                        onChange={(e) => set('perMin', e.target.value)}
+                      />
+                      <Input
+                        label={t('adminA.ratePerHour')}
+                        type="number"
+                        min={0}
+                        value={form.perHour}
+                        onChange={(e) => set('perHour', e.target.value)}
+                      />
+                      <Input
+                        label={t('adminA.ratePerDay')}
+                        type="number"
+                        min={0}
+                        value={form.perDay}
+                        onChange={(e) => set('perDay', e.target.value)}
+                      />
+                    </div>
+                  </FormSection>
+
+                  <FormSection title={t('adminA.sectionExts')} open={false}>
+                    <ExtInput exts={form.exts} onChange={(v) => set('exts', v)} />
+                  </FormSection>
+
+                  <FormSection title={t('adminA.sectionLifecycle')} open>
                     <p className={forms.hint}>{t('adminA.lifecycleHint')}</p>
                     <p className={forms.hint}>{t('adminA.lifecycleSecHint')}</p>
-                    <p className={forms.hint}>{t('adminA.lifecycleStockNote')}</p>
-                  </div>
-                  <div className={styles.grid2}>
-                    <Input
-                      label={t('adminA.defaultExpiresSec')}
-                      type="number"
-                      min={0}
-                      value={form.defaultExpires}
-                      onChange={(e) => set('defaultExpires', e.target.value)}
-                    />
-                    <Input
-                      label={t('adminA.maxExpiresSec')}
-                      type="number"
-                      min={0}
-                      value={form.maxExpires}
-                      onChange={(e) => set('maxExpires', e.target.value)}
-                    />
-                  </div>
-                  <div className={styles.grid2}>
-                    <Input
-                      label={t('adminA.defaultMaxViews')}
-                      type="number"
-                      min={0}
-                      value={form.defaultMaxViews}
-                      onChange={(e) => set('defaultMaxViews', e.target.value)}
-                    />
-                    <Input
-                      label={t('adminA.maxMaxViews')}
-                      type="number"
-                      min={0}
-                      value={form.maxMaxViews}
-                      onChange={(e) => set('maxMaxViews', e.target.value)}
-                    />
-                  </div>
-                  <div className={styles.grid2}>
-                    <Input
-                      label={t('adminA.retentionDays')}
-                      type="number"
-                      min={0}
-                      value={form.retentionDays}
-                      onChange={(e) => set('retentionDays', e.target.value)}
-                    />
-                    <Input
-                      label={t('adminA.forceMaxAgeDays')}
-                      type="number"
-                      min={0}
-                      value={form.forceMaxAgeDays}
-                      onChange={(e) => set('forceMaxAgeDays', e.target.value)}
-                    />
-                  </div>
-                  <div className={forms.field}>
-                    <span className={forms.label}>{t('adminA.allowedPolicies')}</span>
-                    <div className={styles.policies}>
-                      {policiesQ.isError ? (
-                        <span className={forms.hint}>{t('adminA.policiesLoadFailed')}</span>
-                      ) : policies.length === 0 ? (
-                        <span className={forms.hint}>{t('adminA.noPolicies')}</span>
-                      ) : null}
-                      {policies.map((p) => (
-                        <label key={p.id} className={styles.check}>
-                          <input
-                            type="checkbox"
-                            checked={form.policyIds.includes(p.id)}
-                            onChange={(e) =>
-                              set(
-                                'policyIds',
-                                e.target.checked
-                                  ? [...form.policyIds, p.id]
-                                  : form.policyIds.filter((x) => x !== p.id),
-                              )
-                            }
-                          />
-                          {p.name}
-                        </label>
-                      ))}
+                    <div className={styles.grid2}>
+                      <Input
+                        label={t('adminA.defaultExpiresDays')}
+                        type="number"
+                        min={0}
+                        step="any"
+                        value={form.defaultExpiresDays}
+                        onChange={(e) => set('defaultExpiresDays', e.target.value)}
+                      />
+                      <Input
+                        label={t('adminA.maxExpiresDays')}
+                        type="number"
+                        min={0}
+                        step="any"
+                        value={form.maxExpiresDays}
+                        onChange={(e) => set('maxExpiresDays', e.target.value)}
+                      />
                     </div>
-                  </div>
+                    <div className={styles.grid2}>
+                      <Input
+                        label={t('adminA.defaultMaxViews')}
+                        type="number"
+                        min={0}
+                        value={form.defaultMaxViews}
+                        onChange={(e) => set('defaultMaxViews', e.target.value)}
+                      />
+                      <Input
+                        label={t('adminA.maxMaxViews')}
+                        type="number"
+                        min={0}
+                        value={form.maxMaxViews}
+                        onChange={(e) => set('maxMaxViews', e.target.value)}
+                      />
+                    </div>
+                    <div className={styles.grid2}>
+                      <Input
+                        label={t('adminA.retentionDays')}
+                        type="number"
+                        min={0}
+                        value={form.retentionDays}
+                        onChange={(e) => set('retentionDays', e.target.value)}
+                      />
+                      <Input
+                        label={t('adminA.forceMaxAgeDays')}
+                        type="number"
+                        min={0}
+                        value={form.forceMaxAgeDays}
+                        onChange={(e) => set('forceMaxAgeDays', e.target.value)}
+                      />
+                    </div>
+                  </FormSection>
+
+                  <FormSection title={t('adminA.sectionPolicies')} open={false}>
+                    <div className={forms.field}>
+                      <span className={forms.label}>{t('adminA.allowedPolicies')}</span>
+                      <div className={styles.policies}>
+                        {policiesQ.isError ? (
+                          <span className={forms.hint}>{t('adminA.policiesLoadFailed')}</span>
+                        ) : policies.length === 0 ? (
+                          <span className={forms.hint}>{t('adminA.noPolicies')}</span>
+                        ) : null}
+                        {policies.map((p) => (
+                          <label key={p.id} className={styles.check}>
+                            <input
+                              type="checkbox"
+                              checked={form.policyIds.includes(p.id)}
+                              onChange={(e) =>
+                                set(
+                                  'policyIds',
+                                  e.target.checked
+                                    ? [...form.policyIds, p.id]
+                                    : form.policyIds.filter((x) => x !== p.id),
+                                )
+                              }
+                            />
+                            {p.name}
+                          </label>
+                        ))}
+                      </div>
+                    </div>
+                  </FormSection>
+
                   {current && (
-                    <div className={styles.lifeActions}>
-                      <Button
-                        variant="secondary"
-                        disabled={lifePreview.isPending || lifeApply.isPending}
-                        onClick={onLifecyclePreview}
-                      >
-                        {t('adminA.lifecyclePreview')}
-                      </Button>
-                      <Button
-                        variant="secondary"
-                        disabled={lifePreview.isPending || lifeApply.isPending}
-                        onClick={onLifecycleApply}
-                      >
-                        {t('adminA.lifecycleApply')}
-                      </Button>
+                    <FormSection title={t('adminA.sectionStock')} open={false}>
+                      <p className={forms.hint}>{t('adminA.lifecycleStockNote')}</p>
+                      <div className={styles.lifeActions}>
+                        <Button
+                          variant="secondary"
+                          disabled={lifePreview.isPending || lifeApply.isPending}
+                          onClick={onLifecyclePreview}
+                        >
+                          {t('adminA.lifecyclePreview')}
+                        </Button>
+                        <Button
+                          variant="secondary"
+                          disabled={lifePreview.isPending || lifeApply.isPending}
+                          onClick={onLifecycleApply}
+                        >
+                          {t('adminA.lifecycleApply')}
+                        </Button>
+                      </div>
                       {lifeMsg && <p className={forms.hint}>{lifeMsg}</p>}
-                    </div>
+                    </FormSection>
                   )}
+
                   <div className={styles.actions}>
                     <Button
                       variant="primary"
