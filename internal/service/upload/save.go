@@ -45,6 +45,10 @@ func (s *Service) Save(ctx context.Context, tmpPath, filename string, u *model.U
 			return nil, err
 		}
 	}
+	// 组级有效期 / 访问次数默认与上限（含游客 ForceMaxAge）。
+	if err := ApplyGroupAccess(&group, &opts, time.Now()); err != nil {
+		return nil, err
+	}
 
 	fi, err := os.Stat(tmpPath)
 	if err != nil {

@@ -71,6 +71,10 @@ func failUpload(w http.ResponseWriter, err error) {
 		Fail(w, http.StatusBadRequest, CodeInvalidRequest, "相册不存在")
 	case errors.Is(err, upload.ErrGuestNotSupported):
 		Fail(w, http.StatusForbidden, CodeForbidden, "游客上传暂未开放")
+	case errors.Is(err, upload.ErrExpiresOverGroup):
+		Fail(w, http.StatusBadRequest, CodeExpiresOverGroup, "有效期超出用户组限制")
+	case errors.Is(err, upload.ErrMaxViewsOverGroup):
+		Fail(w, http.StatusBadRequest, CodeMaxViewsOverGroup, "访问次数超出用户组限制")
 	default:
 		Fail(w, http.StatusInternalServerError, CodeInternal, "服务器内部错误")
 	}

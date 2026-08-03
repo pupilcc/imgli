@@ -65,7 +65,7 @@ verify upstream docs before migrating.
 - **Content safety** — pluggable moderation pipeline: NSFW detection endpoint
   + OCR keyword screening (self-hosted sidecar in `deploy/ocr-paddle/`),
   review queue, per-group policies.
-- **Accounts & sharing** — user groups with quotas/rate limits, guest upload,
+- **Accounts & sharing** — user groups with quotas/rate limits, group expiry/max-views & retention ([docs/user-groups-lifecycle.md](docs/user-groups-lifecycle.md)), guest upload,
   invite codes, SMTP email (verification/reset/reject notices), albums,
   public gallery (`/a/{id}`), recycle bin, image expiry, access passwords,
   max views; Open Graph previews on share/album pages.

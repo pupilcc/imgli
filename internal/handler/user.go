@@ -137,6 +137,12 @@ func (h *UserHandlers) Quota(w http.ResponseWriter, r *http.Request) {
 		"bandwidth_used_month":  qi.BandwidthUsed,
 		"bandwidth_quota_month": qi.BandwidthQuota,
 		"bandwidth_period":      qi.BandwidthPeriod,
+		"default_expires_in":    qi.DefaultExpiresIn,
+		"max_expires_in":        qi.MaxExpiresIn,
+		"default_max_views":     qi.DefaultMaxViews,
+		"max_max_views":         qi.MaxMaxViews,
+		"retention_days":        qi.RetentionDays,
+		"force_max_age_days":    qi.ForceMaxAgeDays,
 	})
 }
 

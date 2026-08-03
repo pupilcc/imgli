@@ -106,6 +106,55 @@ it('删除:两击确认软删 DELETE（无 permanent）', async () => {
   })
 })
 
+it('列表:两击确认彻底删除 permanent=1', async () => {
+  mockBackend([img()])
+  renderPage()
+  await screen.findByText('cat.png')
+  await userEvent.click(screen.getByTitle('彻底删除'))
+  await userEvent.click(screen.getByTitle('确认彻底删除（不可恢复）'))
+  await waitFor(() => {
+    expect(lastReq?.method).toBe('DELETE')
+    expect(lastReq?.url).toContain('/api/v1/admin/images/k1?permanent=1')
+  })
+})
+
+it('批量:勾选后彻底删除 POST batch purge', async () => {
+  mockBackend([img(), img({ key: 'k2', name: 'dog.png' })])
+  vi.stubGlobal(
+    'fetch',
+    vi.fn((url: RequestInfo | URL, init?: RequestInit) => {
+      const u = String(url)
+      const method = init?.method ?? 'GET'
+      if (method !== 'GET') lastReq = { url: u, method, body: init?.body ? JSON.parse(String(init.body)) : null }
+      if (u.includes('/admin/policies'))
+        return Promise.resolve(jsonRes(env({ items: [{ id: 1, name: '本地', driver: 'local', config: '{}', cdn_domain: '', path_template: '', enabled: true, created_at: '', file_count: 0, used_bytes: 0 }] })))
+      if (u.includes('/admin/images/batch') && method === 'POST')
+        return Promise.resolve(jsonRes(env({
+          results: [
+            { key: 'k1', ok: true, permanent: true, physical_queued: true },
+            { key: 'k2', ok: true, permanent: true, physical_queued: true },
+          ],
+        })))
+      if (u.includes('/admin/images'))
+        return Promise.resolve(jsonRes(env({
+          items: [img(), img({ key: 'k2', name: 'dog.png' })],
+          total: 2, page: 1, limit: 50,
+        })))
+      return Promise.resolve(jsonRes(env(null)))
+    }),
+  )
+  renderPage()
+  await screen.findByText('cat.png')
+  await userEvent.click(screen.getByRole('button', { name: '全选本页' }))
+  await userEvent.click(screen.getByRole('button', { name: '批量彻底删除' }))
+  await userEvent.click(screen.getByRole('button', { name: '确认彻底删除（不可恢复）' }))
+  await waitFor(() => {
+    expect(lastReq?.method).toBe('POST')
+    expect(lastReq?.url).toContain('/admin/images/batch')
+    expect(lastReq?.body).toEqual({ keys: ['k1', 'k2'], action: 'purge' })
+  })
+})
+
 it('详情:点卡片开 Modal 展示元信息与存储定位', async () => {
   mockBackend([img({ nsfw_score: 0.42 })])
   renderPage()

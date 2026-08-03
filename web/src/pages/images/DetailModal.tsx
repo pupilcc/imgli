@@ -1,18 +1,17 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { renderSVG } from 'uqr'
-import { useAlbums, useDeleteImage, useImageDetail, useImageStats, useUpdateImage } from '../../api/hooks'
+import { useAlbums, useDeleteImage, useImageDetail, useImageStats, useQuota, useUpdateImage } from '../../api/hooks'
 import type { ImageItem } from '../../api/types'
 import { useT } from '../../i18n'
 import { copyText } from '../../lib/copy'
 import { formatBytes, formatDate } from '../../lib/format'
 import {
-  EXPIRY_LABEL_KEY,
-  EXPIRY_PRESETS,
-  MAX_VIEWS_LABEL_KEY,
-  MAX_VIEWS_PRESETS,
-  type ExpiryKey,
-  type MaxViewsKey,
+  expiryPresetLabel,
+  filterExpiryPresets,
+  filterMaxViewsPresets,
+  groupExpiresCapSec,
+  maxViewsPresetLabel,
 } from '../../lib/imageAccessPresets'
 import { generateAccessPassword } from '../../lib/password'
 import { useGlobal } from '../../store'
@@ -143,17 +142,29 @@ export function DetailModal({ items, focusKey, onClose, onNavigate }: Props) {
   const detail = useImageDetail(focusKey)
   const stats = useImageStats(focusKey)
   const albums = useAlbums()
+  const quota = useQuota()
   const update = useUpdateImage()
   const remove = useDeleteImage()
   const pushToast = useGlobal((s) => s.pushToast)
   const [renaming, setRenaming] = useState(false)
   const [renameVal, setRenameVal] = useState('')
   const [moving, setMoving] = useState(false)
-  const [expiryKey, setExpiryKey] = useState<ExpiryKey>('never')
+  const [expiryKey, setExpiryKey] = useState<string>('never')
   const [accessPw, setAccessPw] = useState('')
   const paneScrollRef = useRef<HTMLDivElement>(null)
   const accessSectionRef = useRef<HTMLElement>(null)
   const passwordInputRef = useRef<HTMLInputElement>(null)
+
+  // 与上传页一致：按用户组 max/force 过滤有效期与访问次数预设
+  const expiresCap = groupExpiresCapSec({
+    max_expires_in: quota.data?.max_expires_in,
+    force_max_age_days: quota.data?.force_max_age_days,
+  })
+  const maxMaxViews = quota.data?.max_max_views ?? 0
+  const expiryPresets = filterExpiryPresets(expiresCap)
+  const maxViewsPresets = filterMaxViewsPresets(maxMaxViews)
+  const allowPermanent = expiresCap <= 0
+  const allowUnlimitedViews = maxMaxViews <= 0
 
   const prevKey = idx > 0 ? items[idx - 1].key : null
   const nextKey = idx >= 0 && idx < items.length - 1 ? items[idx + 1].key : null
@@ -245,16 +256,42 @@ export function DetailModal({ items, focusKey, onClose, onNavigate }: Props) {
     })
   }
 
-  const setExpiry = (sec: number) => {
-    update.mutate({ key: base.key, body: { expires_in: sec } })
-  }
-
   const maxViews = d?.max_views ?? base.max_views ?? 0
   const viewsServed = d?.views_served ?? base.views_served ?? 0
-  const maxViewsKey: MaxViewsKey =
-    MAX_VIEWS_PRESETS.find((p) => p.n === maxViews)?.key ?? 'unlimited'
+  const maxViewsKey =
+    maxViewsPresets.find((p) => p.n === maxViews)?.key
+    ?? maxViewsPresets[0]?.key
+    ?? 'unlimited'
+  const expiryKeyForUi =
+    expiryPresets.find((p) => p.key === expiryKey)?.key
+    ?? expiryPresets[0]?.key
+    ?? 'never'
+  // 图上当前值是否超出组策略（旧图 / 改组后）
+  const expiryOutOfPolicy =
+    (!allowPermanent && !expiresAt)
+    || (expiresCap > 0 && !!expiresAt && new Date(expiresAt).getTime() > Date.now() + expiresCap * 1000)
+  const maxViewsOutOfPolicy =
+    (!allowUnlimitedViews && maxViews <= 0)
+    || (maxMaxViews > 0 && maxViews > maxMaxViews)
   const setMaxViews = (n: number) => {
+    if (!allowUnlimitedViews && n <= 0) return
+    if (maxMaxViews > 0 && n > maxMaxViews) return
     update.mutate({ key: base.key, body: { max_views: n } })
+  }
+  const setExpiry = (sec: number) => {
+    if (!allowPermanent && sec <= 0) return
+    if (expiresCap > 0 && sec > expiresCap) return
+    update.mutate({ key: base.key, body: { expires_in: sec } })
+  }
+  const applyGroupMaxExpiry = () => {
+    if (expiresCap <= 0) return
+    const hit = expiryPresets.find((p) => p.sec === expiresCap)
+    if (hit) setExpiryKey(hit.key)
+    setExpiry(expiresCap)
+  }
+  const applyGroupMaxViews = () => {
+    if (maxMaxViews <= 0) return
+    setMaxViews(maxMaxViews)
   }
 
   const hasAccessPassword = !!(d?.has_access_password ?? base.has_access_password)
@@ -542,21 +579,40 @@ export function DetailModal({ items, focusKey, onClose, onNavigate }: Props) {
                       </span>
                       <span className={styles.accessFieldValue}>{expiryDisplay}</span>
                     </div>
-                    <Segmented<ExpiryKey>
+                    {expiryOutOfPolicy && (
+                      <p className={styles.policyWarn}>
+                        {t('images.expiryOutOfPolicy', {
+                          max: expiresCap > 0
+                            ? expiryPresetLabel({ key: `cap:${expiresCap}`, sec: expiresCap }, t)
+                            : '—',
+                        })}
+                        {expiresCap > 0 && (
+                          <button
+                            type="button"
+                            className={styles.policyFix}
+                            disabled={update.isPending}
+                            onClick={applyGroupMaxExpiry}
+                          >
+                            {t('images.applyGroupMaxExpiry')}
+                          </button>
+                        )}
+                      </p>
+                    )}
+                    <Segmented
                       mono
                       compact
-                      options={EXPIRY_PRESETS.map((p) => ({
+                      options={expiryPresets.map((p) => ({
                         value: p.key,
-                        label: t(EXPIRY_LABEL_KEY[p.key]),
+                        label: expiryPresetLabel(p, t),
                       }))}
-                      value={expiryKey}
+                      value={expiryKeyForUi}
                       onChange={(k) => {
                         setExpiryKey(k)
-                        const p = EXPIRY_PRESETS.find((x) => x.key === k)
-                        setExpiry(p?.sec ?? 0)
+                        const p = expiryPresets.find((x) => x.key === k)
+                        setExpiry(p?.sec ?? (allowPermanent ? 0 : expiresCap))
                       }}
                     />
-                    {expiresAt && (
+                    {expiresAt && allowPermanent && (
                       <button
                         type="button"
                         className={styles.removeExpiry}
@@ -583,17 +639,32 @@ export function DetailModal({ items, focusKey, onClose, onNavigate }: Props) {
                           : t('upload.maxViewsUnlimited')}
                       </span>
                     </div>
-                    <Segmented<MaxViewsKey>
+                    {maxViewsOutOfPolicy && (
+                      <p className={styles.policyWarn}>
+                        {t('images.maxViewsOutOfPolicy', { max: maxMaxViews })}
+                        {maxMaxViews > 0 && (
+                          <button
+                            type="button"
+                            className={styles.policyFix}
+                            disabled={update.isPending}
+                            onClick={applyGroupMaxViews}
+                          >
+                            {t('images.applyGroupMaxViews')}
+                          </button>
+                        )}
+                      </p>
+                    )}
+                    <Segmented
                       mono
                       compact
-                      options={MAX_VIEWS_PRESETS.map((p) => ({
+                      options={maxViewsPresets.map((p) => ({
                         value: p.key,
-                        label: t(MAX_VIEWS_LABEL_KEY[p.key]),
+                        label: maxViewsPresetLabel(p, t),
                       }))}
                       value={maxViewsKey}
                       onChange={(k) => {
-                        const p = MAX_VIEWS_PRESETS.find((x) => x.key === k)
-                        setMaxViews(p?.n ?? 0)
+                        const p = maxViewsPresets.find((x) => x.key === k)
+                        setMaxViews(p?.n ?? (allowUnlimitedViews ? 0 : maxMaxViews))
                       }}
                     />
                   </div>
@@ -616,6 +687,8 @@ export function DetailModal({ items, focusKey, onClose, onNavigate }: Props) {
                         <strong>{t('images.maxViews')}</strong>
                         {' — '}
                         {t('images.maxViewsHint')}
+                        {' '}
+                        {t('images.maxViewsNoStorage')}
                       </li>
                     </ul>
                   </details>

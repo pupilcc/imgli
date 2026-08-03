@@ -60,7 +60,8 @@
   策略级 CDN 域 `302` 卸带宽,私密图预签名直连。
 - **内容安全**:可插拔机审链——NSFW 检测端点 + OCR 词表筛查
   (自托管旁路服务见 `deploy/ocr-paddle/`),审核队列,按用户组配策略。
-- **账号与分享**:用户组配额/限速、游客上传、邀请码、SMTP 邮件
+- **账号与分享**:用户组配额/限速、**组级有效期与访问次数 / 保留与强制存活**
+  （[docs/user-groups-lifecycle.md](docs/user-groups-lifecycle.md)）、游客上传、邀请码、SMTP 邮件
   (验证/重置/拒审通知)、相册、公开相册访客页 `/a/{id}`、回收站、图片过期、
   访问口令、阅后即焚/次数上限；分享页与公开相册自动 Open Graph 预览。
 - **生态对接**:干净的上传 API + API Token;`imgli upload` / `imgli import-dir` CLI；

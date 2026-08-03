@@ -10,6 +10,7 @@ import (
 
 	"github.com/yixian-huang/imgli/internal/model"
 	"github.com/yixian-huang/imgli/internal/service/adminsvc"
+	"github.com/yixian-huang/imgli/internal/service/imagesvc"
 )
 
 // adminGroupDTO 用户组基础字段（不含 user_count，供 create/update 响应复用）。
@@ -20,6 +21,9 @@ func adminGroupDTO(g *model.UserGroup) map[string]any {
 		"bandwidth_quota_month": g.BandwidthQuotaMonth,
 		"rate_per_minute":       g.RatePerMinute, "rate_per_hour": g.RatePerHour, "rate_per_day": g.RatePerDay,
 		"allowed_exts": g.AllowedExts, "allowed_policy_ids": g.AllowedPolicyIDs,
+		"default_expires_in": g.DefaultExpiresIn, "max_expires_in": g.MaxExpiresIn,
+		"default_max_views": g.DefaultMaxViews, "max_max_views": g.MaxMaxViews,
+		"retention_days": g.RetentionDays, "force_max_age_days": g.ForceMaxAgeDays,
 		"created_at": g.CreatedAt.Format(time.RFC3339),
 	}
 }
@@ -55,6 +59,12 @@ type groupWriteRequest struct {
 	RatePerDay          *int      `json:"rate_per_day"`
 	AllowedExts         *[]string `json:"allowed_exts"`
 	AllowedPolicyIDs    *[]uint64 `json:"allowed_policy_ids"`
+	DefaultExpiresIn    *int      `json:"default_expires_in"`
+	MaxExpiresIn        *int      `json:"max_expires_in"`
+	DefaultMaxViews     *int      `json:"default_max_views"`
+	MaxMaxViews         *int      `json:"max_max_views"`
+	RetentionDays       *int      `json:"retention_days"`
+	ForceMaxAgeDays     *int      `json:"force_max_age_days"`
 }
 
 // CreateGroup POST /api/v1/admin/groups {name,storage_quota,max_file_size,rate_per_minute,
@@ -94,6 +104,24 @@ func (h *AdminHandlers) CreateGroup(w http.ResponseWriter, r *http.Request) {
 	if req.AllowedPolicyIDs != nil {
 		g.AllowedPolicyIDs = *req.AllowedPolicyIDs
 	}
+	if req.DefaultExpiresIn != nil {
+		g.DefaultExpiresIn = *req.DefaultExpiresIn
+	}
+	if req.MaxExpiresIn != nil {
+		g.MaxExpiresIn = *req.MaxExpiresIn
+	}
+	if req.DefaultMaxViews != nil {
+		g.DefaultMaxViews = *req.DefaultMaxViews
+	}
+	if req.MaxMaxViews != nil {
+		g.MaxMaxViews = *req.MaxMaxViews
+	}
+	if req.RetentionDays != nil {
+		g.RetentionDays = *req.RetentionDays
+	}
+	if req.ForceMaxAgeDays != nil {
+		g.ForceMaxAgeDays = *req.ForceMaxAgeDays
+	}
 	err := h.D.Adm.CreateGroup(g)
 	switch {
 	case err == nil:
@@ -103,7 +131,8 @@ func (h *AdminHandlers) CreateGroup(w http.ResponseWriter, r *http.Request) {
 	case errors.Is(err, adminsvc.ErrPolicyNotFound):
 		Fail(w, http.StatusNotFound, CodeNotFound, err.Error())
 	case errors.Is(err, adminsvc.ErrExtsEmpty), errors.Is(err, adminsvc.ErrGroupNameInvalid),
-		errors.Is(err, adminsvc.ErrQuotaInvalid), errors.Is(err, adminsvc.ErrBandwidthQuotaInvalid):
+		errors.Is(err, adminsvc.ErrQuotaInvalid), errors.Is(err, adminsvc.ErrBandwidthQuotaInvalid),
+		errors.Is(err, adminsvc.ErrLifecycleInvalid):
 		Fail(w, http.StatusBadRequest, CodeInvalidRequest, err.Error())
 	default:
 		Fail(w, http.StatusInternalServerError, CodeInternal, "服务器内部错误")
@@ -127,6 +156,9 @@ func (h *AdminHandlers) UpdateGroup(w http.ResponseWriter, r *http.Request) {
 		BandwidthQuotaMonth: req.BandwidthQuotaMonth,
 		RatePerMinute:       req.RatePerMinute, RatePerHour: req.RatePerHour, RatePerDay: req.RatePerDay,
 		AllowedExts: req.AllowedExts, AllowedPolicyIDs: req.AllowedPolicyIDs,
+		DefaultExpiresIn: req.DefaultExpiresIn, MaxExpiresIn: req.MaxExpiresIn,
+		DefaultMaxViews: req.DefaultMaxViews, MaxMaxViews: req.MaxMaxViews,
+		RetentionDays: req.RetentionDays, ForceMaxAgeDays: req.ForceMaxAgeDays,
 	}
 	g, err := h.D.Adm.UpdateGroup(id, patch)
 	switch {
@@ -159,6 +191,24 @@ func (h *AdminHandlers) UpdateGroup(w http.ResponseWriter, r *http.Request) {
 		if req.AllowedPolicyIDs != nil {
 			fields = append(fields, "allowed_policy_ids")
 		}
+		if req.DefaultExpiresIn != nil {
+			fields = append(fields, "default_expires_in")
+		}
+		if req.MaxExpiresIn != nil {
+			fields = append(fields, "max_expires_in")
+		}
+		if req.DefaultMaxViews != nil {
+			fields = append(fields, "default_max_views")
+		}
+		if req.MaxMaxViews != nil {
+			fields = append(fields, "max_max_views")
+		}
+		if req.RetentionDays != nil {
+			fields = append(fields, "retention_days")
+		}
+		if req.ForceMaxAgeDays != nil {
+			fields = append(fields, "force_max_age_days")
+		}
 		actor := PrincipalFrom(r).User
 		h.D.Adm.Audit(&actor.ID, "admin", "group_update", map[string]any{"id": id, "fields": fields}, ClientIP(r))
 		OK(w, adminGroupDTO(g))
@@ -166,8 +216,68 @@ func (h *AdminHandlers) UpdateGroup(w http.ResponseWriter, r *http.Request) {
 		Fail(w, http.StatusNotFound, CodeNotFound, err.Error())
 	case errors.Is(err, adminsvc.ErrBuiltinGroup), errors.Is(err, adminsvc.ErrGroupInUse),
 		errors.Is(err, adminsvc.ErrExtsEmpty), errors.Is(err, adminsvc.ErrGroupNameInvalid),
-		errors.Is(err, adminsvc.ErrQuotaInvalid), errors.Is(err, adminsvc.ErrBandwidthQuotaInvalid):
+		errors.Is(err, adminsvc.ErrQuotaInvalid), errors.Is(err, adminsvc.ErrBandwidthQuotaInvalid),
+		errors.Is(err, adminsvc.ErrLifecycleInvalid):
 		Fail(w, http.StatusBadRequest, CodeInvalidRequest, err.Error())
+	default:
+		Fail(w, http.StatusInternalServerError, CodeInternal, "服务器内部错误")
+	}
+}
+
+// PreviewGroupLifecycle POST /api/v1/admin/groups/{id}/lifecycle/preview
+// 干跑：统计组内需钳制有效期的 live 图（永久或超 cap）。
+func (h *AdminHandlers) PreviewGroupLifecycle(w http.ResponseWriter, r *http.Request) {
+	if h.D.Img == nil {
+		Fail(w, http.StatusInternalServerError, CodeInternal, "服务器内部错误")
+		return
+	}
+	id, err := strconv.ParseUint(chi.URLParam(r, "id"), 10, 64)
+	if err != nil {
+		Fail(w, http.StatusBadRequest, CodeInvalidRequest, "组 id 无效")
+		return
+	}
+	p, err := h.D.Img.PreviewApplyLifecycle(id, 10)
+	switch {
+	case err == nil:
+		OK(w, p)
+	case errors.Is(err, imagesvc.ErrNotFound):
+		Fail(w, http.StatusNotFound, CodeNotFound, "用户组不存在")
+	default:
+		Fail(w, http.StatusInternalServerError, CodeInternal, "服务器内部错误")
+	}
+}
+
+// ApplyGroupLifecycle POST /api/v1/admin/groups/{id}/lifecycle/apply {confirm:true, limit?}
+// 将组内 live 图有效期钳到 now+cap；confirm 必须 true。
+func (h *AdminHandlers) ApplyGroupLifecycle(w http.ResponseWriter, r *http.Request) {
+	if h.D.Img == nil {
+		Fail(w, http.StatusInternalServerError, CodeInternal, "服务器内部错误")
+		return
+	}
+	id, err := strconv.ParseUint(chi.URLParam(r, "id"), 10, 64)
+	if err != nil {
+		Fail(w, http.StatusBadRequest, CodeInvalidRequest, "组 id 无效")
+		return
+	}
+	var req struct {
+		Confirm bool `json:"confirm"`
+		Limit   int  `json:"limit"`
+	}
+	if err := DecodeJSON(r, &req); err != nil {
+		Fail(w, http.StatusBadRequest, CodeInvalidRequest, "请求体无效")
+		return
+	}
+	res, err := h.D.Img.ApplyLifecycle(id, req.Confirm, req.Limit)
+	switch {
+	case err == nil:
+		actor := PrincipalFrom(r).User
+		h.D.Adm.Audit(&actor.ID, "admin", "group_lifecycle_apply",
+			map[string]any{"id": id, "updated": res.Updated, "cap_sec": res.CapSec}, ClientIP(r))
+		OK(w, res)
+	case errors.Is(err, imagesvc.ErrNotFound):
+		Fail(w, http.StatusNotFound, CodeNotFound, "用户组不存在")
+	case err.Error() == "imagesvc: confirm=true required":
+		Fail(w, http.StatusBadRequest, CodeInvalidRequest, "confirm=true required")
 	default:
 		Fail(w, http.StatusInternalServerError, CodeInternal, "服务器内部错误")
 	}

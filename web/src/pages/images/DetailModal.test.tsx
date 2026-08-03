@@ -25,11 +25,25 @@ function makeDaily(nonzero: Record<number, number> = {}): { date: string; views:
   }))
 }
 
-function mockBackend(opts: { stats?: { total: number; daily: { date: string; views: number }[] } | 'fail' } = {}) {
+function mockBackend(opts: {
+  stats?: { total: number; daily: { date: string; views: number }[] } | 'fail'
+  quota?: Record<string, number>
+} = {}) {
+  const quota = {
+    used: 0,
+    total: 10 * 1024 ** 3,
+    max_file_size: 20 * 1024 ** 2,
+    allowed_exts: ['png'],
+    max_expires_in: 0,
+    force_max_age_days: 0,
+    max_max_views: 0,
+    ...opts.quota,
+  }
   vi.stubGlobal(
     'fetch',
     vi.fn((url: RequestInfo | URL, init?: RequestInit) => {
       const u = String(url)
+      if (u.includes('/user/quota')) return Promise.resolve(jsonRes(env(quota)))
       if (u.includes('/albums')) return Promise.resolve(jsonRes(env({ items: [{ id: 7, name: '工作', visibility: 'private', image_count: 0, cover_key: '', created_at: '' }] })))
       if (init?.method === 'PATCH' || init?.method === 'DELETE') return Promise.resolve(jsonRes(env({})))
       if (u.includes('/stats')) {
@@ -184,6 +198,12 @@ it('expires_at 有值显示过期且可移除', async () => {
     'fetch',
     vi.fn((url: RequestInfo | URL, init?: RequestInit) => {
       const u = String(url)
+      if (u.includes('/user/quota')) {
+        return Promise.resolve(jsonRes(env({
+          used: 0, total: 1, max_file_size: 1, allowed_exts: ['png'],
+          max_expires_in: 0, force_max_age_days: 0, max_max_views: 0,
+        })))
+      }
       if (u.includes('/albums')) return Promise.resolve(jsonRes(env({ items: [] })))
       if (init?.method === 'PATCH' || init?.method === 'DELETE') return Promise.resolve(jsonRes(env({})))
       if (u.includes('/stats')) return Promise.resolve(jsonRes(env({ total: 0, daily: makeDaily() })))
@@ -211,6 +231,12 @@ it('编辑有效期预设 PATCH expires_in；移除过期传 0', async () => {
     'fetch',
     vi.fn((url: RequestInfo | URL, init?: RequestInit) => {
       const u = String(url)
+      if (u.includes('/user/quota')) {
+        return Promise.resolve(jsonRes(env({
+          used: 0, total: 1, max_file_size: 1, allowed_exts: ['png'],
+          max_expires_in: 0, force_max_age_days: 0, max_max_views: 0,
+        })))
+      }
       if (u.includes('/albums')) return Promise.resolve(jsonRes(env({ items: [] })))
       if (init?.method === 'PATCH' || init?.method === 'DELETE') return Promise.resolve(jsonRes(env({})))
       if (u.includes('/stats')) return Promise.resolve(jsonRes(env({ total: 0, daily: makeDaily() })))
@@ -241,4 +267,47 @@ it('编辑有效期预设 PATCH expires_in；移除过期传 0', async () => {
     )
     expect(call).toBeTruthy()
   })
+})
+
+it('组限制有效期：隐藏永久档与「移除过期」，无 30 天', async () => {
+  const withExp = [item('a'), item('b', { expires_at: '2026-08-01T00:00:00Z' }), item('c')]
+  mockBackend({
+    quota: { max_expires_in: 7 * 86400, force_max_age_days: 0, max_max_views: 3 },
+  })
+  // detail 需返回带 expires 的图
+  vi.stubGlobal(
+    'fetch',
+    vi.fn((url: RequestInfo | URL, init?: RequestInit) => {
+      const u = String(url)
+      if (u.includes('/user/quota')) {
+        return Promise.resolve(jsonRes(env({
+          used: 0, total: 1, max_file_size: 1, allowed_exts: ['png'],
+          max_expires_in: 7 * 86400, force_max_age_days: 0, max_max_views: 3,
+        })))
+      }
+      if (u.includes('/albums')) return Promise.resolve(jsonRes(env({ items: [] })))
+      if (init?.method === 'PATCH' || init?.method === 'DELETE') return Promise.resolve(jsonRes(env({})))
+      if (u.includes('/stats')) return Promise.resolve(jsonRes(env({ total: 0, daily: makeDaily() })))
+      if (u.match(/\/images\/\w+$/)) {
+        return Promise.resolve(jsonRes(env({
+          ...item('b', { expires_at: '2026-08-01T00:00:00Z', max_views: 1 }),
+          mime: 'image/png', upload_ip: '1.1.1.1',
+        })))
+      }
+      return Promise.resolve(jsonRes(env(null)))
+    }),
+  )
+  renderModal('b', withExp)
+  await screen.findByText('b.png')
+  // 等待 quota 加载后 Segmented 重渲染
+  await waitFor(() => {
+    expect(screen.queryByRole('button', { name: '永久' })).not.toBeInTheDocument()
+  })
+  expect(screen.queryByRole('button', { name: '移除过期' })).not.toBeInTheDocument()
+  expect(screen.queryByRole('button', { name: '30 天' })).not.toBeInTheDocument()
+  expect(screen.getByRole('button', { name: '7 天' })).toBeInTheDocument()
+  expect(screen.queryByRole('button', { name: '不限' })).not.toBeInTheDocument()
+  expect(screen.getByRole('button', { name: '阅后即焚' })).toBeInTheDocument()
+  expect(screen.getByRole('button', { name: '3 次' })).toBeInTheDocument()
+  expect(screen.queryByRole('button', { name: '10 次' })).not.toBeInTheDocument()
 })

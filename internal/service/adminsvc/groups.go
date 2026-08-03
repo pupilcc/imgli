@@ -18,6 +18,8 @@ var (
 	ErrQuotaInvalid = errors.New("storage_quota 与 max_file_size 需 > 0")
 	// ErrBandwidthQuotaInvalid bandwidth_quota_month 必须 >= 0（0=不限制）。
 	ErrBandwidthQuotaInvalid = errors.New("bandwidth_quota_month 需 >= 0")
+	// ErrLifecycleInvalid 组生命周期/上传选项字段不合法。
+	ErrLifecycleInvalid = errors.New("生命周期或上传选项参数不合法")
 	// ErrPolicyNotFound allowed_policy_ids 中存在未知的存储策略 id。
 	ErrPolicyNotFound = errors.New("存储策略不存在")
 	// ErrBuiltinGroup 内置组（IsDefault/IsGuest）不可改名或删除——防止误改语义锚点。
@@ -25,6 +27,13 @@ var (
 	ErrBuiltinGroup = errors.New("内置组不可改名或删除")
 	// ErrGroupInUse 组内仍有用户时不可删除。
 	ErrGroupInUse = errors.New("组内存在用户，不可删除")
+)
+
+// 与 handler.MaxExpiresInSec / imagesvc.MaxViewsMax 对齐的校验上限。
+const (
+	groupMaxExpiresInSec = 366 * 24 * 60 * 60
+	groupMaxViewsCap     = 10000
+	groupMaxAgeDaysCap   = 3650
 )
 
 // GroupRow 是列表项：用户组 + 实时算出的组内用户数。
@@ -44,6 +53,12 @@ type GroupPatch struct {
 	RatePerDay          *int
 	AllowedExts         *[]string
 	AllowedPolicyIDs    *[]uint64
+	DefaultExpiresIn    *int
+	MaxExpiresIn        *int
+	DefaultMaxViews     *int
+	MaxMaxViews         *int
+	RetentionDays       *int
+	ForceMaxAgeDays     *int
 }
 
 // ListGroups 按 id 升序返回全部用户组，含每组实时用户数。组数量少，不分页。
@@ -133,6 +148,12 @@ func (s *Service) CreateGroup(g *model.UserGroup) error {
 	if g.BandwidthQuotaMonth < 0 {
 		return ErrBandwidthQuotaInvalid
 	}
+	if err := validateGroupLifecycle(
+		g.DefaultExpiresIn, g.MaxExpiresIn, g.DefaultMaxViews, g.MaxMaxViews,
+		g.RetentionDays, g.ForceMaxAgeDays,
+	); err != nil {
+		return err
+	}
 	exts, err := normalizeExts(g.AllowedExts)
 	if err != nil {
 		return err
@@ -145,6 +166,29 @@ func (s *Service) CreateGroup(g *model.UserGroup) error {
 	g.IsDefault = false
 	g.IsGuest = false
 	return s.db.Create(g).Error
+}
+
+// validateGroupLifecycle 校验上传选项默认/上限与保留策略字段。
+func validateGroupLifecycle(defExp, maxExp, defViews, maxViews, retention, forceAge int) error {
+	if defExp < 0 || maxExp < 0 || defViews < 0 || maxViews < 0 || retention < 0 || forceAge < 0 {
+		return ErrLifecycleInvalid
+	}
+	if maxExp > groupMaxExpiresInSec || defExp > groupMaxExpiresInSec {
+		return ErrLifecycleInvalid
+	}
+	if maxExp > 0 && defExp > maxExp {
+		return ErrLifecycleInvalid
+	}
+	if maxViews > groupMaxViewsCap || defViews > groupMaxViewsCap {
+		return ErrLifecycleInvalid
+	}
+	if maxViews > 0 && defViews > maxViews {
+		return ErrLifecycleInvalid
+	}
+	if retention > groupMaxAgeDaysCap || forceAge > groupMaxAgeDaysCap {
+		return ErrLifecycleInvalid
+	}
+	return nil
 }
 
 // UpdateGroup 部分更新用户组。内置组（IsDefault/IsGuest）可改配额/限速/允许后缀/允许策略，
@@ -228,6 +272,64 @@ func (s *Service) UpdateGroup(id uint64, p GroupPatch) (*model.UserGroup, error)
 		}
 		g.AllowedPolicyIDs = ids
 		cols = append(cols, "allowed_policy_ids")
+	}
+	// 生命周期字段：先合成完整快照再校验，避免只 patch 一项时与旧值组合非法。
+	defExp, maxExp := g.DefaultExpiresIn, g.MaxExpiresIn
+	defViews, maxViews := g.DefaultMaxViews, g.MaxMaxViews
+	retention, forceAge := g.RetentionDays, g.ForceMaxAgeDays
+	lifeTouched := false
+	if p.DefaultExpiresIn != nil {
+		defExp = *p.DefaultExpiresIn
+		lifeTouched = true
+	}
+	if p.MaxExpiresIn != nil {
+		maxExp = *p.MaxExpiresIn
+		lifeTouched = true
+	}
+	if p.DefaultMaxViews != nil {
+		defViews = *p.DefaultMaxViews
+		lifeTouched = true
+	}
+	if p.MaxMaxViews != nil {
+		maxViews = *p.MaxMaxViews
+		lifeTouched = true
+	}
+	if p.RetentionDays != nil {
+		retention = *p.RetentionDays
+		lifeTouched = true
+	}
+	if p.ForceMaxAgeDays != nil {
+		forceAge = *p.ForceMaxAgeDays
+		lifeTouched = true
+	}
+	if lifeTouched {
+		if err := validateGroupLifecycle(defExp, maxExp, defViews, maxViews, retention, forceAge); err != nil {
+			return nil, err
+		}
+		if p.DefaultExpiresIn != nil {
+			g.DefaultExpiresIn = defExp
+			cols = append(cols, "default_expires_in")
+		}
+		if p.MaxExpiresIn != nil {
+			g.MaxExpiresIn = maxExp
+			cols = append(cols, "max_expires_in")
+		}
+		if p.DefaultMaxViews != nil {
+			g.DefaultMaxViews = defViews
+			cols = append(cols, "default_max_views")
+		}
+		if p.MaxMaxViews != nil {
+			g.MaxMaxViews = maxViews
+			cols = append(cols, "max_max_views")
+		}
+		if p.RetentionDays != nil {
+			g.RetentionDays = retention
+			cols = append(cols, "retention_days")
+		}
+		if p.ForceMaxAgeDays != nil {
+			g.ForceMaxAgeDays = forceAge
+			cols = append(cols, "force_max_age_days")
+		}
 	}
 
 	if len(cols) == 0 {

@@ -56,6 +56,15 @@ export interface Quota {
   bandwidth_quota_month?: number
   /** 账期 YYYY-MM（Asia/Shanghai） */
   bandwidth_period?: string
+  /** 组默认有效期秒；0=默认永久 */
+  default_expires_in?: number
+  /** 组有效期上限秒；0=允许永久 */
+  max_expires_in?: number
+  default_max_views?: number
+  /** 0=允许不限 */
+  max_max_views?: number
+  retention_days?: number
+  force_max_age_days?: number
 }
 
 export interface Links {
@@ -330,6 +339,12 @@ export interface AdminGroup {
   rate_per_day: number
   allowed_exts: string[]
   allowed_policy_ids: number[] | null
+  default_expires_in?: number
+  max_expires_in?: number
+  default_max_views?: number
+  max_max_views?: number
+  retention_days?: number
+  force_max_age_days?: number
   created_at: string
   user_count: number
 }
@@ -499,6 +514,11 @@ export interface GuestLimits {
   max_file_size: number
   allowed_exts: string[]
   per_day: number
+  default_expires_in?: number
+  max_expires_in?: number
+  default_max_views?: number
+  max_max_views?: number
+  force_max_age_days?: number
 }
 
 export interface PublicConfig {

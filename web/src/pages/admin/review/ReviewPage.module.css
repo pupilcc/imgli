@@ -67,3 +67,10 @@
   font-size: 13px;
   color: var(--muted);
 }
+
+.headerActs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+}

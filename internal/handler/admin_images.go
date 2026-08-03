@@ -4,6 +4,7 @@ import (
 	"errors"
 	"net/http"
 	"strconv"
+	"strings"
 
 	"github.com/go-chi/chi/v5"
 
@@ -63,6 +64,93 @@ func (h *AdminHandlers) Images(w http.ResponseWriter, r *http.Request) {
 		items = append(items, h.adminImageItemDTO(&rows[i]))
 	}
 	OK(w, map[string]any{"items": items, "total": total, "page": page, "limit": limit})
+}
+
+// ImagesBatch POST /api/v1/admin/images/batch {keys, action: trash|purge} → {results}。
+// 上限 100；逐项处理部分成功。trash=软删（游客无回收站时升格 purge）；purge=彻底删除。
+func (h *AdminHandlers) ImagesBatch(w http.ResponseWriter, r *http.Request) {
+	var req struct {
+		Keys   []string `json:"keys"`
+		Action string   `json:"action"`
+	}
+	if err := DecodeJSON(r, &req); err != nil {
+		Fail(w, http.StatusBadRequest, CodeInvalidRequest, "请求体无效")
+		return
+	}
+	if req.Action != "trash" && req.Action != "purge" {
+		Fail(w, http.StatusBadRequest, CodeInvalidRequest, "action 仅支持 trash|purge")
+		return
+	}
+	if len(req.Keys) == 0 {
+		Fail(w, http.StatusBadRequest, CodeInvalidRequest, "keys 不能为空")
+		return
+	}
+	if len(req.Keys) > 100 {
+		Fail(w, http.StatusBadRequest, CodeInvalidRequest, adminsvc.ErrTooManyKeys.Error())
+		return
+	}
+	actor := PrincipalFrom(r).User
+	type item struct {
+		Key            string `json:"key"`
+		OK             bool   `json:"ok"`
+		Error          string `json:"error,omitempty"`
+		Permanent      bool   `json:"permanent,omitempty"`
+		PhysicalQueued bool   `json:"physical_queued,omitempty"`
+		ObjectRetained bool   `json:"object_retained,omitempty"`
+	}
+	out := make([]item, 0, len(req.Keys))
+	for _, key := range req.Keys {
+		key = strings.TrimSpace(key)
+		if key == "" {
+			out = append(out, item{Key: key, OK: false, Error: "empty key"})
+			continue
+		}
+		permanent := req.Action == "purge"
+		if !permanent && h.D.Img != nil {
+			if row, err := h.D.Adm.GetImageRow(key); err == nil && row.Img.UserID == nil {
+				permanent = true
+			}
+		}
+		if permanent {
+			if h.D.Img == nil {
+				out = append(out, item{Key: key, OK: false, Error: "internal"})
+				continue
+			}
+			res, err := h.D.Img.AdminPurge(key)
+			if err != nil {
+				msg := "not found"
+				if !errors.Is(err, imagesvc.ErrNotFound) {
+					msg = "error"
+				}
+				out = append(out, item{Key: key, OK: false, Error: msg})
+				continue
+			}
+			h.D.Adm.Audit(&actor.ID, "admin", "image_admin_purge",
+				map[string]any{
+					"key": key, "permanent": true, "batch": true,
+					"owner_id": res.OwnerID, "physical_queued": res.PhysicalQueued,
+					"object_retained": res.ObjectRetained,
+				}, ClientIP(r))
+			out = append(out, item{
+				Key: key, OK: true, Permanent: true,
+				PhysicalQueued: res.PhysicalQueued, ObjectRetained: res.ObjectRetained,
+			})
+			continue
+		}
+		img, err := h.D.Adm.AdminSoftDelete(key)
+		if err != nil {
+			msg := "not found"
+			if !errors.Is(err, adminsvc.ErrImageNotFound) {
+				msg = "error"
+			}
+			out = append(out, item{Key: key, OK: false, Error: msg})
+			continue
+		}
+		h.D.Adm.Audit(&actor.ID, "admin", "image_admin_delete",
+			map[string]any{"key": key, "owner_id": img.UserID, "permanent": false, "batch": true}, ClientIP(r))
+		out = append(out, item{Key: key, OK: true, Permanent: false})
+	}
+	OK(w, map[string]any{"results": out})
 }
 
 // DeleteImage DELETE /api/v1/admin/images/{key}[?permanent=1]

@@ -10,6 +10,21 @@ separate version in `go.mod` or `web/package.json`.
 
 ## [Unreleased]
 
+## [0.9.0] - 2026-08-03
+
+Theme: **Group lifecycle ops · admin stock clamp · cleanup observability**.
+
+### Added
+
+- **Admin images batch:** `POST /admin/images/batch` `{keys, action: trash|purge}` (max 100); list multi-select + batch bar; per-card permanent delete on hover.
+- **User-group lifecycle / upload options:** `default_expires_in`, `max_expires_in`, `default_max_views`, `max_max_views`, `retention_days`, `force_max_age_days` on groups; enforced at upload + image PATCH; exposed on `/user/quota` and guest `/config`; admin Groups UI; hourly soft-delete by retention and hard purge by force max age. Guest seed defaults: 1d default / 7d max / 7d force age.
+- **Image detail access presets:** library detail modal filters expiry / max-views Segmented options by the same group caps as the upload page; hides “remove expiry” when permanent is forbidden; out-of-policy banner + apply group max; dynamic cap presets.
+- **Group stock lifecycle:** `POST /admin/groups/{id}/lifecycle/preview|apply` clamps permanent/over-cap live images to now+cap; Groups UI preview/apply + list badges + stock-only warning.
+- **Cleanup kinds:** `group_retention`, `group_force_age` in admin cleanup preview/run (System page includes them by default).
+- **Error codes:** `expires_over_group`, `max_views_over_group` with i18n mapping.
+- **Review queue:** purge-all-on-page (permanent delete batch).
+- **Docs:** [docs/user-groups-lifecycle.md](docs/user-groups-lifecycle.md); PicGo/ShareX/CDN cleanup notes; CLI `imgli upload -verbose` prints group limits.
+
 ## [0.8.0] - 2026-08-02
 
 Theme: **Admin image ops · delete clarity** — storage locate, trash vs permanent delete, guest purge.

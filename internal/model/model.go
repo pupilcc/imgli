@@ -72,8 +72,20 @@ type UserGroup struct {
 	RatePerDay          int
 	AllowedExts         []string `gorm:"serializer:json"`
 	AllowedPolicyIDs    []uint64 `gorm:"serializer:json"`
-	CreatedAt           time.Time
-	UpdatedAt           time.Time
+	// DefaultExpiresIn 上传默认有效期（秒）；0=默认永久。UI/未传时由后端套用。
+	DefaultExpiresIn int `gorm:"not null;default:0"`
+	// MaxExpiresIn 有效期上限（秒）；0=允许永久（仍受全局 1 年上限）；>0 时禁止永久且不得超过此值。
+	MaxExpiresIn int `gorm:"not null;default:0"`
+	// DefaultMaxViews 默认访问次数；0=默认不限。
+	DefaultMaxViews int `gorm:"not null;default:0"`
+	// MaxMaxViews 访问次数上限；0=允许不限（仍受全局上限）；>0 时禁止不限且不得超过此值。
+	MaxMaxViews int `gorm:"not null;default:0"`
+	// RetentionDays 自动进回收站天数；0=关闭。按 created_at 对 live 图软删。
+	RetentionDays int `gorm:"not null;default:0"`
+	// ForceMaxAgeDays 强制最大存活天数；0=关闭。上传钳制/补默认；定时对超龄 live 图永久清理。
+	ForceMaxAgeDays int `gorm:"not null;default:0"`
+	CreatedAt       time.Time
+	UpdatedAt       time.Time
 }
 
 // File 物理文件（内容寻址）。去重按 (hash,surface) 唯一：hash 命中即秒传。

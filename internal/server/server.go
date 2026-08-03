@@ -265,6 +265,7 @@ func (s *Server) mountAPI() {
 				ar.Patch("/users/{id}", admH.UpdateUser)
 				ar.Post("/users/{id}/reset-password", admH.ResetPassword)
 				ar.Get("/images", admH.Images)
+				ar.Post("/images/batch", admH.ImagesBatch)
 				ar.Delete("/images/{key}", admH.DeleteImage)
 				ar.Patch("/images/{key}", admH.UpdateImageWhitelist)
 				ar.Get("/review", admH.Review)
@@ -273,6 +274,8 @@ func (s *Server) mountAPI() {
 				ar.Get("/groups", admH.Groups)
 				ar.Post("/groups", admH.CreateGroup)
 				ar.Patch("/groups/{id}", admH.UpdateGroup)
+				ar.Post("/groups/{id}/lifecycle/preview", admH.PreviewGroupLifecycle)
+				ar.Post("/groups/{id}/lifecycle/apply", admH.ApplyGroupLifecycle)
 				ar.Delete("/groups/{id}", admH.DeleteGroup)
 				ar.Get("/policies", admH.Policies)
 				ar.Post("/policies", admH.CreatePolicy)
@@ -376,6 +379,8 @@ func (s *Server) Run(ctx context.Context) error {
 		go func() {
 			s.imgSvc.PurgeExpiredTrash(ctx)
 			s.imgSvc.PurgeExpiredImages(ctx)
+			s.imgSvc.SoftDeleteByGroupRetention(ctx)
+			s.imgSvc.PurgeByGroupForceMaxAge(ctx)
 			t := time.NewTicker(time.Hour)
 			defer t.Stop()
 			for {
@@ -385,6 +390,8 @@ func (s *Server) Run(ctx context.Context) error {
 				case <-t.C:
 					s.imgSvc.PurgeExpiredTrash(ctx)
 					s.imgSvc.PurgeExpiredImages(ctx)
+					s.imgSvc.SoftDeleteByGroupRetention(ctx)
+					s.imgSvc.PurgeByGroupForceMaxAge(ctx)
 				}
 			}
 		}()

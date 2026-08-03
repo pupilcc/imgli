@@ -1,8 +1,18 @@
 import { useState, useId } from 'react'
-import { useAdminGroups, useAdminPolicies, useCreateGroup, useDeleteGroup, useUpdateGroup, type GroupWriteBody } from '../../../api/adminHooks'
+import {
+  useAdminGroups,
+  useAdminPolicies,
+  useApplyGroupLifecycle,
+  useCreateGroup,
+  useDeleteGroup,
+  usePreviewGroupLifecycle,
+  useUpdateGroup,
+  type GroupWriteBody,
+} from '../../../api/adminHooks'
 import type { AdminGroup } from '../../../api/types'
 import { useT } from '../../../i18n'
 import { PageHeader } from '../../../shell/PageHeader'
+import { useGlobal } from '../../../store'
 import { Button } from '../../../ui/Button'
 import { EmptyState } from '../../../ui/EmptyState'
 import { InlineConfirm } from '../../../ui/InlineConfirm'
@@ -10,6 +20,20 @@ import { Input } from '../../../ui/Input'
 import { AdminQueryGate } from '../ui/AdminQueryGate'
 import forms from '../ui/adminForms.module.css'
 import styles from './GroupsPage.module.css'
+
+function lifecycleBadges(g: AdminGroup, t: (k: string, v?: Record<string, string | number>) => string): string[] {
+  const badges: string[] = []
+  const maxSec = g.max_expires_in ?? 0
+  const force = g.force_max_age_days ?? 0
+  const ret = g.retention_days ?? 0
+  let capDays = 0
+  if (maxSec > 0) capDays = Math.ceil(maxSec / 86400)
+  if (force > 0 && (capDays === 0 || force < capDays)) capDays = force
+  if (capDays > 0) badges.push(t('adminA.lifecycleBadgeMax', { days: capDays }))
+  if (force > 0) badges.push(t('adminA.lifecycleBadgeForce', { days: force }))
+  if (ret > 0) badges.push(t('adminA.lifecycleBadgeRetention', { days: ret }))
+  return badges
+}
 
 const GB = 1024 ** 3
 const MB = 1024 ** 2
@@ -27,11 +51,19 @@ interface FormState {
   perDay: string
   exts: string[]
   policyIds: number[]
+  defaultExpires: string
+  maxExpires: string
+  defaultMaxViews: string
+  maxMaxViews: string
+  retentionDays: string
+  forceMaxAgeDays: string
 }
 
 const NEW_FORM: FormState = {
   name: '', quotaGB: '10', maxMB: '20', bwGB: '5', perMin: '20', perHour: '200', perDay: '1000',
   exts: ['png', 'jpg', 'jpeg', 'gif', 'webp'], policyIds: [],
+  defaultExpires: '0', maxExpires: '0', defaultMaxViews: '0', maxMaxViews: '0',
+  retentionDays: '0', forceMaxAgeDays: '0',
 }
 
 function formOf(g: AdminGroup): FormState {
@@ -45,6 +77,12 @@ function formOf(g: AdminGroup): FormState {
     perDay: String(g.rate_per_day),
     exts: g.allowed_exts ?? [],
     policyIds: g.allowed_policy_ids ?? [],
+    defaultExpires: String(g.default_expires_in ?? 0),
+    maxExpires: String(g.max_expires_in ?? 0),
+    defaultMaxViews: String(g.default_max_views ?? 0),
+    maxMaxViews: String(g.max_max_views ?? 0),
+    retentionDays: String(g.retention_days ?? 0),
+    forceMaxAgeDays: String(g.force_max_age_days ?? 0),
   }
 }
 
@@ -59,6 +97,12 @@ function createBody(f: FormState): GroupWriteBody {
     rate_per_day: Number(f.perDay),
     allowed_exts: f.exts,
     allowed_policy_ids: f.policyIds,
+    default_expires_in: Number(f.defaultExpires) || 0,
+    max_expires_in: Number(f.maxExpires) || 0,
+    default_max_views: Number(f.defaultMaxViews) || 0,
+    max_max_views: Number(f.maxMaxViews) || 0,
+    retention_days: Number(f.retentionDays) || 0,
+    force_max_age_days: Number(f.forceMaxAgeDays) || 0,
   }
 }
 
@@ -74,6 +118,12 @@ function patchBody(o: AdminGroup, f: FormState): GroupWriteBody {
   if (Number(f.perDay) !== o.rate_per_day) b.rate_per_day = Number(f.perDay)
   if (JSON.stringify(f.exts) !== JSON.stringify(o.allowed_exts ?? [])) b.allowed_exts = f.exts
   if (JSON.stringify(f.policyIds) !== JSON.stringify(o.allowed_policy_ids ?? [])) b.allowed_policy_ids = f.policyIds
+  if (Number(f.defaultExpires) !== (o.default_expires_in ?? 0)) b.default_expires_in = Number(f.defaultExpires) || 0
+  if (Number(f.maxExpires) !== (o.max_expires_in ?? 0)) b.max_expires_in = Number(f.maxExpires) || 0
+  if (Number(f.defaultMaxViews) !== (o.default_max_views ?? 0)) b.default_max_views = Number(f.defaultMaxViews) || 0
+  if (Number(f.maxMaxViews) !== (o.max_max_views ?? 0)) b.max_max_views = Number(f.maxMaxViews) || 0
+  if (Number(f.retentionDays) !== (o.retention_days ?? 0)) b.retention_days = Number(f.retentionDays) || 0
+  if (Number(f.forceMaxAgeDays) !== (o.force_max_age_days ?? 0)) b.force_max_age_days = Number(f.forceMaxAgeDays) || 0
   return b
 }
 
@@ -117,16 +167,20 @@ function ExtInput({ exts, onChange }: { exts: string[]; onChange(v: string[]): v
 
 export function GroupsPage() {
   const { t } = useT()
+  const pushToast = useGlobal((s) => s.pushToast)
   const groupsQ = useAdminGroups()
   const policiesQ = useAdminPolicies()
   const create = useCreateGroup()
   const update = useUpdateGroup()
   const del = useDeleteGroup()
+  const lifePreview = usePreviewGroupLifecycle()
+  const lifeApply = useApplyGroupLifecycle()
 
   const groups = groupsQ.data?.items ?? []
   const policies = policiesQ.data?.items ?? []
   const [sel, setSel] = useState<number | 'new' | null>(null)
   const [form, setForm] = useState<FormState>(NEW_FORM)
+  const [lifeMsg, setLifeMsg] = useState<string | null>(null)
 
   const current = typeof sel === 'number' ? groups.find((g) => g.id === sel) ?? null : null
   const builtin = !!current && (current.is_default || current.is_guest)
@@ -135,10 +189,12 @@ export function GroupsPage() {
   const selectGroup = (g: AdminGroup) => {
     setSel(g.id)
     setForm(formOf(g))
+    setLifeMsg(null)
   }
   const selectNew = () => {
     setSel('new')
     setForm(NEW_FORM)
+    setLifeMsg(null)
   }
 
   const submit = () => {
@@ -149,6 +205,39 @@ export function GroupsPage() {
       if (Object.keys(body).length === 0) return
       update.mutate({ id: current.id, body })
     }
+  }
+
+  const onLifecyclePreview = () => {
+    if (!current) return
+    setLifeMsg(null)
+    lifePreview.mutate(current.id, {
+      onSuccess: (p) => {
+        if (p.cap_sec <= 0) setLifeMsg(t('adminA.lifecycleNoCap'))
+        else {
+          setLifeMsg(t('adminA.lifecyclePreviewResult', {
+            perm: p.permanent_count,
+            over: p.over_cap_count,
+            total: p.total,
+            cap: p.cap_sec,
+          }))
+        }
+      },
+    })
+  }
+
+  const onLifecycleApply = () => {
+    if (!current) return
+    if (!window.confirm(t('adminA.lifecycleApplyConfirm'))) return
+    lifeApply.mutate(
+      { id: current.id },
+      {
+        onSuccess: (r) => {
+          const msg = t('adminA.lifecycleApplyResult', { updated: r.updated, skipped: r.skipped })
+          setLifeMsg(msg)
+          pushToast(msg)
+        },
+      },
+    )
   }
 
   return (
@@ -173,6 +262,9 @@ export function GroupsPage() {
                   {(g.is_default || g.is_guest) && (
                     <span className={styles.builtin}>{g.is_guest ? t('adminA.guest') : t('adminA.defaultGroup')}</span>
                   )}
+                  {lifecycleBadges(g, t).map((b) => (
+                    <span key={b} className={styles.lifeBadge}>{b}</span>
+                  ))}
                   <span className={styles.rowCount}>{t('adminA.memberCount', { count: g.user_count })}</span>
                 </button>
               ))}
@@ -238,6 +330,60 @@ export function GroupsPage() {
                   </div>
                   <ExtInput exts={form.exts} onChange={(v) => set('exts', v)} />
                   <div className={forms.field}>
+                    <span className={forms.label}>{t('adminA.lifecycleSection')}</span>
+                    <p className={forms.hint}>{t('adminA.lifecycleHint')}</p>
+                    <p className={forms.hint}>{t('adminA.lifecycleSecHint')}</p>
+                    <p className={forms.hint}>{t('adminA.lifecycleStockNote')}</p>
+                  </div>
+                  <div className={styles.grid2}>
+                    <Input
+                      label={t('adminA.defaultExpiresSec')}
+                      type="number"
+                      min={0}
+                      value={form.defaultExpires}
+                      onChange={(e) => set('defaultExpires', e.target.value)}
+                    />
+                    <Input
+                      label={t('adminA.maxExpiresSec')}
+                      type="number"
+                      min={0}
+                      value={form.maxExpires}
+                      onChange={(e) => set('maxExpires', e.target.value)}
+                    />
+                  </div>
+                  <div className={styles.grid2}>
+                    <Input
+                      label={t('adminA.defaultMaxViews')}
+                      type="number"
+                      min={0}
+                      value={form.defaultMaxViews}
+                      onChange={(e) => set('defaultMaxViews', e.target.value)}
+                    />
+                    <Input
+                      label={t('adminA.maxMaxViews')}
+                      type="number"
+                      min={0}
+                      value={form.maxMaxViews}
+                      onChange={(e) => set('maxMaxViews', e.target.value)}
+                    />
+                  </div>
+                  <div className={styles.grid2}>
+                    <Input
+                      label={t('adminA.retentionDays')}
+                      type="number"
+                      min={0}
+                      value={form.retentionDays}
+                      onChange={(e) => set('retentionDays', e.target.value)}
+                    />
+                    <Input
+                      label={t('adminA.forceMaxAgeDays')}
+                      type="number"
+                      min={0}
+                      value={form.forceMaxAgeDays}
+                      onChange={(e) => set('forceMaxAgeDays', e.target.value)}
+                    />
+                  </div>
+                  <div className={forms.field}>
                     <span className={forms.label}>{t('adminA.allowedPolicies')}</span>
                     <div className={styles.policies}>
                       {policiesQ.isError ? (
@@ -264,6 +410,25 @@ export function GroupsPage() {
                       ))}
                     </div>
                   </div>
+                  {current && (
+                    <div className={styles.lifeActions}>
+                      <Button
+                        variant="secondary"
+                        disabled={lifePreview.isPending || lifeApply.isPending}
+                        onClick={onLifecyclePreview}
+                      >
+                        {t('adminA.lifecyclePreview')}
+                      </Button>
+                      <Button
+                        variant="secondary"
+                        disabled={lifePreview.isPending || lifeApply.isPending}
+                        onClick={onLifecycleApply}
+                      >
+                        {t('adminA.lifecycleApply')}
+                      </Button>
+                      {lifeMsg && <p className={forms.hint}>{lifeMsg}</p>}
+                    </div>
+                  )}
                   <div className={styles.actions}>
                     <Button
                       variant="primary"

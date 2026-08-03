@@ -44,6 +44,10 @@ export default {
   maxViews1: '1 view',
   maxViews3: '3 views',
   maxViews10: '10 views',
+  expiryCapDays: 'Max {days}d',
+  expiryCapHours: 'Max {hours}h',
+  expiryCapSec: 'Max {sec}s',
+  maxViewsCap: 'Max {n} views',
 
   copyAllLinks: 'Copy all links',
   clearDone: 'Clear completed',

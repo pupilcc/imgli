@@ -13,6 +13,7 @@ const ACTION_I18N: Record<string, string> = {
   group_create: 'adminB.actGroupCreate',
   group_update: 'adminB.actGroupUpdate',
   group_delete: 'adminB.actGroupDelete',
+  group_lifecycle_apply: 'adminB.actGroupLifecycleApply',
   policy_create: 'adminB.actPolicyCreate',
   policy_update: 'adminB.actPolicyUpdate',
   policy_delete: 'adminB.actPolicyDelete',

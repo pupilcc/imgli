@@ -22,6 +22,7 @@ export default {
   actGroupCreate: 'Create group',
   actGroupUpdate: 'Update group',
   actGroupDelete: 'Delete group',
+  actGroupLifecycleApply: 'Apply group lifecycle to stock images',
   actPolicyCreate: 'Create storage policy',
   actPolicyUpdate: 'Update storage policy',
   actPolicyDelete: 'Delete storage policy',

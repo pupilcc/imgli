@@ -5,12 +5,14 @@ import { useAlbums, useConfig, useQuota, useSession, useUserPolicies } from '../
 import { useT } from '../../i18n'
 import { formatBytes } from '../../lib/format'
 import {
-  EXPIRY_LABEL_KEY,
   EXPIRY_PRESETS,
-  MAX_VIEWS_LABEL_KEY,
-  MAX_VIEWS_PRESETS,
-  type ExpiryKey,
-  type MaxViewsKey,
+  expiryPresetLabel,
+  filterExpiryPresets,
+  filterMaxViewsPresets,
+  groupExpiresCapSec,
+  maxViewsPresetLabel,
+  resolveDefaultExpiresIn,
+  resolveDefaultMaxViews,
 } from '../../lib/imageAccessPresets'
 import { loginHref } from '../../lib/safeNext'
 import { useGlobal } from '../../store'
@@ -64,6 +66,7 @@ export function UploadPage() {
   const [policyId, setPolicyId] = useState<number | null>(() => prefs?.default_policy_id ?? null)
   const [expiresIn, setExpiresIn] = useState(0)
   const [maxViews, setMaxViews] = useState(0)
+  const accessDefaultsSeeded = useRef(false)
   const fileInput = useRef<HTMLInputElement>(null)
   // 队列是全局 store:挂载时把已完成项播种为「已复制」,防路由往返后重复自动复制历史项(codex 终审)
   const copiedRef = useRef<Set<number>>(new Set())
@@ -92,13 +95,63 @@ export function UploadPage() {
       ? { maxFileSize: quota.data.max_file_size, allowedExts: quota.data.allowed_exts ?? [] }
       : null
   const showPolicy = (policies.data?.length ?? 0) > 1
+  const accessPolicy = isGuest
+    ? {
+        default_expires_in: guestLimits?.default_expires_in ?? 0,
+        max_expires_in: guestLimits?.max_expires_in ?? 0,
+        default_max_views: guestLimits?.default_max_views ?? 0,
+        max_max_views: guestLimits?.max_max_views ?? 0,
+        force_max_age_days: guestLimits?.force_max_age_days ?? 0,
+      }
+    : {
+        default_expires_in: quota.data?.default_expires_in ?? 0,
+        max_expires_in: quota.data?.max_expires_in ?? 0,
+        default_max_views: quota.data?.default_max_views ?? 0,
+        max_max_views: quota.data?.max_max_views ?? 0,
+        force_max_age_days: quota.data?.force_max_age_days ?? 0,
+      }
+  const expiresCap = groupExpiresCapSec(accessPolicy)
+  const expiryPresets = filterExpiryPresets(expiresCap)
+  const maxViewsPresets = filterMaxViewsPresets(accessPolicy.max_max_views)
+  // 组策略就绪后预填默认（仅一次，避免覆盖用户已改选项）
+  useEffect(() => {
+    if (accessDefaultsSeeded.current) return
+    const ready = isGuest ? config.data != null : quota.data != null
+    if (!ready) return
+    accessDefaultsSeeded.current = true
+    setExpiresIn(
+      resolveDefaultExpiresIn(
+        accessPolicy.default_expires_in,
+        expiresCap,
+        expiryPresets,
+      ),
+    )
+    setMaxViews(
+      resolveDefaultMaxViews(
+        accessPolicy.default_max_views,
+        accessPolicy.max_max_views,
+        maxViewsPresets,
+      ),
+    )
+  }, [isGuest, config.data, quota.data, accessPolicy, expiresCap, expiryPresets, maxViewsPresets])
+
   const opts: QueueOpts = isGuest
     ? { visibility: 'public', albumId: null, policyId: null, expiresIn, maxViews }
     : { visibility, albumId, policyId: showPolicy ? policyId : null, expiresIn, maxViews }
-  const expiryKey: ExpiryKey =
-    EXPIRY_PRESETS.find((p) => p.sec === expiresIn)?.key ?? 'never'
-  const maxViewsKey: MaxViewsKey =
-    MAX_VIEWS_PRESETS.find((p) => p.n === maxViews)?.key ?? 'unlimited'
+  const expiryKey =
+    expiryPresets.find((p) => p.sec === expiresIn)?.key
+    ?? (expiresCap > 0 ? (expiryPresets[0]?.key ?? 'never') : 'never')
+  const maxViewsKey =
+    maxViewsPresets.find((p) => p.n === maxViews)?.key
+    ?? (accessPolicy.max_max_views > 0 ? (maxViewsPresets[0]?.key ?? 'unlimited') : 'unlimited')
+  const expiryLabel = expiryPresetLabel(
+    expiryPresets.find((p) => p.key === expiryKey) ?? { key: expiryKey, sec: expiresIn },
+    t,
+  )
+  const maxViewsLabel = maxViewsPresetLabel(
+    maxViewsPresets.find((p) => p.key === maxViewsKey) ?? { key: maxViewsKey, n: maxViews },
+    t,
+  )
 
   useEffect(() => {
     if (albumId !== null && albums.data && !albums.data.items.some((a) => a.id === albumId)) {
@@ -194,7 +247,7 @@ export function UploadPage() {
   }
 
   const albumName = albumId ? (albums.data?.items.find((a) => a.id === albumId)?.name ?? '') : t('upload.noAlbum')
-  const summary = `${albumName} · ${visibility === 'public' ? t('upload.public') : t('upload.private')} · ${t(EXPIRY_LABEL_KEY[expiryKey])} · ${t(MAX_VIEWS_LABEL_KEY[maxViewsKey])}`
+  const summary = `${albumName} · ${visibility === 'public' ? t('upload.public') : t('upload.private')} · ${expiryLabel} · ${maxViewsLabel}`
 
   return (
     <div
@@ -418,31 +471,31 @@ export function UploadPage() {
               </div>
               <div className={`${styles.optField} ${styles.optFieldWide}`}>
                 <span className={styles.optLabel}>{t('upload.expiry')}</span>
-                <Segmented<ExpiryKey>
+                <Segmented
                   mono
-                  options={EXPIRY_PRESETS.map((p) => ({
+                  options={expiryPresets.map((p) => ({
                     value: p.key,
-                    label: t(EXPIRY_LABEL_KEY[p.key]),
+                    label: expiryPresetLabel(p, t),
                   }))}
                   value={expiryKey}
                   onChange={(k) => {
-                    const p = EXPIRY_PRESETS.find((x) => x.key === k)
-                    setExpiresIn(p?.sec ?? 0)
+                    const p = expiryPresets.find((x) => x.key === k)
+                    setExpiresIn(p?.sec ?? (expiresCap > 0 ? expiresCap : 0))
                   }}
                 />
               </div>
               <div className={`${styles.optField} ${styles.optFieldWide}`}>
                 <span className={styles.optLabel}>{t('upload.maxViews')}</span>
-                <Segmented<MaxViewsKey>
+                <Segmented
                   mono
-                  options={MAX_VIEWS_PRESETS.map((p) => ({
+                  options={maxViewsPresets.map((p) => ({
                     value: p.key,
-                    label: t(MAX_VIEWS_LABEL_KEY[p.key]),
+                    label: maxViewsPresetLabel(p, t),
                   }))}
                   value={maxViewsKey}
                   onChange={(k) => {
-                    const p = MAX_VIEWS_PRESETS.find((x) => x.key === k)
-                    setMaxViews(p?.n ?? 0)
+                    const p = maxViewsPresets.find((x) => x.key === k)
+                    setMaxViews(p?.n ?? (accessPolicy.max_max_views > 0 ? accessPolicy.max_max_views : 0))
                   }}
                 />
               </div>

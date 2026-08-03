@@ -132,7 +132,7 @@ export function SystemPage() {
   const onPreviewCleanup = () => {
     setCleanupMsg(null)
     previewCleanup.mutate(
-      { kinds: ['expired', 'trash'] },
+      { kinds: ['expired', 'trash', 'group_retention', 'group_force_age'] },
       {
         onSuccess: (r) => {
           const parts = (r.items ?? []).map((it) => `${it.kind}:${it.count}`)
@@ -146,7 +146,7 @@ export function SystemPage() {
     if (!window.confirm(t('adminA.cleanupRunConfirm'))) return
     setCleanupMsg(null)
     runCleanup.mutate(
-      { kinds: ['expired', 'trash'], confirm: true, limit: 200 },
+      { kinds: ['expired', 'trash', 'group_retention', 'group_force_age'], confirm: true, limit: 200 },
       {
         onSuccess: (r) => {
           const parts = (r.items ?? []).map((it) => `${it.kind}: deleted ${it.deleted ?? 0}`)

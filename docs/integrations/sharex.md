@@ -102,7 +102,10 @@ Save → set as default image uploader → test upload.
 | 403 | Guest upload disabled and not authenticated |
 | 413 | Over group max file size or storage quota |
 | 415 | Extension not allowed |
+| 400 | Invalid options (e.g. `expires_over_group` / `max_views_over_group` when the token’s group forbids permanent or over-cap values) |
 | 429 | Rate limited or monthly bandwidth cap |
+
+Group limits: `GET /api/v1/user/quota` (authenticated) or `GET /api/v1/config` → `guest`. See [user-groups-lifecycle.md](../user-groups-lifecycle.md).
 
 ---
 

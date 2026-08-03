@@ -167,6 +167,18 @@ func migrateBandwidthDefaults(db *gorm.DB) error {
 		Update("bandwidth_quota_month", FreeBandwidthQuotaMonth).Error
 }
 
+// migrateGuestLifecycleDefaults 为存量游客组补生命周期默认（全 0 视为未配置）。
+// 管理员若曾显式把某字段改成非 0，不会被覆盖；若全部仍 0，写入与 Seed 一致的 1d/7d/7d。
+func migrateGuestLifecycleDefaults(db *gorm.DB) error {
+	return db.Model(&UserGroup{}).
+		Where("is_guest = ? AND default_expires_in = 0 AND max_expires_in = 0 AND force_max_age_days = 0", true).
+		Updates(map[string]any{
+			"default_expires_in": 86400,
+			"max_expires_in":     7 * 86400,
+			"force_max_age_days": 7,
+		}).Error
+}
+
 // migrateSurface 完成 files.surface 的存量适配：回填空 surface 为 public，并删除旧的
 // 单列 hash 唯一索引。AutoMigrate 会据标签建 (hash,surface) 复合唯一索引,但不会自动删
 // 旧的 idx_files_hash；不删则 unique(hash) 仍在,阻止同 hash 跨 surface 两行。
@@ -201,8 +213,16 @@ func Seed(db *gorm.DB) error {
 			RatePerMinute: 3, RatePerHour: 3, RatePerDay: 3,
 			AllowedExts:      []string{"png", "jpg", "jpeg", "gif", "webp"},
 			AllowedPolicyIDs: []uint64{1},
+			// 游客默认非永久：1 天默认 / 最长 7 天 / 超龄硬清 7 天。
+			DefaultExpiresIn: 86400,
+			MaxExpiresIn:     7 * 86400,
+			ForceMaxAgeDays:  7,
 		}
 		if err := firstOrCreateBy(tx, &UserGroup{}, "is_guest = ?", true, &guest); err != nil {
+			return err
+		}
+		// 存量库 firstOrCreate 不会更新已有游客组：仅当生命周期字段仍全 0 时补默认。
+		if err := migrateGuestLifecycleDefaults(tx); err != nil {
 			return err
 		}
 		local := StoragePolicy{
