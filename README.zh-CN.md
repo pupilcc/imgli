@@ -71,11 +71,13 @@
 - **变换**:受控缩略 `/t/{key}?w=200|400|800`。
 - **运维（v0.6+）**:管理后台 **跨策略存储搬迁**（进度/续跑/size 校验；见
   [docs/storage-migrate.md](docs/storage-migrate.md)）；**版本展示 + 探测更新 +
-  一键二进制升级**（Docker 请换镜像）；**过期图 / 旧回收站清理**（dry-run + 确认执行）。
-- **运维控制台（v0.7）**:管理后台 **系统 / 运维**——内嵌 **doctor 健康检查**
-  （`GET /admin/system/health`）、运行时摘要、浏览器 vs `base_url` 错配（反代 CSRF）、
-  升级 preflight；设置页 **三步接入** UI 与上传页首次引导统一。反代 FAQ：
-  [docs/security-hardening.md](docs/security-hardening.md#faq-reverse-proxy-loginregister-cross-site-rejected)。
+  一键二进制升级**（Docker 请换镜像）；**生命周期清理**（dry-run + 确认执行）。
+- **运维控制台（v0.7–v0.9）**:管理后台 **系统 / 运维**——doctor 健康检查、升级 preflight、
+  反代 CSRF 提示；**v0.8** 图片软删/彻底删除与存储定位；**v0.9** 组级保留/强制存活清理
+  kinds、存量有效期钳制、批量硬删。文档：
+  [用户组生命周期](docs/user-groups-lifecycle.md) ·
+  [清理与 CDN](docs/ops-cleanup-cdn-boundary.md) ·
+  [反代 FAQ](docs/security-hardening.md#faq-reverse-proxy-loginregister-cross-site-rejected)。
 - **细节**:中英双语界面、PWA、浅色/深色/**跟随系统**主题、文字水印(内嵌中文字体子集)、
   带审计日志与轻量运营统计的管理后台。
 
@@ -96,7 +98,7 @@ imgli serve
 固定版本或安装路径：
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/yixian-huang/imgli/main/scripts/install.sh | sh -s -- v0.8.0
+curl -fsSL https://raw.githubusercontent.com/yixian-huang/imgli/main/scripts/install.sh | sh -s -- v0.9.0
 PREFIX=/usr/local/bin curl -fsSL https://raw.githubusercontent.com/yixian-huang/imgli/main/scripts/install.sh | sh
 ```
 
@@ -112,7 +114,7 @@ docker run --rm -p 8686:8686 -v imgli-data:/data \
 # → http://localhost:8686（第一个注册用户即管理员）
 ```
 
-固定版本用 `ghcr.io/yixian-huang/imgli:v0.8.0`（见
+固定版本用 `ghcr.io/yixian-huang/imgli:v0.9.0`（见
 [Releases](https://github.com/yixian-huang/imgli/releases)）。
 
 ### Docker Compose
@@ -133,7 +135,7 @@ TLS 反代片段：[`deploy/Caddyfile.example`](deploy/Caddyfile.example)、
 
 ```bash
 make build          # 需要 Go ≥ 1.26、Node ≥ 24
-./imgli version     # ldflags 注入的 git tag，如 v0.8.0
+./imgli version     # ldflags 注入的 git tag，如 v0.9.0
 ./imgli serve       # → http://localhost:8686
 ```
 
@@ -193,13 +195,16 @@ export IMGLI_TOKEN='粘贴一次性显示的 token'
 imgli upload shot.png
 # → https://your-host/i/….png
 
+imgli upload -verbose shot.png              # stderr 打印组有效期/次数限制
 imgli upload -format markdown shot.png
 imgli upload -format json -visibility private shot.png
+imgli upload -expires-in 86400 shot.png
 cat shot.png | imgli upload -name shot.png -
 ```
 
 参数：`-base-url`、`-token`、`-format url|markdown|json`、`-visibility`、
-`-expires-in`、`-name`（stdin 时的文件名）。
+`-expires-in`、`-verbose`、`-name`（stdin 时的文件名）。组策略见
+[docs/user-groups-lifecycle.md](docs/user-groups-lifecycle.md)。
 
 ### doctor（自检）
 
@@ -232,9 +237,12 @@ cd web && npm run e2e   # Playwright,会先构建二进制
 
 - 存储矩阵：[S3](docs/s3-compatibility.md) · [WebDAV](docs/webdav-compatibility.md) · [FTP 双轨](docs/storage-ftp.md)
 - **跨策略搬迁**：[docs/storage-migrate.md](docs/storage-migrate.md)（CLI + Admin 任务）
+- **用户组生命周期（v0.9）**：[docs/user-groups-lifecycle.md](docs/user-groups-lifecycle.md)（有效期/次数上限、保留与强制存活、存量钳制）
 - **清理与 CDN 边界**：[docs/ops-cleanup-cdn-boundary.md](docs/ops-cleanup-cdn-boundary.md)
+- **生产部署检查清单**：[docs/ops-deploy-checklist.md](docs/ops-deploy-checklist.md)
 - **反代 / CSRF**：[docs/security-hardening.md](docs/security-hardening.md#faq-reverse-proxy-loginregister-cross-site-rejected)（v0.7+ 亦可在后台「系统 / 运维」自检）
 - **OIDC 运维排错**：[docs/oidc-operator.md](docs/oidc-operator.md)
+- 集成：[docs/integrations/README.md](docs/integrations/README.md) · CLI `imgli upload -verbose`
 - 迁入 imgli：`imgli import-dir`（本地目录 → 上传 API）
 - 机审抽检路径：[docs/moderation-spot-check.md](docs/moderation-spot-check.md)
 - 公开 Roadmap 镜像：[ROADMAP.md](ROADMAP.md)（执行面 = GitHub Issues）

@@ -132,6 +132,7 @@ curl -sS -X POST 'https://img.li/api/v1/upload' \
 ## 6. 相关
 
 - 其他客户端：[ShareX](integrations/sharex.md) · [uPic / PicList](integrations/upic.md) · [integrations 索引](integrations/README.md)  
-- CLI：`imgli upload`（见仓库 README）  
+- 用户组有效期策略：[user-groups-lifecycle.md](user-groups-lifecycle.md)  
+- CLI：`imgli upload -verbose`（见仓库 README / integrations 索引）  
 - 压测：`scripts/loadtest.py write --token …`  
 - 健康检查脚本：`deploy/ops/health-check.sh`  

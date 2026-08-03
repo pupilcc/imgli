@@ -19,18 +19,36 @@ Create a token: **Settings → API Token** (scope `upload` or `full`). Plaintext
 | [upic.md](upic.md) | [uPic](https://github.com/gee1k/uPic) / PicList-style custom uploaders |
 | README **CLI** | `imgli upload` (single file) · `imgli import-dir` (bulk directory) |
 
-### CLI bulk import (`import-dir`)
+### Optional form fields (upload)
+
+| Field | Notes |
+|-------|--------|
+| `expires_in` | Seconds; `0` / omit = permanent **unless** the user group forbids it (v0.9+) |
+| `max_views` | `0` / omit = unlimited **unless** group `max_max_views` > 0 |
+| `visibility` | `public` \| `private` |
+
+Group limits (token account): `GET /api/v1/user/quota`. Guest:
+`GET /api/v1/config` → `guest`. Full policy guide:
+[user-groups-lifecycle.md](../user-groups-lifecycle.md).
+
+Error codes for over-cap options: `expires_over_group`, `max_views_over_group` (HTTP 400).
+
+### CLI
 
 ```bash
 export IMGLI_BASE_URL=https://your-host
 export IMGLI_TOKEN='your-api-token'
-imgli import-dir ./photos                 # recursive by default
-imgli import-dir -dry-run ./photos        # list only
+
+imgli upload shot.png
+imgli upload -verbose shot.png              # print group expiry/views limits (stderr)
+imgli upload -expires-in 86400 shot.png
+imgli import-dir ./photos                   # recursive by default
+imgli import-dir -dry-run ./photos
 imgli import-dir -visibility private ./in
 ```
 
-Flags: `-recursive` (default true), `-continue` (default true), `-base-url`, `-token`.
-Reuses `POST /api/v1/upload` (instant-upload / content-hash on the server).
+`import-dir` flags: `-recursive` (default true), `-continue` (default true),
+`-base-url`, `-token`. Reuses `POST /api/v1/upload`.
 
 ### Related HTTP surfaces (v0.3+)
 

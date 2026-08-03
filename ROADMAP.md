@@ -3,11 +3,21 @@
 > **Planning SSOT is internal** (`imgli/roadmap` in the project knowledge base).  
 > This file is a **public, de-sensitized mirror** for contributors. Prefer GitHub Issues + Milestones for execution.
 
-## Latest shipped — v0.8.0 · Admin image ops · delete clarity
+## Latest shipped — v0.9.0 · Group lifecycle ops · stock clamp
+
+Release: https://github.com/yixian-huang/imgli/releases/tag/v0.9.0
+
+User-group expiry/max-views caps, retention & force-max-age, stock lifecycle
+preview/apply, admin batch trash/purge, cleanup kinds, docs/CLI. See
+[CHANGELOG](CHANGELOG.md#090---2026-08-03) and
+[docs/user-groups-lifecycle.md](docs/user-groups-lifecycle.md).
+
+## Previous — v0.8.0 · Admin image ops · delete clarity
 
 Release: https://github.com/yixian-huang/imgli/releases/tag/v0.8.0
 
-Admin storage locate (policy/driver/path), permanent purge vs trash, guest auto-purge, clearer delete UX. See [CHANGELOG](CHANGELOG.md#080---2026-08-02).
+Admin storage locate (policy/driver/path), permanent purge vs trash, guest
+auto-purge, clearer delete UX. See [CHANGELOG](CHANGELOG.md#080---2026-08-02).
 
 ## Previous — v0.7.x · Ops console · WebDAV · upgrade
 

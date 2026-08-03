@@ -312,7 +312,8 @@ Theme: **Workflow & Trust** — CLI/integrations, share landing, privacy
 - Bilingual UI (中文/English), PWA, dark mode, text watermark, admin audit logs.
 - Docker Compose quick start and GitHub Actions CI (Go matrix, web, e2e smoke).
 
-[Unreleased]: https://github.com/yixian-huang/imgli/compare/v0.8.0...HEAD
+[Unreleased]: https://github.com/yixian-huang/imgli/compare/v0.9.0...HEAD
+[0.9.0]: https://github.com/yixian-huang/imgli/compare/v0.8.0...v0.9.0
 [0.8.0]: https://github.com/yixian-huang/imgli/compare/v0.7.4...v0.8.0
 [0.7.4]: https://github.com/yixian-huang/imgli/compare/v0.7.3...v0.7.4
 [0.7.3]: https://github.com/yixian-huang/imgli/compare/v0.7.2...v0.7.3

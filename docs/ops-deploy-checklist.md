@@ -83,6 +83,17 @@ curl -sfS https://img.li/healthz
 - 插槽渲染：`web/src/ui/SiteSlots.tsx`
 - 回归测：`web/src/ui/SiteSlots.test.tsx`、`web/src/lib/locale.test.ts`
 
+## 升级到 v0.9（用户组生命周期）
+
+1. 部署带 AutoMigrate 的新二进制/镜像（用户组新列自动加）。
+2. **游客组**：若生命周期字段仍全为 `0`，启动 Seed 会补默认 1d / 7d / force 7d。
+3. 登录用户组：在后台 **用户组** 按运营策略配置 `max_expires_in` / `force_max_age_days` 等。
+4. **存量**：改配置**不**自动改写旧图；需要时用「存量预览 / 钳制」，或依赖小时任务 +
+   **系统 / 运维** 清理 kinds（含 `group_retention` / `group_force_age`）。
+5. 大规模硬清公开图后按需做 **CDN purge**（见清理文档）。
+
+详见 [`user-groups-lifecycle.md`](user-groups-lifecycle.md)。
+
 ## 相关运维文档
 
 - 存储搬迁：[`storage-migrate.md`](storage-migrate.md)

@@ -87,9 +87,12 @@ Plugin package names differ (`web-uploader` vs market variants); after curl work
 |------|---------|
 | 401 | Bad or missing Bearer token |
 | 403 | Guest closed / not allowed |
+| 400 | Invalid options (e.g. group forbids permanent / over-cap `expires_in` → `expires_over_group`) |
 | 413 | File too large or quota |
 | 415 | Extension not allowed |
 | 429 | Rate limit or bandwidth cap |
+
+Group limits: `GET /api/v1/user/quota`. See [user-groups-lifecycle.md](../user-groups-lifecycle.md).
 
 ---
 
@@ -97,4 +100,4 @@ Plugin package names differ (`web-uploader` vs market variants); after curl work
 
 - [integrations index](README.md)
 - [ShareX](sharex.md) · [PicGo](../picgo.md)
-- CLI: `imgli upload` (repository README)
+- CLI: `imgli upload -verbose` (repository README)

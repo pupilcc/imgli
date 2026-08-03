@@ -20,7 +20,7 @@ GitHub and the product knowledge base.
 5. **Never** put full internal roadmap or VIP secrets into `docs-imgli/`.
 6. **WebDAV / S3 / FTP matrices** live in **repo** (`docs/webdav-compatibility.md`, `docs/s3-compatibility.md`, `docs/storage-ftp.md`); product site pages stay short and link out.
 
-## Map (storage-related example)
+## Map (storage / lifecycle examples)
 
 | Topic | Repo SSOT | Product docs (`docs-imgli`) |
 |-------|-----------|-------------------------------|
@@ -28,6 +28,8 @@ GitHub and the product knowledge base.
 | WebDAV vendors | `docs/webdav-compatibility.md` | `docs-imgli/storage-cdn` + link (or `docs-imgli/webdav`) |
 | FTP dual track | `docs/storage-ftp.md` | `docs-imgli/ftp` |
 | Caps design | `docs/design/storage-caps-draft.md` | user-facing Caps described on storage pages only |
+| **User-group lifecycle (v0.9)** | `docs/user-groups-lifecycle.md` | short how-to + link (no dual full copy) |
+| **Cleanup vs CDN** | `docs/ops-cleanup-cdn-boundary.md` | ops FAQ blurb + link |
 | Production VIP deploy | *(not in public repo detail)* | internal `imgli/ops-*` only |
 
 ## Agent / human checklist
