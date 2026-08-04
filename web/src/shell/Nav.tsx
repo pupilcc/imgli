@@ -93,7 +93,7 @@ export function Nav({ user }: { user: User }) {
         <div className="relative" ref={menuRef}>
           <button
             type="button"
-            className="flex h-[30px] w-[30px] cursor-pointer items-center justify-center overflow-hidden rounded-full border border-border bg-soft p-0 text-xs font-bold text-ink"
+            className="avatar flex h-[30px] w-[30px] cursor-pointer items-center justify-center overflow-hidden rounded-full border border-border bg-soft p-0 text-xs font-bold text-ink"
             onClick={() => setMenuOpen((v) => !v)}
           >
             {user.avatar_url && !imgFailed ? (

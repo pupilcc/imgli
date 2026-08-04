@@ -144,8 +144,9 @@ export function StatusPill({
   return (
     <span
       className={cn(
+        // stOk/stErr kept for e2e hooks (class*=stErr)
         'justify-self-start whitespace-nowrap rounded-sm border bg-surface px-[7px] py-0.5 font-mono text-[9.5px] tracking-[0.08em]',
-        ok ? 'border-ok text-ok' : 'border-err text-err',
+        ok ? 'stOk border-ok text-ok' : 'stErr border-err text-err',
         className,
       )}
     >

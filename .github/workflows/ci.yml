@@ -55,9 +55,12 @@ jobs:
         run: |
           make build
           IMGLI_DATA_DIR=$(mktemp -d) ./imgli serve &
-          sleep 2
-          curl -sf http://localhost:8686/healthz
-          curl -sf http://localhost:8686/ | grep -q 'id="root"'
+          for i in $(seq 1 30); do
+            curl -sf http://127.0.0.1:8686/healthz && break
+            sleep 1
+          done
+          curl -sf http://127.0.0.1:8686/healthz
+          curl -sf http://127.0.0.1:8686/ | grep -q 'id="root"'
 
   e2e:
     runs-on: ubuntu-latest

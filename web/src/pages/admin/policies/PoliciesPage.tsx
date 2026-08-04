@@ -603,7 +603,7 @@ export function PoliciesPage() {
                         }}
                       />
                     ) : (
-                      <div className="rounded-lg border border-border bg-soft px-3 py-2.5 text-muted">{driverLabel}</div>
+                      <div className="driver rounded-lg border border-border bg-soft px-3 py-2.5 text-muted">{driverLabel}</div>
                     )}
                   </AdminField>
                   <PolicyCapsPanel caps={caps} warnings={warnings} />
