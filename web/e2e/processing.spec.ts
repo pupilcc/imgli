@@ -98,7 +98,7 @@ test.afterEach(async ({ browser }) => {
 })
 
 test('文字水印改变哈希:同字节先秒传、开水印后非秒传', async ({ page, browser }) => {
-  // UploadCard 秒传态 DOM:badge 文案「秒传」+ sub「已存在相同文件，直接返回链接」
+  // UploadCard 秒传态 DOM:badge「秒传」+ sub（v0.9.2 同用户复用 → reusedHint）
   // 普通成功态 badge「已完成」(status=success)。
 
   // 1) 注册 d2proc → 传独特 PNG A
@@ -114,10 +114,10 @@ test('文字水印改变哈希:同字节先秒传、开水印后非秒传', asyn
   await expect(page.getByText('已完成', { exact: true })).toHaveCount(1)
   await expect(page.getByText('秒传', { exact: true })).toHaveCount(0)
 
-  // 2) 再传同字节 A → 秒传
+  // 2) 再传同字节 A → 同用户复用原链（reused）
   await uploadPNG(page, 'd2proc-a-again.png', PNG_A)
   await expect(page.getByText('秒传', { exact: true })).toHaveCount(1)
-  await expect(page.getByText('已存在相同文件，直接返回链接')).toBeVisible()
+  await expect(page.getByText('图库中已有相同图片，返回原链接')).toBeVisible()
 
   d2procState = await page.context().storageState()
 
@@ -137,7 +137,8 @@ test('文字水印改变哈希:同字节先秒传、开水印后非秒传', asyn
     await uploadPNG(page, 'd2proc-a-wm.png', PNG_A)
     await expect(page.getByText('已完成', { exact: true })).toBeVisible({ timeout: 30_000 })
     await expect(page.getByText('秒传', { exact: true })).toHaveCount(0)
-    await expect(page.getByText('已存在相同文件，直接返回链接')).toHaveCount(0)
+    await expect(page.getByText('图库中已有相同图片，返回原链接')).toHaveCount(0)
+    await expect(page.getByText('内容已秒传，已创建新外链')).toHaveCount(0)
 
     // 就地还原
     await putProcessingDefault(adminPage)
