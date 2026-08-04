@@ -22,3 +22,7 @@ web/playwright-report/
 
 # full Noto source (regenerate subset via scripts/subset-watermark-font.sh)
 internal/imaging/fonts/*.full.otf
+
+# local visual QA / playwright MCP
+.playwright-mcp/
+visual-*.png

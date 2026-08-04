@@ -3,7 +3,15 @@
 > **Planning SSOT is internal** (`imgli/roadmap` in the project knowledge base).  
 > This file is a **public, de-sensitized mirror** for contributors. Prefer GitHub Issues + Milestones for execution.
 
-## Latest shipped — v0.9.2 · Instant reuse · site name · stats honesty
+## Latest shipped — v0.9.3 · Admin users ops · Tailwind UI
+
+Release: https://github.com/yixian-huang/imgli/releases/tag/v0.9.3
+
+Admin users bandwidth/last-seen/sortable headers/icon confirms; frontend
+migrated to Tailwind v4 with shared admin chrome. See
+[CHANGELOG](CHANGELOG.md#093---2026-08-04).
+
+## Previous — v0.9.2 · Instant reuse · site name · stats honesty
 
 Release: https://github.com/yixian-huang/imgli/releases/tag/v0.9.2
 

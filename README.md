@@ -92,6 +92,8 @@ verify upstream docs before migrating.
   storage policy live/trash image counts + object bytes. Acceptance:
   [docs/superpowers/plans/2026-08-04-v0.9.2-acceptance.md](docs/superpowers/plans/2026-08-04-v0.9.2-acceptance.md);
   customization IA: [docs/design/site-customization-ia.md](docs/design/site-customization-ia.md).
+- **v0.9.3** — admin users ops (bandwidth / last-seen / header sort / icon
+  confirms); **Tailwind CSS v4** UI rewrite with shared admin chrome.
 - **Polish** — bilingual UI (中文/English), PWA, light/dark/**system** theme,
   text watermark (embedded CJK font subset), admin dashboard with audit logs
   and light ops analytics.
@@ -112,7 +114,7 @@ imgli serve
 Pin a version or install location:
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/yixian-huang/imgli/main/scripts/install.sh | sh -s -- v0.9.2
+curl -fsSL https://raw.githubusercontent.com/yixian-huang/imgli/main/scripts/install.sh | sh -s -- v0.9.3
 PREFIX=/usr/local/bin curl -fsSL https://raw.githubusercontent.com/yixian-huang/imgli/main/scripts/install.sh | sh
 ```
 
@@ -128,7 +130,7 @@ docker run --rm -p 8686:8686 -v imgli-data:/data \
 # → http://localhost:8686  (first registered user becomes admin)
 ```
 
-Pin a release with `ghcr.io/yixian-huang/imgli:v0.9.2` (see
+Pin a release with `ghcr.io/yixian-huang/imgli:v0.9.3` (see
 [Releases](https://github.com/yixian-huang/imgli/releases)).
 
 ### Docker Compose
@@ -149,7 +151,7 @@ Backup / restore: [`docs/backup.md`](docs/backup.md).
 
 ```bash
 make build          # needs Go ≥ 1.26 and Node ≥ 24
-./imgli version     # git tag via ldflags, e.g. v0.9.2
+./imgli version     # git tag via ldflags, e.g. v0.9.3
 ./imgli serve       # → http://localhost:8686
 ```
 

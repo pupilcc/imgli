@@ -82,6 +82,8 @@
   （鲤鱼标保留）；存储策略 live/trash 图片数与对象占用。验收：
   [docs/superpowers/plans/2026-08-04-v0.9.2-acceptance.md](docs/superpowers/plans/2026-08-04-v0.9.2-acceptance.md)；
   站点定制 IA：[docs/design/site-customization-ia.md](docs/design/site-customization-ia.md)。
+- **v0.9.3**：管理端用户运营表（流量/最近访问/表头排序/图标二次确认）；前端 **Tailwind CSS v4**
+  全站样式重写 + 共享 admin chrome。
 - **细节**:中英双语界面、PWA、浅色/深色/**跟随系统**主题、文字水印(内嵌中文字体子集)、
   带审计日志与轻量运营统计的管理后台。
 
@@ -102,7 +104,7 @@ imgli serve
 固定版本或安装路径：
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/yixian-huang/imgli/main/scripts/install.sh | sh -s -- v0.9.2
+curl -fsSL https://raw.githubusercontent.com/yixian-huang/imgli/main/scripts/install.sh | sh -s -- v0.9.3
 PREFIX=/usr/local/bin curl -fsSL https://raw.githubusercontent.com/yixian-huang/imgli/main/scripts/install.sh | sh
 ```
 
@@ -118,7 +120,7 @@ docker run --rm -p 8686:8686 -v imgli-data:/data \
 # → http://localhost:8686（第一个注册用户即管理员）
 ```
 
-固定版本用 `ghcr.io/yixian-huang/imgli:v0.9.2`（见
+固定版本用 `ghcr.io/yixian-huang/imgli:v0.9.3`（见
 [Releases](https://github.com/yixian-huang/imgli/releases)）。
 
 ### Docker Compose
@@ -139,7 +141,7 @@ TLS 反代片段：[`deploy/Caddyfile.example`](deploy/Caddyfile.example)、
 
 ```bash
 make build          # 需要 Go ≥ 1.26、Node ≥ 24
-./imgli version     # ldflags 注入的 git tag，如 v0.9.2
+./imgli version     # ldflags 注入的 git tag，如 v0.9.3
 ./imgli serve       # → http://localhost:8686
 ```
 
