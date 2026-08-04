@@ -3,6 +3,7 @@ import { Link, useSearchParams } from 'react-router'
 import { useQueryClient } from '@tanstack/react-query'
 import { useAlbums, useConfig, useQuota, useSession, useUserPolicies } from '../../api/hooks'
 import { useT } from '../../i18n'
+import { cn } from '../../lib/cn'
 import { formatBytes } from '../../lib/format'
 import {
   EXPIRY_PRESETS,
@@ -23,7 +24,6 @@ import { Segmented } from '../../ui/Segmented'
 import { Skeleton } from '../../ui/Skeleton'
 import { PageHeader } from '../../shell/PageHeader'
 import { UploadCard } from './UploadCard'
-import styles from './UploadPage.module.css'
 import { FirstRunOnboarding } from './FirstRunOnboarding'
 
 const URL_RE = /^https?:\/\/\S+$/
@@ -251,7 +251,7 @@ export function UploadPage() {
 
   return (
     <div
-      className={styles.page}
+      className="relative mx-auto max-w-[760px] pt-12 pb-8"
       onDragEnter={(e) => {
         e.preventDefault()
         if (e.dataTransfer.types.includes('Files')) setPageDrag(true)
@@ -272,12 +272,18 @@ export function UploadPage() {
     >
       {!isGuest && <FirstRunOnboarding show />}
 
-      {pageDrag && <div className={styles.pageDragOverlay}>{t('upload.dropRelease')}</div>}
-      <PageHeader kicker="UPLOAD" title={t('upload.title')} extra={<p className={styles.subtitle}>{t('upload.subtitle')}</p>} />
+      {pageDrag && (
+        <div className="pointer-events-none fixed inset-0 z-40 flex items-center justify-center border-2 border-dashed border-ink bg-[color-mix(in_srgb,var(--bg)_70%,transparent)] text-base font-bold">
+          {t('upload.dropRelease')}
+        </div>
+      )}
+      <PageHeader kicker="UPLOAD" title={t('upload.title')} extra={<p className="m-0 text-[13px] text-muted">{t('upload.subtitle')}</p>} />
 
       {isGuest && guestUploadOn && guestLimits && (
-        <div className={styles.guestBar}>
-          <span className={styles.guestTag}>{t('upload.guestMode')}</span>
+        <div className="mb-[18px] flex items-center gap-2.5 border border-border bg-surface px-3.5 py-2.5 text-sm-plus text-muted">
+          <span className="shrink-0 border border-border px-1.5 py-px font-mono text-2xs tracking-[0.08em] text-ink">
+            {t('upload.guestMode')}
+          </span>
           <span>
             {t('upload.guestLimits', {
               size: formatBytes(guestLimits.max_file_size),
@@ -289,7 +295,10 @@ export function UploadPage() {
 
       {/* 窄屏补位：顶栏 cluster 在 ≤900px 隐藏，上传页再露出用量，避免桌面双显 */}
       {!isGuest && quota.data && (
-        <div className={styles.quotaRow} data-testid="upload-quota-meters">
+        <div
+          className="mb-3.5 hidden flex-wrap gap-x-6 gap-y-4 rounded border border-border bg-surface px-3 py-2.5 max-[900px]:flex"
+          data-testid="upload-quota-meters"
+        >
           <QuotaBar used={quota.data.used} total={quota.data.total} kind="storage" to="/settings" />
           {bwQuota > 0 && (
             <QuotaBar used={bwUsed} total={bwQuota} kind="bandwidth" to="/settings" />
@@ -298,42 +307,51 @@ export function UploadPage() {
       )}
 
       {needLogin && (
-        <div className={styles.loginGate} data-testid="login-gate">
-          <div className={styles.loginGateTitle}>{t('upload.loginRequiredTitle')}</div>
-          <p className={styles.loginGateDesc}>{t('upload.loginRequiredDesc')}</p>
-          <Link to={loginTo} className={styles.loginGateCta}>
+        <div className="mb-3.5 rounded border border-border bg-surface px-[18px] py-4" data-testid="login-gate">
+          <div className="mb-1.5 text-[15px] font-bold tracking-[-0.01em]">{t('upload.loginRequiredTitle')}</div>
+          <p className="mb-3 mt-0 text-[13px] leading-normal text-muted">{t('upload.loginRequiredDesc')}</p>
+          <Link
+            to={loginTo}
+            className="inline-flex items-center rounded-sm bg-ink px-4 py-2 text-[13px] font-bold text-bg no-underline hover:opacity-90"
+          >
             {t('upload.loginRequiredCta')}
           </Link>
           {(!!config.data?.help_url?.trim() || !!config.data?.upgrade_url?.trim()) && (
-            <div className={styles.loginGateLinks}>
+            <div className="mt-3 flex flex-wrap items-center gap-1.5 text-sm-plus">
               {!!config.data?.help_url?.trim() && (
-                <a href={config.data.help_url.trim()} rel="noopener noreferrer">
+                <a
+                  href={config.data.help_url.trim()}
+                  rel="noopener noreferrer"
+                  className="text-ink underline underline-offset-2"
+                >
                   {t('upload.helpLink')}
                 </a>
               )}
               {!!config.data?.help_url?.trim() && !!config.data?.upgrade_url?.trim() && (
-                <span className={styles.loginGateDot}>·</span>
+                <span className="text-muted">·</span>
               )}
               {!!config.data?.upgrade_url?.trim() && (
-                <a href={config.data.upgrade_url.trim()} rel="noopener noreferrer">
+                <a
+                  href={config.data.upgrade_url.trim()}
+                  rel="noopener noreferrer"
+                  className="text-ink underline underline-offset-2"
+                >
                   {t('upload.upgradeLink')}
                 </a>
               )}
             </div>
           )}
-          <p className={styles.loginGateHint}>{t('upload.loginRequiredHint')}</p>
+          <p className="mt-2.5 mb-0 text-xs text-muted">{t('upload.loginRequiredHint')}</p>
         </div>
       )}
 
       <div
         data-testid="dropzone"
-        className={[
-          styles.dropzone,
-          drag && styles.dropzoneDrag,
-          needLogin && styles.dropzoneMuted,
-        ]
-          .filter(Boolean)
-          .join(' ')}
+        className={cn(
+          'relative cursor-pointer rounded border border-dashed border-muted bg-surface px-6 py-12 text-center transition-[border-color] duration-150 hover:border-ink',
+          drag && 'border-ink',
+          needLogin && 'cursor-default opacity-[0.72] hover:border-muted',
+        )}
         onClick={() => {
           if (needLogin) return pushToast(t('upload.toastLoginRequired'))
           if (full) return pushToast(t('upload.toastQuotaFull'))
@@ -352,24 +370,28 @@ export function UploadPage() {
           acceptFiles(e.dataTransfer.files)
         }}
       >
-        {drag && <div className={styles.dragOverlay}>{t('upload.dropRelease')}</div>}
+        {drag && (
+          <div className="pointer-events-none absolute inset-0 z-[2] flex animate-[pulse_1.2s_infinite] items-center justify-center rounded border border-dashed border-ink bg-soft text-[15px] font-bold">
+            {t('upload.dropRelease')}
+          </div>
+        )}
         {(full || bwFull) && (
           <div
-            className={styles.fullOverlay}
+            className="absolute inset-0 z-[3] flex cursor-not-allowed flex-col items-center justify-center gap-2 rounded bg-bg opacity-[0.92]"
             onClick={(e) => {
               e.stopPropagation()
               pushToast(full ? t('upload.toastQuotaFull') : t('upload.toastBandwidthFull'))
             }}
           >
-            <span className={styles.fullTitle}>
+            <span className="text-sm font-bold text-err">
               {full ? t('upload.fullTitle') : t('upload.bandwidthFullTitle')}
             </span>
-            <span className={styles.fullDesc}>
+            <span className="text-xs text-muted">
               {full ? t('upload.fullDesc') : t('upload.bandwidthFullDesc')}
             </span>
             {!!config.data?.upgrade_url?.trim() && (
               <a
-                className={styles.fullSelfHost}
+                className="mt-2.5 inline-block text-sm-plus font-semibold text-ink underline underline-offset-2"
                 href={config.data.upgrade_url.trim()}
                 rel="noopener noreferrer"
                 onClick={(e) => e.stopPropagation()}
@@ -379,9 +401,11 @@ export function UploadPage() {
             )}
           </div>
         )}
-        <div className={styles.upIcon}>↑</div>
-        <div className={styles.dzTitle}>{t('upload.dropTitle')}</div>
-        <div className={styles.dzLimit}>
+        <div className="mx-auto mb-[18px] flex size-10 items-center justify-center rounded-sm border border-border bg-soft text-[17px] font-semibold text-ink">
+          ↑
+        </div>
+        <div className="mb-[7px] text-[15px] font-bold tracking-[-0.005em]">{t('upload.dropTitle')}</div>
+        <div className="mb-5 flex justify-center font-mono text-[11px] tracking-[0.05em] text-muted">
           {needLogin ? (
             t('upload.loginRequiredTitle')
           ) : limits ? (
@@ -390,9 +414,13 @@ export function UploadPage() {
             <Skeleton width={220} height={11} />
           )}
         </div>
-        <div className={styles.kbdRow}>
-          <span className={styles.kbd}>Ctrl</span>
-          <span className={styles.kbd}>V</span>
+        <div className="inline-flex items-center gap-2 text-sm-plus text-muted">
+          <span className="rounded-[2px] border border-border bg-soft px-1.5 py-0.5 font-mono text-[11px] text-ink">
+            Ctrl
+          </span>
+          <span className="rounded-[2px] border border-border bg-soft px-1.5 py-0.5 font-mono text-[11px] text-ink">
+            V
+          </span>
           {t('upload.pasteHint')}
         </div>
         <input
@@ -400,7 +428,7 @@ export function UploadPage() {
           type="file"
           accept="image/*"
           multiple
-          className={styles.fileInput}
+          className="hidden"
           disabled={needLogin}
           onChange={(e) => {
             if (e.target.files?.length) acceptFiles(e.target.files)
@@ -409,10 +437,17 @@ export function UploadPage() {
         />
       </div>
 
-      <div className={[styles.urlRow, needLogin && styles.urlRowDisabled].filter(Boolean).join(' ')}>
-        <span className={styles.urlTag}>URL</span>
+      <div
+        className={cn(
+          'mt-2.5 flex overflow-hidden rounded-sm border border-border bg-surface',
+          needLogin && 'opacity-65 [&_button]:cursor-not-allowed [&_input:disabled]:cursor-not-allowed',
+        )}
+      >
+        <span className="flex shrink-0 items-center border-r border-border bg-soft px-3 font-mono text-2xs tracking-[0.1em] text-muted">
+          URL
+        </span>
         <input
-          className={styles.urlInput}
+          className="min-w-0 flex-1 border-0 bg-transparent px-3 py-2.5 font-mono text-xs text-ink outline-none"
           value={fetchUrl}
           placeholder={t('upload.urlPlaceholder')}
           disabled={needLogin}
@@ -421,32 +456,41 @@ export function UploadPage() {
             if (e.key === 'Enter') doFetch()
           }}
         />
-        <button type="button" className={styles.fetchBtn} disabled={needLogin} onClick={doFetch}>
+        <button
+          type="button"
+          className="shrink-0 cursor-pointer border-0 border-l border-border bg-surface px-[18px] text-xs font-bold text-ink hover:bg-soft disabled:cursor-not-allowed"
+          disabled={needLogin}
+          onClick={doFetch}
+        >
           {t('upload.fetch')}
         </button>
       </div>
 
       {!isGuest && (
-        <div className={styles.optsBox}>
-          <button type="button" className={styles.optsHead} onClick={() => setOptsOpen((v) => !v)}>
-            <span className={styles.optsTitle}>
-              <span className={styles.optsKicker}>OPTIONS</span>
+        <div className="mt-2.5 overflow-hidden rounded-sm border border-border bg-surface">
+          <button
+            type="button"
+            className="flex w-full cursor-pointer items-center justify-between border-0 bg-transparent px-3.5 py-[11px] text-sm-plus font-bold text-ink hover:bg-soft"
+            onClick={() => setOptsOpen((v) => !v)}
+          >
+            <span className="flex items-center gap-2">
+              <span className="font-mono text-2xs tracking-[0.1em] text-muted">OPTIONS</span>
               {t('upload.options')}
             </span>
-            <span className={styles.optsRight}>
-              <span className={styles.optsSummary}>{summary}</span>
-              <span className={styles.chevron}>{optsOpen ? '▲' : '▼'}</span>
+            <span className="flex items-center gap-2.5">
+              <span className="font-mono text-xs-plus font-normal text-muted">{summary}</span>
+              <span className="text-2xs text-muted">{optsOpen ? '▲' : '▼'}</span>
             </span>
           </button>
           {optsOpen && (
-            <div className={styles.optsGrid}>
-              <div className={styles.optField}>
-                <label className={styles.optLabel} htmlFor="opt-album">
+            <div className="grid animate-[fadeIn_0.15s] grid-cols-2 gap-3.5 border-t border-border px-3.5 pt-3.5 pb-4 max-[560px]:grid-cols-1">
+              <div className="flex flex-col gap-1.5">
+                <label className="text-[11.5px] font-semibold text-muted" htmlFor="opt-album">
                   {t('upload.uploadToAlbum')}
                 </label>
                 <select
                   id="opt-album"
-                  className={styles.optSelect}
+                  className="cursor-pointer rounded-sm border border-border bg-bg px-2.5 py-2 font-inherit text-sm-plus text-ink outline-none"
                   value={albumId ?? 'none'}
                   onChange={(e) => setAlbumId(e.target.value === 'none' ? null : Number(e.target.value))}
                 >
@@ -458,8 +502,8 @@ export function UploadPage() {
                   ))}
                 </select>
               </div>
-              <div className={styles.optField}>
-                <span className={styles.optLabel}>{t('upload.visibility')}</span>
+              <div className="flex flex-col gap-1.5">
+                <span className="text-[11.5px] font-semibold text-muted">{t('upload.visibility')}</span>
                 <Segmented<'public' | 'private'>
                   options={[
                     { value: 'public', label: t('upload.public') },
@@ -469,8 +513,8 @@ export function UploadPage() {
                   onChange={setVisibility}
                 />
               </div>
-              <div className={`${styles.optField} ${styles.optFieldWide}`}>
-                <span className={styles.optLabel}>{t('upload.expiry')}</span>
+              <div className="col-span-full flex flex-col gap-1.5">
+                <span className="text-[11.5px] font-semibold text-muted">{t('upload.expiry')}</span>
                 <Segmented
                   mono
                   options={expiryPresets.map((p) => ({
@@ -484,8 +528,8 @@ export function UploadPage() {
                   }}
                 />
               </div>
-              <div className={`${styles.optField} ${styles.optFieldWide}`}>
-                <span className={styles.optLabel}>{t('upload.maxViews')}</span>
+              <div className="col-span-full flex flex-col gap-1.5">
+                <span className="text-[11.5px] font-semibold text-muted">{t('upload.maxViews')}</span>
                 <Segmented
                   mono
                   options={maxViewsPresets.map((p) => ({
@@ -500,13 +544,13 @@ export function UploadPage() {
                 />
               </div>
               {showPolicy && (
-                <div className={styles.optField}>
-                  <label className={styles.optLabel} htmlFor="opt-policy">
+                <div className="flex flex-col gap-1.5">
+                  <label className="text-[11.5px] font-semibold text-muted" htmlFor="opt-policy">
                     {t('upload.storagePolicy')}
                   </label>
                   <select
                     id="opt-policy"
-                    className={styles.optSelect}
+                    className="cursor-pointer rounded-sm border border-border bg-bg px-2.5 py-2 font-inherit text-sm-plus text-ink outline-none"
                     value={policyId ?? 'default'}
                     onChange={(e) => setPolicyId(e.target.value === 'default' ? null : Number(e.target.value))}
                   >
@@ -526,18 +570,26 @@ export function UploadPage() {
 
       {items.length > 0 && (
         <>
-          <div className={styles.queueHead}>
-            <span className={styles.queueKicker}>QUEUE — {items.length}</span>
-            <span className={styles.queueActions}>
-              <button type="button" className={styles.textBtn} onClick={copyAllLinks}>
+          <div className="mt-10 mb-3 flex items-baseline justify-between">
+            <span className="font-mono text-[11px] tracking-[0.14em] text-muted">QUEUE — {items.length}</span>
+            <span className="flex gap-3.5">
+              <button
+                type="button"
+                className="cursor-pointer border-0 bg-transparent p-1 text-xs font-semibold text-muted hover:text-ink"
+                onClick={copyAllLinks}
+              >
                 {t('upload.copyAllLinks')}
               </button>
-              <button type="button" className={styles.textBtn} onClick={clearDone}>
+              <button
+                type="button"
+                className="cursor-pointer border-0 bg-transparent p-1 text-xs font-semibold text-muted hover:text-ink"
+                onClick={clearDone}
+              >
                 {t('upload.clearDone')}
               </button>
             </span>
           </div>
-          <div className={styles.queueList}>
+          <div className="flex flex-col gap-2">
             {items.map((i) => (
               <UploadCard key={i.id} item={i} />
             ))}

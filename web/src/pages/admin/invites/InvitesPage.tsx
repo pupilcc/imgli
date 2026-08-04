@@ -13,10 +13,17 @@ import { InlineConfirm } from '../../../ui/InlineConfirm'
 import { Input } from '../../../ui/Input'
 import { Modal } from '../../../ui/Modal'
 import { Tag } from '../../../ui/Tag'
+import {
+  AdminFilters,
+  AdminSelect,
+  AdminTable,
+  AdminTableHead,
+  AdminTableRow,
+} from '../ui/adminChrome'
 import { AdminQueryGate } from '../ui/AdminQueryGate'
 import { Pager } from '../ui/Pager'
-import forms from '../ui/adminForms.module.css'
-import styles from './InvitesPage.module.css'
+
+const COLS = '150px 90px 1fr minmax(180px,220px) 90px'
 
 export function InvitesPage() {
   const { t } = useT()
@@ -62,13 +69,17 @@ export function InvitesPage() {
         kicker="INVITE CODES"
         title={t('adminB.invitesTitle')}
         extra={
-          <div className={styles.toolbar}>
-            <select value={status} onChange={(e) => setParam('status', e.target.value)} aria-label={t('adminB.filterStatusAria')} className={forms.select}>
+          <AdminFilters>
+            <AdminSelect
+              value={status}
+              onChange={(e) => setParam('status', e.target.value)}
+              aria-label={t('adminB.filterStatusAria')}
+            >
               <option value="">{t('adminB.allStatuses')}</option>
               <option value="unused">{t('adminB.statusUnused')}</option>
               <option value="used">{t('adminB.statusUsed')}</option>
               <option value="expired">{t('adminB.statusExpired')}</option>
-            </select>
+            </AdminSelect>
             <Button
               variant="primary"
               onClick={() => {
@@ -78,7 +89,7 @@ export function InvitesPage() {
             >
               {t('adminB.generateInvites')}
             </Button>
-          </div>
+          </AdminFilters>
         }
       />
       <AdminQueryGate query={invites}>
@@ -95,28 +106,28 @@ export function InvitesPage() {
             )
           ) : (
             <>
-              <div className={styles.table}>
-                <div className={`${styles.head} ${styles.row}`}>
+              <AdminTable minWidth={640}>
+                <AdminTableHead columns={COLS} className="text-[11px] tracking-[0.04em] normal-case">
                   <span>{t('adminB.colCode')}</span>
                   <span>{t('adminB.colStatus')}</span>
                   <span>{t('adminB.colUsedBy')}</span>
                   <span>{t('adminB.colCreatedExpires')}</span>
                   <span />
-                </div>
+                </AdminTableHead>
                 {data.items.map((ic) => {
                   const tag = statusTag(ic.status)
                   return (
-                    <div key={ic.id} className={styles.row}>
-                      <span className={styles.code}>{ic.code}</span>
+                    <AdminTableRow key={ic.id} columns={COLS} className="text-[13px]">
+                      <span className="font-mono font-semibold">{ic.code}</span>
                       <span>
                         <Tag variant={tag.variant}>{tag.label}</Tag>
                       </span>
-                      <span className={styles.by}>{ic.used_by_name || '—'}</span>
-                      <span className={styles.time}>
+                      <span className="text-muted">{ic.used_by_name || '—'}</span>
+                      <span className="text-xs text-muted">
                         {formatDate(ic.created_at)}
                         {ic.expires_at ? ` / ${formatDate(ic.expires_at)}` : ` / ${t('adminB.permanent')}`}
                       </span>
-                      <span className={styles.ops}>
+                      <span className="justify-self-end text-right">
                         {ic.status !== 'used' && (
                           <InlineConfirm
                             label={t('adminB.revoke')}
@@ -125,16 +136,11 @@ export function InvitesPage() {
                           />
                         )}
                       </span>
-                    </div>
+                    </AdminTableRow>
                   )
                 })}
-              </div>
-              <Pager
-                page={page}
-                limit={data.limit}
-                total={data.total}
-                onPage={(p) => setParam('page', p > 1 ? String(p) : '')}
-              />
+              </AdminTable>
+              <Pager page={page} limit={data.limit} total={data.total} onPage={(p) => setParam('page', p > 1 ? String(p) : '')} />
             </>
           )
         }
@@ -142,11 +148,16 @@ export function InvitesPage() {
 
       <Modal open={modalOpen} onClose={closeModal}>
         {madeCodes ? (
-          <div className={styles.modalBody}>
-            <h2 className={styles.modalTitle}>{t('adminB.generatedCount', { count: madeCodes.length })}</h2>
-            <pre className={styles.codeList}>{madeCodes.join('\n')}</pre>
-            <div className={styles.modalActions}>
-              <Button variant="secondary" onClick={() => copyText(madeCodes.join('\n'), t('adminB.inviteCodesLabel', { count: madeCodes.length }))}>
+          <div className="flex flex-col gap-3.5">
+            <h2 className="m-0 text-[15px] font-bold">{t('adminB.generatedCount', { count: madeCodes.length })}</h2>
+            <pre className="m-0 max-h-[260px] overflow-auto border border-border bg-soft p-3 font-mono text-[13px] leading-loose">
+              {madeCodes.join('\n')}
+            </pre>
+            <div className="flex justify-end gap-2.5">
+              <Button
+                variant="secondary"
+                onClick={() => copyText(madeCodes.join('\n'), t('adminB.inviteCodesLabel', { count: madeCodes.length }))}
+              >
                 {t('adminB.copyAll')}
               </Button>
               <Button variant="primary" onClick={closeModal}>
@@ -155,11 +166,17 @@ export function InvitesPage() {
             </div>
           </div>
         ) : (
-          <div className={styles.modalBody}>
-            <h2 className={styles.modalTitle}>{t('adminB.generateInvites')}</h2>
+          <div className="flex flex-col gap-3.5">
+            <h2 className="m-0 text-[15px] font-bold">{t('adminB.generateInvites')}</h2>
             <Input label={t('adminB.countLabel')} type="number" value={count} onChange={(e) => setCount(e.target.value)} />
-            <Input label={t('adminB.expiresDays')} type="number" placeholder={t('adminB.expiresPlaceholder')} value={days} onChange={(e) => setDays(e.target.value)} />
-            <div className={styles.modalActions}>
+            <Input
+              label={t('adminB.expiresDays')}
+              type="number"
+              placeholder={t('adminB.expiresPlaceholder')}
+              value={days}
+              onChange={(e) => setDays(e.target.value)}
+            />
+            <div className="flex justify-end gap-2.5">
               <Button variant="secondary" onClick={closeModal}>
                 {t('common.cancel')}
               </Button>

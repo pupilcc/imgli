@@ -2,8 +2,8 @@ import { useEffect, useMemo, useState } from 'react'
 import type { HTMLInject, SiteAnnouncement, SiteFooter as SiteFooterConfig } from '../api/types'
 import { useT } from '../i18n'
 import { localeFingerprint, pickLocale } from '../lib/locale'
+import { cn } from '../lib/cn'
 import { BRAND_WORDMARK } from './Brand'
-import styles from './SiteSlots.module.css'
 
 const DISMISS_KEY = 'imgli_announcement_dismissed'
 
@@ -54,20 +54,30 @@ export function AnnouncementBar({ announcement }: { announcement?: SiteAnnouncem
   }
 
   return (
-    <div className={styles.bar} role="region" aria-label={t('common.announcementAria')}>
-      <div className={styles.barInner}>
-        <span className={styles.barKicker}>{t('common.announcementKicker')}</span>
-        <span className={styles.barText}>{text}</span>
-        <div className={styles.barActions}>
+    <div
+      className="relative z-[11] animate-[fadeIn_0.2s_ease] border-b border-border bg-soft text-ink before:absolute before:inset-y-0 before:left-0 before:w-[3px] before:bg-ink before:opacity-85"
+      role="region"
+      aria-label={t('common.announcementAria')}
+    >
+      <div className="mx-auto flex max-w-[1100px] flex-wrap items-center gap-x-3.5 gap-y-2.5 px-8 py-2.5 pl-7 max-md:gap-x-2.5 max-md:gap-y-2 max-md:px-4 max-md:pl-[18px]">
+        <span className="flex-none rounded-sm border border-border bg-surface px-[7px] py-[3px] font-mono text-2xs font-semibold tracking-[0.12em] text-muted uppercase leading-tight">
+          {t('common.announcementKicker')}
+        </span>
+        <span className="min-w-0 flex-[1_1_12rem] text-[13px] font-medium leading-normal text-ink">{text}</span>
+        <div className="ml-auto flex flex-none items-center gap-2 max-md:ml-0 max-md:w-full max-md:justify-start">
           {linkURL && linkLabel ? (
-            <a className={styles.barLink} href={linkURL} rel="noopener noreferrer">
+            <a
+              className="inline-flex h-7 items-center whitespace-nowrap rounded-sm border border-ink bg-ink px-3 text-xs font-bold text-bg no-underline transition-opacity duration-150 hover:opacity-88 hover:text-bg"
+              href={linkURL}
+              rel="noopener noreferrer"
+            >
               {linkLabel}
             </a>
           ) : null}
           {canDismiss ? (
             <button
               type="button"
-              className={styles.barClose}
+              className="inline-flex h-7 w-7 flex-none cursor-pointer items-center justify-center rounded-sm border border-border bg-surface text-base leading-none text-muted transition-colors hover:border-muted hover:bg-bg hover:text-ink"
               onClick={dismiss}
               aria-label={t('common.close')}
               title={t('common.close')}
@@ -83,34 +93,23 @@ export function AnnouncementBar({ announcement }: { announcement?: SiteAnnouncem
 
 type SiteFooterProps = {
   footer?: SiteFooterConfig | null
-  /** Instance site_name; falls back to product wordmark. */
   siteName?: string | null
-  /** on|off — optional “based on imgli” credit (default on). */
   ossCredit?: 'on' | 'off' | string | null
-  /** AGPL corresponding source URL; empty hides. */
   sourceUrl?: string | null
-  /** Show link to /about when enabled. */
   aboutEnabled?: boolean
 }
 
-/**
- * 页脚：以链接分组为主；底部一行克制署名。
- * 不重复砸站名/img.li/图鲤（顶栏已有品牌，此处避免标题轰炸）。
- */
 export function SiteFooter({ footer, siteName, ossCredit, sourceUrl, aboutEnabled }: SiteFooterProps) {
   const { t, lang } = useT()
   const groups = footer?.groups?.filter((g) => g.links?.length) ?? []
   const name = (siteName || '').trim() || BRAND_WORDMARK
   const year = new Date().getFullYear()
-  // 站名已含 img.li / 图鲤 时不再叠开源工程名；oss_credit=off 可关
   const nameLower = name.toLowerCase()
   const creditOn = (ossCredit || 'on') !== 'off'
   const showOssSuffix =
-    creditOn &&
-    !nameLower.includes('img.li') &&
-    !nameLower.includes('imgli') &&
-    !name.includes('图鲤')
+    creditOn && !nameLower.includes('img.li') && !nameLower.includes('imgli') && !name.includes('图鲤')
   const src = (sourceUrl || '').trim()
+  const metaQuiet = 'text-muted opacity-80'
   const metaBits = (
     <>
       <span>
@@ -118,12 +117,12 @@ export function SiteFooter({ footer, siteName, ossCredit, sourceUrl, aboutEnable
         {showOssSuffix ? ` · ${t('common.footerOss')}` : ''}
       </span>
       {aboutEnabled ? (
-        <a href="/about" className={styles.footerMetaQuiet}>
+        <a href="/about" className={metaQuiet}>
           {t('common.about')}
         </a>
       ) : null}
       {src ? (
-        <a href={src} rel="noopener noreferrer" className={styles.footerMetaQuiet}>
+        <a href={src} rel="noopener noreferrer" className={metaQuiet}>
           {t('common.sourceCode')}
         </a>
       ) : null}
@@ -132,30 +131,40 @@ export function SiteFooter({ footer, siteName, ossCredit, sourceUrl, aboutEnable
 
   if (groups.length === 0) {
     return (
-      <footer className={`${styles.footer} ${styles.footerMinimal}`}>
-        <div className={styles.footerInner}>
-          <div className={styles.footerMeta}>{metaBits}</div>
+      <footer className="mt-auto border-t border-border bg-surface px-8 pt-4 pb-5 max-md:px-4">
+        <div className="mx-auto flex max-w-[1100px] flex-col gap-[22px]">
+          <div className="flex flex-wrap items-center justify-center gap-x-5 gap-y-1.5 text-center text-[11.5px] leading-snug text-muted">
+            {metaBits}
+          </div>
         </div>
       </footer>
     )
   }
 
   return (
-    <footer className={styles.footer}>
-      <div className={styles.footerInner}>
-        <div className={styles.footerGroups}>
+    <footer className="mt-auto border-t border-border bg-surface px-8 pt-7 pb-6 max-md:px-4 max-md:pt-[22px] max-md:pb-5">
+      <div className="mx-auto flex max-w-[1100px] flex-col gap-[22px]">
+        <div className="grid w-full min-w-0 grid-cols-[repeat(auto-fit,minmax(10rem,1fr))] justify-items-stretch gap-x-7 gap-y-6 max-md:grid-cols-2 max-md:gap-x-3 max-md:gap-y-5 max-[420px]:grid-cols-1">
           {groups.map((g, i) => {
             const title = pickLocale(g.title, lang)
             return (
-              <div key={i} className={styles.footerGroup}>
-                {title ? <div className={styles.footerTitle}>{title}</div> : null}
-                <ul className={styles.footerList}>
+              <div key={i} className="min-w-0 text-center">
+                {title ? (
+                  <div className="mb-3 font-mono text-2xs font-semibold tracking-[0.12em] text-muted uppercase leading-tight">
+                    {title}
+                  </div>
+                ) : null}
+                <ul className="m-0 flex list-none flex-col items-center gap-2 p-0">
                   {g.links.map((l, j) => {
                     const label = pickLocale(l.label, lang)
                     if (!label || !l.url) return null
                     return (
                       <li key={j}>
-                        <a href={l.url} rel="noopener noreferrer">
+                        <a
+                          href={l.url}
+                          rel="noopener noreferrer"
+                          className="inline-block border-b border-transparent text-[13px] font-medium leading-snug text-ink no-underline transition-colors hover:border-border hover:text-ink"
+                        >
                           {label}
                         </a>
                       </li>
@@ -166,19 +175,15 @@ export function SiteFooter({ footer, siteName, ossCredit, sourceUrl, aboutEnable
             )
           })}
         </div>
-        <div className={styles.footerMeta}>
+        <div className="flex flex-wrap items-center justify-center gap-x-5 gap-y-1.5 border-t border-border pt-4 text-center text-[11.5px] leading-snug text-muted">
           {metaBits}
-          <span className={styles.footerMetaQuiet}>{t('meta.tagline')}</span>
+          <span className={cn(metaQuiet)}>{t('meta.tagline')}</span>
         </div>
       </div>
     </footer>
   )
 }
 
-/**
- * 自定义 HTML 注入（自托管自伤面）。
- * head：解析后挂到 document.head；body_end：追加到 document.body 末尾。
- */
 export function HtmlInject({ inject }: { inject?: HTMLInject | null }) {
   useEffect(() => {
     if (!inject) return

@@ -19,9 +19,18 @@ import { Button } from '../../ui/Button'
 import { InlineConfirm } from '../../ui/InlineConfirm'
 import { Tag } from '../../ui/Tag'
 import { Toggle } from '../../ui/Toggle'
-import styles from './SettingsPage.module.css'
 
 const STRONG_RE = /^(?=.*[A-Za-z])(?=.*\d).{8,}$/
+
+const field = 'flex flex-col gap-1.5'
+const label = 'text-xs font-semibold text-muted'
+const input =
+  'rounded-sm border border-border bg-bg px-3 py-[9px] font-inherit text-[13px] text-ink outline-none focus:border-muted'
+const kicker = 'mb-3 font-mono text-2xs tracking-[0.14em] text-muted'
+const card = 'flex flex-col gap-3.5 rounded-sm border border-border bg-surface p-[18px]'
+const section = 'mb-7'
+const grid2 = 'grid grid-cols-2 gap-3.5 max-[560px]:grid-cols-1'
+const errLine = 'animate-[fadeIn_0.15s] text-xs text-err'
 
 export function ProfileTab() {
   const { t } = useT()
@@ -74,16 +83,22 @@ export function ProfileTab() {
 
   return (
     <div>
-      <div className={styles.section}>
-        <div className={styles.kicker}>{t('settings.profileKicker')}</div>
-        <div className={styles.card}>
-          <div className={styles.avatarRow}>
+      <div className={section}>
+        <div className={kicker}>{t('settings.profileKicker')}</div>
+        <div className={card}>
+          <div className="mb-4 flex items-center gap-4">
             {user.avatar_url ? (
-              <img className={styles.avatarPreview} src={user.avatar_url} alt={t('settings.avatarAlt')} />
+              <img
+                className="size-16 rounded-full border border-border object-cover"
+                src={user.avatar_url}
+                alt={t('settings.avatarAlt')}
+              />
             ) : (
-              <div className={styles.avatarFallback}>{(user.nickname || user.username).slice(0, 1)}</div>
+              <div className="flex size-16 items-center justify-center rounded-full border border-border bg-soft text-2xl font-bold text-ink">
+                {(user.nickname || user.username).slice(0, 1)}
+              </div>
             )}
-            <div className={styles.avatarActions}>
+            <div className="flex flex-wrap items-center gap-2">
               <input
                 ref={fileRef}
                 type="file"
@@ -107,15 +122,24 @@ export function ProfileTab() {
               )}
             </div>
           </div>
-          <div className={styles.grid2}>
-            <div className={styles.field}>
-              <label className={styles.label} htmlFor="nick">{t('settings.nickname')}</label>
-              <input id="nick" className={styles.input} value={nickVal} onChange={(e) => setNick(e.target.value)} />
+          <div className={grid2}>
+            <div className={field}>
+              <label className={label} htmlFor="nick">
+                {t('settings.nickname')}
+              </label>
+              <input id="nick" className={input} value={nickVal} onChange={(e) => setNick(e.target.value)} />
             </div>
-            <div className={styles.field}>
-              <label className={styles.label} htmlFor="email">{t('settings.email')}</label>
-              <input id="email" className={`${styles.input} ${styles.inputRO}`} value={user.email} readOnly />
-              <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+            <div className={field}>
+              <label className={label} htmlFor="email">
+                {t('settings.email')}
+              </label>
+              <input
+                id="email"
+                className={`${input} bg-soft font-mono text-xs text-muted`}
+                value={user.email}
+                readOnly
+              />
+              <div className="flex flex-wrap items-center gap-2">
                 {user.email_verified ? (
                   <Tag variant="ok">{t('settings.verified')}</Tag>
                 ) : (
@@ -135,29 +159,28 @@ export function ProfileTab() {
                   </>
                 )}
               </div>
-              <div className={styles.field} style={{ marginTop: 12 }}>
-                <label className={styles.label} htmlFor="new-email">
+              <div className={`${field} mt-3`}>
+                <label className={label} htmlFor="new-email">
                   {t('settings.changeEmail')}
                 </label>
                 <input
                   id="new-email"
-                  className={styles.input}
+                  className={input}
                   value={newEmail}
                   onChange={(e) => setNewEmail(e.target.value)}
                   placeholder={t('settings.newEmailPlaceholder')}
                 />
                 <input
                   type="password"
-                  className={styles.input}
-                  style={{ marginTop: 8 }}
+                  className={`${input} mt-2`}
                   value={emailPwd}
                   onChange={(e) => setEmailPwd(e.target.value)}
                   placeholder={t('settings.confirmPassword')}
                 />
-                {emailErr && <div className={styles.err}>{emailErr}</div>}
+                {emailErr && <div className={errLine}>{emailErr}</div>}
                 <Button
                   variant="secondary"
-                  style={{ marginTop: 8 }}
+                  className="mt-2"
                   disabled={changeEmail.isPending}
                   onClick={() => {
                     setEmailErr(null)
@@ -182,9 +205,9 @@ export function ProfileTab() {
               </div>
             </div>
           </div>
-          <div className={styles.field}>
-            <div className={styles.toggleRow}>
-              <span className={styles.label}>{t('settings.publicProfile')}</span>
+          <div className={field}>
+            <div className="flex items-center justify-between">
+              <span className={label}>{t('settings.publicProfile')}</span>
               <Toggle
                 checked={!!user.public_profile}
                 onChange={(v) =>
@@ -193,13 +216,13 @@ export function ProfileTab() {
                 aria-label={t('settings.publicProfileAria')}
               />
             </div>
-            <div className={styles.label} style={{ fontWeight: 400 }}>
+            <div className={`${label} font-normal`}>
               {t('settings.publicProfileHint', { username: user.username })}
             </div>
           </div>
           <Button
             variant="primary"
-            className={styles.saveBtn}
+            className="self-start"
             disabled={updateProfile.isPending}
             onClick={() =>
               updateProfile.mutate({ nickname: nickVal.trim() }, { onSuccess: () => pushToast(t('settings.toastSaved')) })
@@ -210,52 +233,64 @@ export function ProfileTab() {
         </div>
       </div>
 
-      <div className={styles.section}>
-        <div className={styles.kicker}>{t('settings.passwordKicker')}</div>
-        <div className={styles.card}>
-          <div className={styles.grid2}>
-            <div className={styles.field}>
-              <label className={styles.label} htmlFor="old-pwd">{t('settings.currentPassword')}</label>
-              <input id="old-pwd" type="password" className={styles.input} value={oldPwd} onChange={(e) => setOldPwd(e.target.value)} />
+      <div className={section}>
+        <div className={kicker}>{t('settings.passwordKicker')}</div>
+        <div className={card}>
+          <div className={grid2}>
+            <div className={field}>
+              <label className={label} htmlFor="old-pwd">
+                {t('settings.currentPassword')}
+              </label>
+              <input
+                id="old-pwd"
+                type="password"
+                className={input}
+                value={oldPwd}
+                onChange={(e) => setOldPwd(e.target.value)}
+              />
             </div>
-            <div className={styles.field}>
-              <label className={styles.label} htmlFor="new-pwd">{t('settings.newPassword')}</label>
+            <div className={field}>
+              <label className={label} htmlFor="new-pwd">
+                {t('settings.newPassword')}
+              </label>
               <input
                 id="new-pwd"
                 type="password"
                 placeholder={t('settings.newPasswordPlaceholder')}
-                className={styles.input}
+                className={input}
                 value={newPwd}
                 onChange={(e) => setNewPwd(e.target.value)}
               />
             </div>
           </div>
-          {pwdErr && <div className={styles.errLine}>{pwdErr}</div>}
-          <Button className={styles.saveBtn} disabled={changePwd.isPending} onClick={savePwd}>
+          {pwdErr && <div className={errLine}>{pwdErr}</div>}
+          <Button className="self-start" disabled={changePwd.isPending} onClick={savePwd}>
             {t('settings.updatePassword')}
           </Button>
         </div>
       </div>
 
-      <div className={styles.section}>
-        <div className={styles.kicker}>{t('settings.dangerKicker')}</div>
-        <div className={`${styles.card} ${styles.dangerCard}`}>
-          <p className={styles.dangerText}>
+      <div className={section}>
+        <div className={kicker}>{t('settings.dangerKicker')}</div>
+        <div className={`${card} border-err`}>
+          <p className="mb-3 mt-0 text-[13px] leading-[1.55] text-muted">
             {t('settings.dangerTextBefore')}
-            <strong>{t('settings.dangerTextStrong')}</strong>
+            <strong className="font-bold text-err">{t('settings.dangerTextStrong')}</strong>
             {t('settings.dangerTextAfter')}
           </p>
-          <div className={styles.field}>
-            <label className={styles.label} htmlFor="del-pwd">{t('settings.deleteConfirmPassword')}</label>
+          <div className={field}>
+            <label className={label} htmlFor="del-pwd">
+              {t('settings.deleteConfirmPassword')}
+            </label>
             <input
               id="del-pwd"
               type="password"
-              className={styles.input}
+              className={input}
               value={delPwd}
               onChange={(e) => setDelPwd(e.target.value)}
             />
           </div>
-          {delErr && <div className={styles.errLine}>{delErr}</div>}
+          {delErr && <div className={errLine}>{delErr}</div>}
           <InlineConfirm
             label={t('settings.deleteAccount')}
             confirmLabel={t('settings.confirmDeleteAccount')}

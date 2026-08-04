@@ -5,7 +5,7 @@ import { Input } from '../../../../ui/Input'
 import { Segmented } from '../../../../ui/Segmented'
 import { Toggle } from '../../../../ui/Toggle'
 import type { FormSet, FormState } from '../settingsForm'
-import styles from '../SettingsPage.module.css'
+import { s } from '../settingsUi'
 
 interface Props {
   form: FormState
@@ -28,16 +28,16 @@ export function OcrTab({
 }: Props) {
   const { t } = useT()
   return (
-    <section className={styles.section}>
-      <div className={styles.h2Row}>
-        <h2 className={styles.h2}>{t('adminB.ocrSection')}</h2>
+    <section className={s.section}>
+      <div className={s.h2Row}>
+        <h2 className={s.h2}>{t('adminB.ocrSection')}</h2>
         <Toggle
           aria-label={t('adminB.ocrEnable')}
           checked={form.ocrEnabled}
           onChange={(v) => set('ocrEnabled', v)}
         />
       </div>
-      <span className={styles.hint}>{t('adminB.ocrEnableHint')}</span>
+      <span className={s.hint}>{t('adminB.ocrEnableHint')}</span>
       <Input
         label={t('adminB.ocrEndpoint')}
         placeholder={t('adminB.ocrEndpointPlaceholder')}
@@ -48,31 +48,31 @@ export function OcrTab({
         label={t('adminB.ocrApiKey')}
         placeholder={t('adminB.noKeyPlaceholder')}
         value={form.ocrApiKey}
-        extra={<span className={styles.hint}>{t('adminB.secretMaskHintSettings')}</span>}
+        extra={<span className={s.hint}>{t('adminB.secretMaskHintSettings')}</span>}
         onChange={(e) => set('ocrApiKey', e.target.value)}
         onFocus={(e) => e.target.select()}
       />
-      <div className={styles.field}>
-        <div className={styles.sliderHead}>
-          <label className={styles.label} htmlFor="ocr-keywords">
+      <div className={s.field}>
+        <div className={s.sliderHead}>
+          <label className={s.label} htmlFor="ocr-keywords">
             {t('adminB.ocrKeywords')}
           </label>
-          <span className={styles.mono}>{t('adminB.ocrKeywordCount', { count: keywordCount })}</span>
+          <span className={s.mono}>{t('adminB.ocrKeywordCount', { count: keywordCount })}</span>
         </div>
         <textarea
           id="ocr-keywords"
-          className={styles.textarea}
+          className={s.textarea}
           rows={10}
           placeholder={t('adminB.ocrKeywordsPlaceholder')}
           value={form.ocrKeywords}
           onChange={(e) => set('ocrKeywords', e.target.value)}
         />
-        <div className={styles.lexiconToolbar}>
+        <div className={s.lexiconToolbar}>
           <input
             ref={lexiconFileRef}
             type="file"
             accept=".txt,text/plain"
-            className={styles.fileInput}
+            className={s.fileInput}
             aria-hidden
             tabIndex={-1}
             onChange={(e) => {
@@ -105,11 +105,11 @@ export function OcrTab({
             {t('adminB.ocrExport')}
           </Button>
         </div>
-        <span className={styles.hint}>{t('adminB.ocrKeywordsHint')}</span>
-        <span className={styles.hint}>{t('adminB.ocrLexiconNote')}</span>
+        <span className={s.hint}>{t('adminB.ocrKeywordsHint')}</span>
+        <span className={s.hint}>{t('adminB.ocrLexiconNote')}</span>
       </div>
-      <div className={styles.field}>
-        <span className={styles.label}>{t('adminB.ocrOnHit')}</span>
+      <div className={s.field}>
+        <span className={s.label}>{t('adminB.ocrOnHit')}</span>
         <Segmented
           options={[
             { value: 'review', label: t('adminB.actionPending') },

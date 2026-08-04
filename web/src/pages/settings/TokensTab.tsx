@@ -1,15 +1,25 @@
 import { useMemo, useState } from 'react'
 import { useConfig, useCreateToken, useRevokeToken, useTokens } from '../../api/hooks'
 import { useT } from '../../i18n'
+import { cn } from '../../lib/cn'
 import { copyText } from '../../lib/copy'
 import { formatDate } from '../../lib/format'
 import { Button } from '../../ui/Button'
 import { InlineConfirm } from '../../ui/InlineConfirm'
 import { Modal } from '../../ui/Modal'
 import { StepGuide } from '../../ui/StepGuide'
-import styles from './SettingsPage.module.css'
-import own from './TokensTab.module.css'
 import { buildIntegrationSnippets, type SnippetKind } from './tokenSnippets'
+
+const kicker = 'mb-3 font-mono text-2xs tracking-[0.14em] text-muted'
+const field = 'flex flex-col gap-1.5'
+const label = 'text-xs font-semibold text-muted'
+const input =
+  'rounded-sm border border-border bg-bg px-3 py-[9px] font-inherit text-[13px] text-ink outline-none focus:border-muted'
+const errLine = 'animate-[fadeIn_0.15s] text-xs text-err'
+const tableCols =
+  'grid grid-cols-[1.2fr_1.5fr_0.8fr_0.9fr_0.9fr_auto] items-center gap-3 border-b border-border px-4 py-[11px] max-md:grid-cols-[1fr_0.8fr_auto]'
+const hideOnMobile =
+  'max-md:[&>*:nth-child(2)]:hidden max-md:[&>*:nth-child(4)]:hidden max-md:[&>*:nth-child(5)]:hidden'
 
 export function TokensTab() {
   const { t } = useT()
@@ -63,8 +73,8 @@ export function TokensTab() {
 
   return (
     <div>
-      <div className={own.headRow}>
-        <div className={styles.kicker}>{t('settings.tokensKicker')}</div>
+      <div className="mb-2 flex items-center justify-between [&>div]:mb-0">
+        <div className={kicker}>{t('settings.tokensKicker')}</div>
         <Button variant="primary" onClick={() => setShowNew(true)}>
           {t('settings.generateToken')}
         </Button>
@@ -80,34 +90,62 @@ export function TokensTab() {
       />
 
       {fresh && (
-        <div className={own.freshBox}>
-          <div className={own.freshTitle}>{t('settings.freshTokenTitle')}</div>
-          <div className={own.freshRow}>
-            <span className={own.freshText}>{fresh}</span>
-            <button type="button" className={own.freshCopy} onClick={() => copyText(fresh, t('settings.copyLabelToken'))}>
+        <div className="mb-3 animate-[fadeIn_0.2s] rounded-sm border border-ink bg-surface px-4 py-3.5">
+          <div className="mb-2 text-xs font-bold">{t('settings.freshTokenTitle')}</div>
+          <div className="flex items-center overflow-hidden rounded-sm border border-border">
+            <span className="min-w-0 flex-1 overflow-hidden bg-soft px-3 py-2 font-mono text-[11.5px] text-ellipsis whitespace-nowrap">
+              {fresh}
+            </span>
+            <button
+              type="button"
+              className="min-w-16 shrink-0 cursor-pointer border-0 border-l border-border bg-surface px-3.5 py-2 text-[11.5px] font-bold text-ink hover:bg-soft"
+              onClick={() => copyText(fresh, t('settings.copyLabelToken'))}
+            >
               {t('settings.copy')}
             </button>
-            <button type="button" className={own.freshClose} onClick={() => setFresh(null)}>
+            <button
+              type="button"
+              className="shrink-0 cursor-pointer border-0 border-l border-border bg-surface px-3 py-2 text-[13px] leading-none text-muted hover:text-ink"
+              onClick={() => setFresh(null)}
+            >
               ×
             </button>
           </div>
-          <p className={own.freshHint}>{t('settings.freshSnippetHint')}</p>
+          <p className="mt-2.5 mb-0 text-[11.5px] leading-normal text-muted">{t('settings.freshSnippetHint')}</p>
         </div>
       )}
 
-      <div className={own.table}>
-        <div className={own.tHead}>
-          <span>{t('settings.colName')}</span><span>{t('settings.colToken')}</span><span>{t('settings.colScope')}</span><span>{t('settings.colCreated')}</span><span>{t('settings.colLastUsed')}</span><span></span>
+      <div className="overflow-hidden rounded-sm border border-border bg-surface">
+        <div
+          className={cn(
+            tableCols,
+            hideOnMobile,
+            'bg-soft py-[9px] font-mono text-2xs tracking-[0.1em] text-muted',
+          )}
+        >
+          <span>{t('settings.colName')}</span>
+          <span>{t('settings.colToken')}</span>
+          <span>{t('settings.colScope')}</span>
+          <span>{t('settings.colCreated')}</span>
+          <span>{t('settings.colLastUsed')}</span>
+          <span />
         </div>
         {(tokens.data ?? []).map((tk) => (
-          <div key={tk.id} className={own.tRow}>
-            <span className={own.tName}>{tk.name}</span>
-            <span className={own.tMask}>bl_····························</span>
-            <span className={[own.scope, tk.scope === 'full' && own.scopeFull].filter(Boolean).join(' ')}>
+          <div key={tk.id} className={cn(tableCols, hideOnMobile)}>
+            <span className="truncate text-[13px] font-bold">{tk.name}</span>
+            <span className="font-mono text-[11px] text-muted">bl_····························</span>
+            <span
+              className={cn(
+                'justify-self-start rounded-[2px] border border-border px-[7px] py-0.5 font-mono text-[9.5px] tracking-[0.06em] text-muted',
+                tk.scope === 'full' && 'border-warn text-warn',
+              )}
+            >
               {tk.scope.toUpperCase()}
             </span>
-            <span className={own.tMuted}>{formatDate(tk.created_at)}</span>
-            <span className={own.tMuted}>{tk.last_used_at ? formatDate(tk.last_used_at) : t('settings.neverUsed')}</span>
+            <span className="font-mono text-xs-plus text-muted">{formatDate(tk.created_at)}</span>
+            <span className="font-mono text-xs-plus text-muted">
+              {tk.last_used_at ? formatDate(tk.last_used_at) : t('settings.neverUsed')}
+            </span>
             <InlineConfirm
               label={t('settings.revoke')}
               confirmLabel={t('settings.confirmRevoke')}
@@ -116,41 +154,47 @@ export function TokensTab() {
             />
           </div>
         ))}
-        {tokens.data?.length === 0 && <div className={own.empty}>{t('settings.emptyTokens')}</div>}
+        {tokens.data?.length === 0 && (
+          <div className="px-7 py-7 text-center text-sm-plus text-muted">{t('settings.emptyTokens')}</div>
+        )}
       </div>
 
-      <div className={own.confSection}>
-        <div className={styles.kicker}>{t('settings.clientConfigKicker')}</div>
-        <p className={own.confNote}>
+      <div className="mt-7">
+        <div className={kicker}>{t('settings.clientConfigKicker')}</div>
+        <p className="mb-3 mt-0 text-xs leading-normal text-muted">
           {t('settings.clientConfigNote', { base: baseURL || '…' })}
         </p>
-        <div className={own.confGrid}>
+        <div className="grid grid-cols-2 gap-3.5 max-md:grid-cols-1">
           {snippets.map((s) => (
-            <div key={s.kind} className={own.confCard}>
-              <div className={own.confHead}>
-                <span className={own.confName}>{titleByKind[s.kind]}</span>
+            <div key={s.kind} className="overflow-hidden rounded-sm border border-border bg-surface">
+              <div className="flex items-center justify-between border-b border-border bg-soft px-3.5 py-[9px]">
+                <span className="text-xs font-bold">{titleByKind[s.kind]}</span>
                 <button
                   type="button"
-                  className={own.confCopy}
+                  className="cursor-pointer border-0 bg-transparent text-[11px] font-semibold text-muted underline hover:text-ink"
                   onClick={() => copyText(s.text, copyLabelByKind[s.kind])}
                 >
                   {t('settings.copyConfig')}
                 </button>
               </div>
-              <pre className={own.confPre}>{s.text}</pre>
+              <pre className="m-0 overflow-auto bg-bg p-3.5 font-mono text-xs-plus leading-[1.7] text-ink">
+                {s.text}
+              </pre>
             </div>
           ))}
         </div>
       </div>
 
       <Modal open={showNew} onClose={() => setShowNew(false)} width={400}>
-        <div className={styles.kicker}>NEW TOKEN</div>
-        <div className={own.modalTitle}>{t('settings.newTokenTitle')}</div>
-        <div className={styles.field}>
-          <label className={styles.label} htmlFor="tk-name">{t('settings.colName')}</label>
+        <div className={kicker}>NEW TOKEN</div>
+        <div className="mb-3.5 text-base font-bold">{t('settings.newTokenTitle')}</div>
+        <div className={field}>
+          <label className={label} htmlFor="tk-name">
+            {t('settings.colName')}
+          </label>
           <input
             id="tk-name"
-            className={styles.input}
+            className={input}
             placeholder={t('settings.tokenNamePlaceholder')}
             value={name}
             onChange={(e) => {
@@ -158,28 +202,39 @@ export function TokensTab() {
               setNameErr(false)
             }}
           />
-          {nameErr && <div className={styles.errLine}>{t('settings.errNameRequired')}</div>}
+          {nameErr && <div className={errLine}>{t('settings.errNameRequired')}</div>}
         </div>
-        <div className={styles.field}>
-          <span className={styles.label}>{t('settings.scope')}</span>
+        <div className={`${field} mt-3.5`}>
+          <span className={label}>{t('settings.scope')}</span>
           <button
             type="button"
-            className={[own.scopeOpt, scope === 'upload' && own.scopeOptActive].filter(Boolean).join(' ')}
+            className={cn(
+              'mb-2 w-full cursor-pointer rounded-sm border border-border bg-surface px-3.5 py-[11px] text-left text-sm-plus font-semibold text-ink hover:bg-soft',
+              scope === 'upload' && 'border-ink bg-soft',
+            )}
             onClick={() => setScope('upload')}
           >
             {t('settings.scopeUpload')}
-            <span className={own.scopeSub}>{t('settings.scopeUploadSub')}</span>
+            <span className="mt-0.5 block text-[11px] font-normal text-muted">{t('settings.scopeUploadSub')}</span>
           </button>
           <button
             type="button"
-            className={[own.scopeOpt, scope === 'full' && own.scopeOptActive].filter(Boolean).join(' ')}
+            className={cn(
+              'mb-2 w-full cursor-pointer rounded-sm border border-border bg-surface px-3.5 py-[11px] text-left text-sm-plus font-semibold text-ink hover:bg-soft',
+              scope === 'full' && 'border-ink bg-soft',
+            )}
             onClick={() => setScope('full')}
           >
             {t('settings.scopeFull')}
-            <span className={own.scopeSub}>{t('settings.scopeFullSub')}</span>
+            <span className="mt-0.5 block text-[11px] font-normal text-muted">{t('settings.scopeFullSub')}</span>
           </button>
         </div>
-        <Button variant="primary" className={own.createBtn} disabled={create.isPending} onClick={createToken}>
+        <Button
+          variant="primary"
+          className="mt-1 w-full py-[11px] text-[13px]"
+          disabled={create.isPending}
+          onClick={createToken}
+        >
           {t('settings.createToken')}
         </Button>
       </Modal>

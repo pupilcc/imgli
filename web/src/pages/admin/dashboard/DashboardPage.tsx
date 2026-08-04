@@ -16,10 +16,28 @@ import { PageHeader } from '../../../shell/PageHeader'
 import { Skeleton } from '../../../ui/Skeleton'
 import { AdminQueryGate } from '../ui/AdminQueryGate'
 import { ACTION_LABELS, dotColor } from '../ui/auditActions'
-import styles from './DashboardPage.module.css'
 import { TrendChart } from './TrendChart'
 
 type RefWindow = 7 | 30
+
+const cardClass = 'rounded-sm border border-border bg-surface p-4'
+const cardLabelClass = 'mb-2.5 font-mono text-2xs tracking-[0.1em] text-muted'
+const cardValueClass = 'text-[22px] font-extrabold tracking-tight'
+const cardsClass = 'mb-3.5 grid grid-cols-2 gap-3.5 min-[901px]:grid-cols-4'
+const panelsClass = 'mb-3.5 grid grid-cols-1 gap-3.5 min-[901px]:grid-cols-[1.6fr_1fr]'
+const panelClass = 'min-w-0 rounded-sm border border-border bg-surface p-[18px]'
+const panelHeadClass = 'mb-4 flex items-baseline justify-between font-mono text-2xs tracking-[0.1em] text-muted'
+const eventEmptyClass = 'text-sm-plus text-muted'
+const sectionLabelClass = 'my-1 mb-2.5 font-mono text-2xs uppercase tracking-[0.12em] text-muted'
+const winBtnClass =
+  'cursor-pointer rounded-[2px] border border-border bg-transparent px-1.5 py-0.5 font-mono text-2xs text-muted'
+const winActiveClass =
+  'cursor-pointer rounded-[2px] border border-ink bg-transparent px-1.5 py-0.5 font-mono text-2xs font-bold text-ink'
+const refTableClass =
+  'w-full border-collapse text-sm-plus [&_th]:border-b [&_th]:border-border [&_th]:py-2 [&_th]:text-left [&_th]:font-mono [&_th]:text-2xs [&_th]:font-medium [&_th]:tracking-[0.08em] [&_th]:text-muted [&_td]:border-b [&_td]:border-border [&_td]:py-2 [&_td]:text-left [&_tr:last-child_td]:border-b-0'
+const refCountClass = 'w-16 text-right font-mono tabular-nums'
+const caveatClass = 'mt-3 mb-0 text-[11px] leading-snug text-muted'
+const eventActorClass = 'font-mono text-muted'
 
 export function DashboardPage() {
   const { t } = useT()
@@ -77,9 +95,9 @@ export function DashboardPage() {
   return (
     <div>
       <PageHeader kicker="DASHBOARD" title={t('adminA.dashTitle')} />
-      <div className={styles.versionBar}>
-        <span className={styles.versionLabel}>{t('adminA.runningVersion')}</span>
-        <code className={styles.versionCode}>{verQ.data?.current ?? '…'}</code>
+      <div className="mb-4 flex flex-wrap items-center gap-x-4 gap-y-2.5 rounded-lg border border-border bg-soft px-4 py-3">
+        <span className="text-[0.85rem] text-muted">{t('adminA.runningVersion')}</span>
+        <code className="text-[0.95rem] font-semibold">{verQ.data?.current ?? '…'}</code>
         <Button variant="secondary" disabled={checkUpdate.isPending} onClick={onCheckUpdate}>
           {t('adminA.checkUpdate')}
         </Button>
@@ -88,11 +106,11 @@ export function DashboardPage() {
             {t('adminA.upgradeTo', { latest: latestTag })}
           </Button>
         )}
-        <Link className={styles.versionMsg} to="/admin/system">
+        <Link className="flex-[1_1_12rem] text-[0.9rem]" to="/admin/system">
           {t('adminA.systemTitle')} →
         </Link>
         {updateMsg && (
-          <span className={styles.versionMsg}>
+          <span className="flex-[1_1_12rem] text-[0.9rem]">
             {updateMsg}
             {checkUpdate.data?.release_url && checkUpdate.data.update_available && (
               <>
@@ -113,8 +131,8 @@ export function DashboardPage() {
               : (data.top_referers_30d ?? data.top_referers ?? [])
           return (
         <>
-          <div className={styles.sectionLabel}>{t('adminA.opsSection')}</div>
-          <div className={styles.cards}>
+          <div className={sectionLabelClass}>{t('adminA.opsSection')}</div>
+          <div className={cardsClass}>
             {[
               { label: t('adminA.usersCount'), value: String(data.users) },
               {
@@ -127,26 +145,30 @@ export function DashboardPage() {
               },
               { label: t('adminA.totalStorage'), value: formatBytes(data.storage) },
             ].map((c) => (
-              <div key={c.label} className={styles.card}>
-                <div className={styles.cardLabel}>{c.label}</div>
-                <div className={styles.cardValue}>{c.value}</div>
+              <div key={c.label} className={cardClass}>
+                <div className={cardLabelClass}>{c.label}</div>
+                <div className={cardValueClass}>{c.value}</div>
               </div>
             ))}
           </div>
           {(data.bandwidth_top_users?.length ?? 0) > 0 && (
-            <div className={styles.bwStrip}>
-              <span className={styles.bwLabel}>{t('adminA.bandwidthTopUsers')}</span>
+            <div className="-mt-1 mb-4 flex flex-wrap items-center gap-2 text-xs">
+              <span className="font-mono text-2xs tracking-[0.08em] text-muted">{t('adminA.bandwidthTopUsers')}</span>
               {data.bandwidth_top_users!.map((u) => (
-                <Link key={u.user_id} className={styles.bwChip} to={`/admin/users?q=${encodeURIComponent(u.username)}`}>
+                <Link
+                  key={u.user_id}
+                  className="inline-flex items-center gap-1.5 rounded-sm border border-border bg-surface px-2 py-1 text-inherit no-underline hover:border-muted"
+                  to={`/admin/users?q=${encodeURIComponent(u.username)}`}
+                >
                   {u.username}
-                  <span className={styles.bwAmt}>{formatBytes(u.used)}</span>
+                  <span className="font-mono text-2xs text-muted">{formatBytes(u.used)}</span>
                 </Link>
               ))}
             </div>
           )}
 
-          <div className={styles.sectionLabel}>{t('adminA.inventorySection')}</div>
-          <div className={styles.cards}>
+          <div className={sectionLabelClass}>{t('adminA.inventorySection')}</div>
+          <div className={cardsClass}>
             {[
               { label: t('adminA.imagesCount'), value: String(data.images) },
               { label: t('adminA.todayUploads'), value: String(data.today_uploads) },
@@ -155,29 +177,29 @@ export function DashboardPage() {
               { label: t('adminA.tasksPending'), value: String(data.tasks_pending ?? 0) },
               { label: t('adminA.tasksRunning'), value: String(data.tasks_running ?? 0) },
             ].map((c) => (
-              <div key={c.label} className={styles.card}>
-                <div className={styles.cardLabel}>{c.label}</div>
-                <div className={styles.cardValue}>{c.value}</div>
+              <div key={c.label} className={cardClass}>
+                <div className={cardLabelClass}>{c.label}</div>
+                <div className={cardValueClass}>{c.value}</div>
               </div>
             ))}
           </div>
 
-          <div className={styles.panels}>
-            <div className={styles.panel}>
-              <div className={styles.panelHead}>
+          <div className={panelsClass}>
+            <div className={panelClass}>
+              <div className={panelHeadClass}>
                 <span>{t('adminA.signupsTrend30d')}</span>
                 <span>{t('adminA.unitUsersPerDay')}</span>
               </div>
               <TrendChart daily={data.signups_30d ?? []} days={30} />
             </div>
-            <div className={styles.panel}>
-              <div className={styles.panelHead}>
+            <div className={panelClass}>
+              <div className={panelHeadClass}>
                 <span>{t('adminA.signupChannels')}</span>
               </div>
               {(data.signup_channels_30d ?? []).length === 0 ? (
-                <div className={styles.eventEmpty}>{t('adminA.noSignups')}</div>
+                <div className={eventEmptyClass}>{t('adminA.noSignups')}</div>
               ) : (
-                <table className={styles.refTable}>
+                <table className={refTableClass}>
                   <thead>
                     <tr>
                       <th>{t('adminA.channel')}</th>
@@ -188,7 +210,7 @@ export function DashboardPage() {
                     {(data.signup_channels_30d ?? []).map((r) => (
                       <tr key={r.channel}>
                         <td>{channelLabel(t, r.channel)}</td>
-                        <td className={styles.refCount}>{r.count}</td>
+                        <td className={refCountClass}>{r.count}</td>
                       </tr>
                     ))}
                   </tbody>
@@ -197,29 +219,29 @@ export function DashboardPage() {
             </div>
           </div>
 
-          <div className={styles.panels}>
-            <div className={styles.panel}>
-              <div className={styles.panelHead}>
+          <div className={panelsClass}>
+            <div className={panelClass}>
+              <div className={panelHeadClass}>
                 <span>{t('adminA.uploadTrend30d')}</span>
                 <span>{t('adminA.unitImagesPerDay')}</span>
               </div>
               <TrendChart daily={data.daily ?? []} />
             </div>
-            <div className={styles.panel}>
-              <div className={styles.panelHead}>
+            <div className={panelClass}>
+              <div className={panelHeadClass}>
                 <span>{t('adminA.recentEvents')}</span>
               </div>
-              <div className={styles.events}>
-                {logs.data && logs.data.items.length === 0 && <div className={styles.eventEmpty}>{t('adminA.noEvents')}</div>}
+              <div className="flex flex-col gap-[13px]">
+                {logs.data && logs.data.items.length === 0 && <div className={eventEmptyClass}>{t('adminA.noEvents')}</div>}
                 {logs.data?.items.map((l) => (
-                  <div key={l.id} className={styles.event}>
-                    <span className={styles.dot} style={{ background: dotColor(l.action) }} />
-                    <div className={styles.eventBody}>
-                      <div className={styles.eventText}>
+                  <div key={l.id} className="flex items-start gap-2.5">
+                    <span className="mt-[5px] h-1.5 w-1.5 flex-none rounded-full" style={{ background: dotColor(l.action) }} />
+                    <div className="min-w-0">
+                      <div className="text-sm-plus leading-snug">
                         {ACTION_LABELS[l.action] ?? l.action}
-                        {l.actor_id != null && <span className={styles.eventActor}> · #{l.actor_id}</span>}
+                        {l.actor_id != null && <span className={eventActorClass}> · #{l.actor_id}</span>}
                       </div>
-                      <div className={styles.eventTime}>{formatDate(l.created_at)}</div>
+                      <div className="mt-0.5 font-mono text-2xs text-muted">{formatDate(l.created_at)}</div>
                     </div>
                   </div>
                 ))}
@@ -227,15 +249,15 @@ export function DashboardPage() {
             </div>
           </div>
 
-          <div className={styles.panels}>
-            <div className={styles.panel}>
-              <div className={styles.panelHead}>
+          <div className={panelsClass}>
+            <div className={panelClass}>
+              <div className={panelHeadClass}>
                 <span>{refWindow === 7 ? t('adminA.traffic7d') : t('adminA.traffic30d')}</span>
-                <span className={styles.windowToggle}>
-                  <button type="button" className={refWindow === 7 ? styles.winActive : styles.winBtn} onClick={() => setRefWindow(7)}>
+                <span className="inline-flex gap-1">
+                  <button type="button" className={refWindow === 7 ? winActiveClass : winBtnClass} onClick={() => setRefWindow(7)}>
                     7d
                   </button>
-                  <button type="button" className={refWindow === 30 ? styles.winActive : styles.winBtn} onClick={() => setRefWindow(30)}>
+                  <button type="button" className={refWindow === 30 ? winActiveClass : winBtnClass} onClick={() => setRefWindow(30)}>
                     30d
                   </button>
                 </span>
@@ -247,24 +269,24 @@ export function DashboardPage() {
                 ).map((d) => ({ date: d.date, count: d.views }))}
                 days={refWindow}
               />
-              <p className={styles.caveat}>{t('adminA.originMeteringNote')}</p>
+              <p className={caveatClass}>{t('adminA.originMeteringNote')}</p>
             </div>
-            <div className={styles.panel}>
-              <div className={styles.panelHead}>
+            <div className={panelClass}>
+              <div className={panelHeadClass}>
                 <span>{t('adminA.topReferers')}</span>
-                <span className={styles.windowToggle}>
-                  <button type="button" className={refWindow === 7 ? styles.winActive : styles.winBtn} onClick={() => setRefWindow(7)}>
+                <span className="inline-flex gap-1">
+                  <button type="button" className={refWindow === 7 ? winActiveClass : winBtnClass} onClick={() => setRefWindow(7)}>
                     7d
                   </button>
-                  <button type="button" className={refWindow === 30 ? styles.winActive : styles.winBtn} onClick={() => setRefWindow(30)}>
+                  <button type="button" className={refWindow === 30 ? winActiveClass : winBtnClass} onClick={() => setRefWindow(30)}>
                     30d
                   </button>
                 </span>
               </div>
               {referers.length === 0 ? (
-                <div className={styles.eventEmpty}>{t('adminA.noReferers')}</div>
+                <div className={eventEmptyClass}>{t('adminA.noReferers')}</div>
               ) : (
-                <table className={styles.refTable}>
+                <table className={refTableClass}>
                   <thead>
                     <tr>
                       <th>{t('adminA.domain')}</th>
@@ -275,36 +297,40 @@ export function DashboardPage() {
                     {referers.map((r) => (
                       <tr
                         key={r.host}
-                        className={styles.refRow}
+                        className="cursor-pointer hover:bg-soft"
                         onClick={() => setSelectedHost(r.host === selectedHost ? null : r.host)}
                       >
                         <td>
                           {r.host}
-                          {r.suspect ? <span className={styles.suspect}>{t('adminA.suspect')}</span> : null}
+                          {r.suspect ? (
+                            <span className="ml-1.5 rounded-[2px] border border-warn px-1 font-mono text-[9px] tracking-[0.06em] text-warn">
+                              {t('adminA.suspect')}
+                            </span>
+                          ) : null}
                         </td>
-                        <td className={styles.refCount}>{r.count}</td>
+                        <td className={refCountClass}>{r.count}</td>
                       </tr>
                     ))}
                   </tbody>
                 </table>
               )}
-              <p className={styles.caveat}>{t('adminA.originMeteringNote')}</p>
+              <p className={caveatClass}>{t('adminA.originMeteringNote')}</p>
               {selectedHost && (
-                <div className={styles.hostDetail}>
-                  <div className={styles.panelHead}>
+                <div className="mt-3.5 border-t border-dashed border-border pt-3">
+                  <div className={panelHeadClass}>
                     <span>
                       {t('adminA.refererImages')}: {selectedHost}
                     </span>
-                    <button type="button" className={styles.winBtn} onClick={() => setSelectedHost(null)}>
+                    <button type="button" className={winBtnClass} onClick={() => setSelectedHost(null)}>
                       ×
                     </button>
                   </div>
                   {hostImages.isLoading ? (
                     <Skeleton height={80} />
                   ) : (hostImages.data?.items ?? []).length === 0 ? (
-                    <div className={styles.eventEmpty}>{t('adminA.noRefererImages')}</div>
+                    <div className={eventEmptyClass}>{t('adminA.noRefererImages')}</div>
                   ) : (
-                    <table className={styles.refTable}>
+                    <table className={refTableClass}>
                       <thead>
                         <tr>
                           <th>{t('adminA.imageKey')}</th>
@@ -316,9 +342,9 @@ export function DashboardPage() {
                           <tr key={it.key}>
                             <td>
                               <Link to={`/admin/images?q=${encodeURIComponent(it.key)}`}>{it.key}</Link>
-                              {it.name ? <span className={styles.eventActor}> · {it.name}</span> : null}
+                              {it.name ? <span className={eventActorClass}> · {it.name}</span> : null}
                             </td>
-                            <td className={styles.refCount}>{it.count}</td>
+                            <td className={refCountClass}>{it.count}</td>
                           </tr>
                         ))}
                       </tbody>

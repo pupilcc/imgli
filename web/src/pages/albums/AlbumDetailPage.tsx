@@ -10,7 +10,6 @@ import { EmptyState } from '../../ui/EmptyState'
 import { BatchBar } from '../images/BatchBar'
 import { DetailModal } from '../images/DetailModal'
 import { ImageGrid } from '../images/ImageGrid'
-import styles from './AlbumDetailPage.module.css'
 
 export function AlbumDetailPage() {
   const { t } = useT()
@@ -53,7 +52,7 @@ export function AlbumDetailPage() {
 
   if (!albums.isLoading && !album) {
     return (
-      <div className={styles.page}>
+      <div className="mx-auto max-w-[1120px] pt-11">
         <EmptyState badge="404" title={t('albums.notFound')} desc={t('albums.notFoundDesc')}>
           <Button variant="primary" onClick={() => navigate('/albums')}>
             {t('albums.backToAlbums')}
@@ -86,16 +85,19 @@ export function AlbumDetailPage() {
     update.mutate({ key: item.key, body: { visibility: item.visibility === 'public' ? 'private' : 'public' } })
 
   return (
-    <div className={styles.page}>
-      <div className={styles.head}>
-        <div className={styles.headLeft}>
-          <Link to="/albums" className={styles.back}>
+    <div className="mx-auto max-w-[1120px] pt-11">
+      <div className="mb-6 flex animate-[fadeIn_0.2s] items-end justify-between border-b border-border pb-[18px]">
+        <div className="min-w-0">
+          <Link
+            to="/albums"
+            className="mb-2 inline-block font-mono text-[11px] tracking-[0.14em] text-muted hover:text-ink"
+          >
             ← ALBUMS
           </Link>
           {renaming ? (
-            <div className={styles.renameRow}>
+            <div className="flex gap-1.5">
               <input
-                className={styles.renameInput}
+                className="w-[220px] rounded-sm border border-muted bg-bg px-2.5 py-1 font-inherit text-xl font-bold text-ink outline-none"
                 autoFocus
                 value={renameVal}
                 onChange={(e) => setRenameVal(e.target.value)}
@@ -103,14 +105,20 @@ export function AlbumDetailPage() {
                   if (e.key === 'Enter') commitRename()
                 }}
               />
-              <button type="button" className={styles.renameSave} onClick={commitRename}>{t('albums.save')}</button>
-            </div>
-          ) : (
-            <div className={styles.titleRow}>
-              <h1 className={styles.title}>{album?.name ?? '…'}</h1>
               <button
                 type="button"
-                className={styles.renameLink}
+                className="cursor-pointer rounded-sm border-0 bg-btn px-3.5 py-[7px] text-xs font-bold text-btn-text"
+                onClick={commitRename}
+              >
+                {t('albums.save')}
+              </button>
+            </div>
+          ) : (
+            <div className="flex items-baseline gap-3">
+              <h1 className="m-0 text-[26px] font-bold tracking-[-0.015em]">{album?.name ?? '…'}</h1>
+              <button
+                type="button"
+                className="cursor-pointer border-0 bg-transparent p-0 text-[11.5px] text-muted underline hover:text-ink"
                 onClick={() => {
                   setRenameVal(album?.name ?? '')
                   setRenaming(true)
@@ -118,11 +126,15 @@ export function AlbumDetailPage() {
               >
                 {t('albums.rename')}
               </button>
-              {album && <span className={styles.privacyTag}>{album.visibility === 'public' ? 'PUBLIC' : 'PRIVATE'}</span>}
+              {album && (
+                <span className="rounded-[2px] border border-border px-[7px] py-0.5 font-mono text-[9.5px] tracking-[0.1em] text-muted">
+                  {album.visibility === 'public' ? 'PUBLIC' : 'PRIVATE'}
+                </span>
+              )}
             </div>
           )}
         </div>
-        <div className={styles.headRight}>
+        <div className="flex gap-2">
           {album?.visibility === 'public' && (
             <Button
               onClick={() => {
@@ -141,7 +153,7 @@ export function AlbumDetailPage() {
           </Link>
         </div>
       </div>
-      <div className={styles.metaLine}>
+      <div className="mb-3.5 font-mono text-xs-plus tracking-[0.06em] text-muted">
         {album ? t('albums.detailMeta', { count: album.image_count, date: formatDate(album.created_at) }) : ''}
       </div>
 

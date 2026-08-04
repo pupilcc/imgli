@@ -10,6 +10,21 @@ separate version in `go.mod` or `web/package.json`.
 
 ## [Unreleased]
 
+## [0.9.3] - 2026-08-04
+
+Theme: **Admin users ops · full Tailwind UI**.
+
+### Added
+
+- **Admin users table:** monthly bandwidth + period, last-seen (latest Web session), registration time; sortable column headers (`sort=bandwidth|storage|created|last_seen`); icon actions with two-click confirm for ban/unban/reset password.
+- **Tailwind CSS v4** frontend stack (`tailwindcss` + `@tailwindcss/vite`, `clsx` / `tailwind-merge`); design tokens mapped via `@theme` in `web/src/styles/tokens.css`.
+- **Shared admin chrome:** `adminChrome.tsx` (filters, search, select, table/sort headers, status pills, icon actions); admin settings class map `settingsUi.ts`.
+
+### Changed
+
+- **UI rewrite:** all product and admin pages/shells/primitives use Tailwind utilities; CSS Modules removed from `web/src`.
+- Users list layout: aligned columns, footer page stats, CSV export unchanged.
+
 ## [0.9.2] - 2026-08-04
 
 Theme: **Instant reuse · site name surface · stats honesty**.
@@ -342,7 +357,8 @@ Theme: **Workflow & Trust** — CLI/integrations, share landing, privacy
 - Bilingual UI (中文/English), PWA, dark mode, text watermark, admin audit logs.
 - Docker Compose quick start and GitHub Actions CI (Go matrix, web, e2e smoke).
 
-[Unreleased]: https://github.com/yixian-huang/imgli/compare/v0.9.2...HEAD
+[Unreleased]: https://github.com/yixian-huang/imgli/compare/v0.9.3...HEAD
+[0.9.3]: https://github.com/yixian-huang/imgli/compare/v0.9.2...v0.9.3
 [0.9.2]: https://github.com/yixian-huang/imgli/compare/v0.9.1...v0.9.2
 [0.9.1]: https://github.com/yixian-huang/imgli/compare/v0.9.0...v0.9.1
 [0.9.0]: https://github.com/yixian-huang/imgli/compare/v0.8.0...v0.9.0

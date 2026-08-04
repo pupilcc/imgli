@@ -6,7 +6,6 @@ import { sessionKey, useVerifyEmail } from '../../api/hooks'
 import { useT } from '../../i18n'
 import { errorText } from '../../i18n/errorText'
 import { AuthShell } from './AuthShell'
-import styles from './AuthPage.module.css'
 
 export function VerifyEmailPage() {
   const { t } = useT()
@@ -47,8 +46,8 @@ export function VerifyEmailPage() {
 
   return (
     <AuthShell>
-      <div className={styles.kicker}>{t('auth.verifyEmailKicker')}</div>
-      <h1 className={styles.heading}>
+      <div className="mb-2.5 font-mono text-[11px] tracking-[0.14em] text-muted">{t('auth.verifyEmailKicker')}</div>
+      <h1 className="mb-6 mt-0 text-2xl font-bold tracking-[-0.015em]">
         {state === 'pending'
           ? t('auth.verifying')
           : state === 'ok'
@@ -56,13 +55,15 @@ export function VerifyEmailPage() {
             : t('auth.verifyFailed')}
       </h1>
       {state === 'fail' && (
-        <p className={styles.flowText}>
+        <p className="mt-2 mb-0 text-[13.5px] leading-[1.8] text-muted">
           {msg}
           {t('auth.verifyFailHint')}
         </p>
       )}
-      {state === 'ok' && <p className={styles.flowText}>{t('auth.verifyOkText')}</p>}
-      <Link to="/login" className={styles.flowLink}>{t('auth.backToLogin')}</Link>
+      {state === 'ok' && <p className="mt-2 mb-0 text-[13.5px] leading-[1.8] text-muted">{t('auth.verifyOkText')}</p>}
+      <Link to="/login" className="mt-[22px] inline-block text-sm-plus text-muted hover:text-ink">
+        {t('auth.backToLogin')}
+      </Link>
     </AuthShell>
   )
 }

@@ -1,7 +1,6 @@
 import { Link } from 'react-router'
 import { useT } from '../i18n'
 import { formatBytes } from '../lib/format'
-import styles from './QuotaBar.module.css'
 
 export type QuotaLevel = 'ok' | 'warn' | 'full'
 
@@ -30,6 +29,14 @@ function formatPair(used: number, total: number): string {
   return uUnit === tUnit ? `${uNum} / ${totalText}` : `${usedText} / ${totalText}`
 }
 
+function Track({ pct, color }: { pct: number; color: string }) {
+  return (
+    <div className="h-[3px] overflow-hidden rounded-sm bg-soft">
+      <div className="h-full transition-[width] duration-300" style={{ width: `${pct}%`, background: color }} />
+    </div>
+  )
+}
+
 /** 单条迷你进度（上传页并排等较宽场景）。 */
 export function QuotaBar({
   used,
@@ -50,17 +57,12 @@ export function QuotaBar({
   const tag = kind === 'bandwidth' ? 'BANDWIDTH' : 'STORAGE'
   const title = kind === 'bandwidth' ? t('ui.bandwidthTitle') : t('ui.quotaTitle')
   return (
-    <Link to={to} title={title} className={styles.wrap}>
-      <div className={styles.labels}>
+    <Link to={to} title={title} className="flex w-[148px] flex-none flex-col gap-1 max-[900px]:hidden">
+      <div className="flex justify-between gap-1.5 font-mono text-[9.5px] tracking-[0.04em] text-muted">
         <span>{tag}</span>
         <span style={{ color: levelColor[level] }}>{label}</span>
       </div>
-      <div className={styles.track}>
-        <div
-          className={styles.fill}
-          style={{ width: total > 0 ? `${pct}%` : '0%', background: levelColor[level] }}
-        />
-      </div>
+      <Track pct={total > 0 ? pct : 0} color={levelColor[level]} />
     </Link>
   )
 }
@@ -95,30 +97,28 @@ export function NavQuotaCluster({
     : `${t('ui.quotaTitle')}: ${formatPair(storage.used, storage.total)} (${trashHint})`
 
   return (
-    <Link to={to} title={title} className={styles.cluster} data-testid="nav-quota-cluster">
-      <div className={styles.clusterRow}>
-        <span className={styles.clusterTag}>{t('ui.navStorageShort')}</span>
-        <span className={styles.clusterVal} style={{ color: levelColor[sLevel] }}>
+    <Link
+      to={to}
+      title={title}
+      className="flex w-[148px] flex-none flex-col gap-0.5 py-1 text-inherit no-underline hover:text-inherit max-[900px]:hidden"
+      data-testid="nav-quota-cluster"
+    >
+      <div className="flex items-baseline justify-between gap-1.5 font-mono text-[9.5px] leading-tight tracking-[0.03em]">
+        <span className="flex-none text-muted">{t('ui.navStorageShort')}</span>
+        <span className="min-w-0 overflow-hidden text-right text-ellipsis whitespace-nowrap" style={{ color: levelColor[sLevel] }}>
           {formatPair(storage.used, storage.total)}
         </span>
       </div>
-      <div className={styles.track}>
-        <div
-          className={styles.fill}
-          style={{ width: storage.total > 0 ? `${sPct}%` : '0%', background: levelColor[sLevel] }}
-        />
-      </div>
+      <Track pct={storage.total > 0 ? sPct : 0} color={levelColor[sLevel]} />
       {showBw && (
         <>
-          <div className={styles.clusterRow}>
-            <span className={styles.clusterTag}>{t('ui.navBandwidthShort')}</span>
-            <span className={styles.clusterVal} style={{ color: levelColor[bLevel] }}>
+          <div className="flex items-baseline justify-between gap-1.5 font-mono text-[9.5px] leading-tight tracking-[0.03em]">
+            <span className="flex-none text-muted">{t('ui.navBandwidthShort')}</span>
+            <span className="min-w-0 overflow-hidden text-right text-ellipsis whitespace-nowrap" style={{ color: levelColor[bLevel] }}>
               {formatPair(bandwidth.used, bandwidth.total)}
             </span>
           </div>
-          <div className={styles.track}>
-            <div className={styles.fill} style={{ width: `${bPct}%`, background: levelColor[bLevel] }} />
-          </div>
+          <Track pct={bPct} color={levelColor[bLevel]} />
         </>
       )}
     </Link>

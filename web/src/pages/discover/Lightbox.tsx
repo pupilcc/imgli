@@ -3,7 +3,6 @@ import { Link } from 'react-router'
 import type { DiscoverRow } from '../../api/types'
 import { useT } from '../../i18n'
 import { copyText } from '../../lib/copy'
-import styles from './Lightbox.module.css'
 
 interface Props {
   row: DiscoverRow | null
@@ -29,30 +28,43 @@ export function Lightbox({ row, onClose }: Props) {
   const externalUrl = `${location.origin}/i/${row.key}`
 
   return (
-    <div className={styles.mask} onClick={onClose} role="presentation">
+    <div
+      className="fixed inset-0 z-50 flex animate-[fadeIn_0.15s] items-center justify-center bg-black/72 p-3 sm:p-6"
+      onClick={onClose}
+      role="presentation"
+    >
       <div
-        className={styles.panel}
+        className="relative flex max-h-[92vh] max-w-[min(960px,100%)] flex-col items-center"
         role="dialog"
         aria-modal="true"
         aria-label={row.name}
         onClick={(e) => e.stopPropagation()}
       >
-        <button type="button" className={styles.closeBtn} title={t('discover.close')} onClick={onClose}>
+        <button
+          type="button"
+          className="absolute top-1 right-1 z-[2] flex h-8 w-8 cursor-pointer items-center justify-center rounded-full border border-white/25 bg-black/55 text-lg leading-none text-white hover:bg-black/80 sm:-top-2 sm:-right-2"
+          title={t('discover.close')}
+          onClick={onClose}
+        >
           ×
         </button>
         <img
-          className={styles.image}
+          className="block max-h-[78vh] max-w-full rounded bg-black/20 object-contain sm:max-h-[90vh]"
           src={`/i/${row.key}`}
           alt={row.name}
           onClick={(e) => e.stopPropagation()}
         />
-        <div className={styles.footer}>
-          <Link to={`/u/${row.author.username}`} className={styles.authorLink} onClick={onClose}>
+        <div className="mt-3 flex w-full items-center justify-between gap-4 px-1">
+          <Link
+            to={`/u/${row.author.username}`}
+            className="min-w-0 overflow-hidden text-[13px] text-ellipsis whitespace-nowrap text-white/90 no-underline hover:text-white hover:underline"
+            onClick={onClose}
+          >
             {displayName}
           </Link>
           <button
             type="button"
-            className={styles.copyBtn}
+            className="h-[30px] flex-none cursor-pointer rounded-sm border border-white/28 bg-white/12 px-3.5 text-xs font-semibold text-white hover:bg-white/20"
             onClick={() => copyText(externalUrl, t('discover.externalLink'))}
           >
             {t('discover.copyExternal')}

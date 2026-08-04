@@ -10,7 +10,6 @@ import { Button } from '../../ui/Button'
 import { Input } from '../../ui/Input'
 import { LangToggle } from '../../ui/LangToggle'
 import { useGlobal } from '../../store'
-import styles from './SharePage.module.css'
 
 /** Public share landing: preview + copy links for public/normal images. */
 export function SharePage() {
@@ -39,44 +38,52 @@ export function SharePage() {
   }
 
   return (
-    <div className={styles.shell}>
-      <header className={styles.nav}>
-        <Link to="/" className={styles.brand} aria-label={siteName}>
+    <div className="min-h-dvh bg-bg text-ink">
+      <header className="flex items-center justify-between border-b border-border bg-surface px-5 py-3">
+        <Link to="/" className="flex items-center text-inherit no-underline" aria-label={siteName}>
           <BrandLockup word={cfg.data?.site_name} />
         </Link>
-        <div className={styles.right}>
-          <button type="button" className={styles.themeBtn} title={t('nav.toggleTheme')} onClick={toggleTheme}>
+        <div className="flex items-center gap-2.5">
+          <button
+            type="button"
+            className="h-[34px] w-[34px] cursor-pointer rounded-sm border border-border bg-surface text-sm text-ink"
+            title={t('nav.toggleTheme')}
+            onClick={toggleTheme}
+          >
             {theme === 'light' ? '◐' : '◑'}
           </button>
           <LangToggle />
-          <Link to="/" className={styles.linkBtn}>
+          <Link
+            to="/"
+            className="inline-flex h-[34px] items-center rounded-sm border border-ink bg-ink px-3 text-sm-plus font-bold text-bg no-underline"
+          >
             {t('share.uploadCta')}
           </Link>
         </div>
       </header>
 
-      <main className={styles.main}>
-        {q.isLoading && <div className={styles.msg}>{t('share.loading')}</div>}
+      <main className="mx-auto max-w-[960px] px-4 pt-7 pb-12">
+        {q.isLoading && <div className="px-4 py-12 text-center text-muted">{t('share.loading')}</div>}
         {notFound && (
-          <div className={styles.msgBox}>
-            <div className={styles.kicker}>NOT FOUND</div>
-            <h1 className={styles.title}>{t('share.notFoundTitle')}</h1>
-            <p className={styles.desc}>{t('share.notFoundDesc')}</p>
+          <div className="mx-auto my-10 max-w-[420px] px-4 py-12 text-center text-muted">
+            <div className="mb-2 font-mono text-2xs tracking-[0.12em] text-muted">NOT FOUND</div>
+            <h1 className="mb-2 mt-0 text-[22px] font-bold text-ink">{t('share.notFoundTitle')}</h1>
+            <p className="mb-[18px] mt-0 text-[13.5px] leading-normal">{t('share.notFoundDesc')}</p>
             <Link to="/">
               <Button variant="primary">{t('share.uploadCta')}</Button>
             </Link>
           </div>
         )}
         {q.isError && !notFound && (
-          <div className={styles.msg}>{t('share.loadFailed')}</div>
+          <div className="px-4 py-12 text-center text-muted">{t('share.loadFailed')}</div>
         )}
         {data && needPw && (
-          <div className={styles.msgBox}>
-            <div className={styles.kicker}>PASSWORD</div>
-            <h1 className={styles.title}>{t('share.passwordTitle')}</h1>
-            <p className={styles.desc}>{t('share.passwordHint')}</p>
+          <div className="mx-auto my-10 max-w-[420px] px-4 py-12 text-center text-muted">
+            <div className="mb-2 font-mono text-2xs tracking-[0.12em] text-muted">PASSWORD</div>
+            <h1 className="mb-2 mt-0 text-[22px] font-bold text-ink">{t('share.passwordTitle')}</h1>
+            <p className="mb-[18px] mt-0 text-[13.5px] leading-normal">{t('share.passwordHint')}</p>
             <form
-              className={styles.pwForm}
+              className="mx-auto flex max-w-[320px] flex-col gap-3 text-left"
               onSubmit={(e) => {
                 e.preventDefault()
                 unlock.mutate(
@@ -97,7 +104,7 @@ export function SharePage() {
                 autoComplete="current-password"
               />
               {unlock.isError && (
-                <p className={styles.desc}>
+                <p className="mb-[18px] mt-0 text-[13.5px] leading-normal">
                   {unlock.error instanceof ApiError && unlock.error.httpStatus === 401
                     ? t('share.passwordWrong')
                     : t('share.loadFailed')}
@@ -110,17 +117,17 @@ export function SharePage() {
           </div>
         )}
         {data && !needPw && (
-          <div className={styles.card}>
-            <div className={styles.previewWrap}>
+          <div className="grid grid-cols-[1.2fr_1fr] gap-6 overflow-hidden rounded border border-border bg-surface max-md:grid-cols-1">
+            <div className="flex min-h-[280px] items-center justify-center bg-soft p-4 max-md:min-h-[200px]">
               <img
-                className={styles.preview}
+                className="max-h-[min(70vh,560px)] max-w-full rounded-[2px] object-contain"
                 src={data.links.url}
                 alt={data.name}
               />
             </div>
-            <div className={styles.meta}>
-              <h1 className={styles.name}>{data.name}</h1>
-              <div className={styles.stats}>
+            <div className="flex flex-col gap-3 px-[22px] pt-[22px] pb-6">
+              <h1 className="m-0 text-lg font-bold leading-snug break-all">{data.name}</h1>
+              <div className="flex flex-wrap items-center gap-1 font-mono text-[11.5px] text-muted">
                 {data.width > 0 && data.height > 0 && (
                   <span>
                     {data.width}×{data.height}
@@ -128,19 +135,19 @@ export function SharePage() {
                 )}
                 {data.size > 0 && (
                   <>
-                    <span className={styles.dot}>·</span>
+                    <span className="opacity-50">·</span>
                     <span>{formatBytes(data.size)}</span>
                   </>
                 )}
                 {expiryLabel && (
                   <>
-                    <span className={styles.dot}>·</span>
+                    <span className="opacity-50">·</span>
                     <span>{t('share.expires', { date: expiryLabel })}</span>
                   </>
                 )}
                 {!!data.max_views && data.max_views > 0 && (
                   <>
-                    <span className={styles.dot}>·</span>
+                    <span className="opacity-50">·</span>
                     <span>
                       {t('images.maxViewsUsed', {
                         used: data.views_served ?? 0,
@@ -150,7 +157,7 @@ export function SharePage() {
                   </>
                 )}
               </div>
-              <div className={styles.actions}>
+              <div className="mt-1 flex flex-wrap gap-2">
                 <Button
                   variant="primary"
                   onClick={() => copyText(data.links.url, t('share.copyUrl'))}
@@ -174,16 +181,21 @@ export function SharePage() {
                   </Button>
                 )}
               </div>
-              <pre className={styles.urlLine}>{data.links.url}</pre>
+              <pre className="mt-1 mb-0 max-h-[88px] overflow-auto rounded-sm border border-border bg-bg px-3 py-2.5 font-mono text-[11px] leading-normal break-all whitespace-pre-wrap text-muted">
+                {data.links.url}
+              </pre>
             </div>
           </div>
         )}
       </main>
-      <footer className={styles.brandFoot} data-testid="share-brand-foot">
+      <footer
+        className="mx-auto flex max-w-[960px] flex-wrap items-center gap-1.5 px-4 pt-2 pb-7 text-xs text-muted [&_a]:text-ink [&_a]:underline [&_a]:underline-offset-2"
+        data-testid="share-brand-foot"
+      >
         <span>{t('share.ossCredit')}</span>
         {showBrand && (
           <>
-            <span className={styles.brandSep}>·</span>
+            <span className="opacity-45">·</span>
             <span>{t('share.brandVia', { site: siteName })}</span>
           </>
         )}
@@ -191,7 +203,7 @@ export function SharePage() {
           <>
             {helpURL && (
               <>
-                <span className={styles.brandSep}>·</span>
+                <span className="opacity-45">·</span>
                 <a href={helpURL} rel="noopener noreferrer">
                   {t('share.helpLink')}
                 </a>
@@ -199,7 +211,7 @@ export function SharePage() {
             )}
             {upgradeURL && (
               <>
-                <span className={styles.brandSep}>·</span>
+                <span className="opacity-45">·</span>
                 <a href={upgradeURL} rel="noopener noreferrer">
                   {t('share.upgradeLink')}
                 </a>

@@ -1,3 +1,37 @@
+@import 'tailwindcss';
+
+/*
+ * Design tokens → Tailwind v4 @theme.
+ * body[data-theme=dark] still flips CSS variables for runtime theme toggle.
+ */
+@theme {
+  --color-bg: var(--bg);
+  --color-surface: var(--surface);
+  --color-soft: var(--soft);
+  --color-border: var(--border);
+  --color-ink: var(--text);
+  --color-muted: var(--muted);
+  --color-btn: var(--btn);
+  --color-btn-text: var(--btnText);
+  --color-ok: var(--ok);
+  --color-warn: var(--warn);
+  --color-err: var(--err);
+
+  --font-sans: 'Manrope', system-ui, 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', sans-serif;
+  --font-mono: ui-monospace, Menlo, monospace;
+
+  --radius-sm: 3px;
+  --radius-md: 8px;
+  --radius-lg: 10px;
+
+  --text-2xs: 10px;
+  --text-2xs--line-height: 1.35;
+  --text-xs-plus: 10.5px;
+  --text-xs-plus--line-height: 1.4;
+  --text-sm-plus: 12.5px;
+  --text-sm-plus--line-height: 1.4;
+}
+
 :root {
   --bg: #fafafa;
   --surface: #ffffff;
@@ -10,8 +44,8 @@
   --ok: #1a9b5c;
   --warn: #b07d00;
   --err: #c0392b;
-  --font-mono: ui-monospace, Menlo, monospace;
 }
+
 body[data-theme='dark'] {
   --bg: #0f0f11;
   --surface: #19191d;
@@ -26,26 +60,80 @@ body[data-theme='dark'] {
   --err: #e06555;
 }
 
-body {
-  margin: 0;
-  font-family: 'Manrope', system-ui, 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', sans-serif;
-  font-size: 13px;
-  background: var(--bg);
-  color: var(--text);
-  transition: background 0.25s, color 0.25s;
+@layer base {
+  body {
+    margin: 0;
+    font-family: var(--font-sans);
+    font-size: 13px;
+    background: var(--bg);
+    color: var(--text);
+    transition: background 0.25s, color 0.25s;
+  }
+  a {
+    color: var(--text);
+    text-decoration: none;
+  }
+  a:hover {
+    color: var(--muted);
+  }
+  ::selection {
+    background: var(--text);
+    color: var(--bg);
+  }
+  input::placeholder {
+    color: var(--muted);
+  }
+  button {
+    font-family: inherit;
+  }
 }
-a { color: var(--text); text-decoration: none; }
-a:hover { color: var(--muted); }
-::selection { background: var(--text); color: var(--bg); }
-input::placeholder { color: var(--muted); }
-button { font-family: inherit; }
 
-.mono { font-family: var(--font-mono); }
-.stripe {
-  background: repeating-linear-gradient(45deg, var(--soft), var(--soft) 5px, var(--surface) 5px, var(--surface) 10px);
+@layer utilities {
+  .stripe {
+    background: repeating-linear-gradient(
+      45deg,
+      var(--soft),
+      var(--soft) 5px,
+      var(--surface) 5px,
+      var(--surface) 10px
+    );
+  }
 }
 
-@keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.45; } }
-@keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
-@keyframes rise { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
-@keyframes toastUp { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+@keyframes pulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.45;
+  }
+}
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+@keyframes rise {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+@keyframes toastUp {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}

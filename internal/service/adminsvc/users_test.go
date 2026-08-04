@@ -2,6 +2,7 @@ package adminsvc
 
 import (
 	"testing"
+	"time"
 
 	"github.com/yixian-huang/imgli/internal/model"
 	"github.com/yixian-huang/imgli/internal/service/auth"
@@ -149,6 +150,46 @@ func TestListUsersFilterAndPaginate(t *testing.T) {
 	}
 	if total != 3 || len(rows) != 1 {
 		t.Errorf("page2 limit2: total=%d len=%d", total, len(rows))
+	}
+
+	// bandwidth 排序 + last_seen
+	if err := db.Model(alice).Updates(map[string]any{
+		"bandwidth_used_month": int64(1000), "bandwidth_period": "2026-08",
+	}).Error; err != nil {
+		t.Fatal(err)
+	}
+	if err := db.Model(bob).Updates(map[string]any{
+		"bandwidth_used_month": int64(5000), "bandwidth_period": "2026-08",
+	}).Error; err != nil {
+		t.Fatal(err)
+	}
+	old := time.Now().Add(-48 * time.Hour)
+	newer := time.Now().Add(-1 * time.Hour)
+	if err := db.Create(&model.Session{ID: "s-alice", UserID: alice.ID, CreatedAt: old, ExpiresAt: time.Now().Add(24 * time.Hour)}).Error; err != nil {
+		t.Fatal(err)
+	}
+	if err := db.Create(&model.Session{ID: "s-bob", UserID: bob.ID, CreatedAt: newer, ExpiresAt: time.Now().Add(24 * time.Hour)}).Error; err != nil {
+		t.Fatal(err)
+	}
+	rows, _, err = svc.ListUsers("", 0, "", "", "bandwidth", 1, 50)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(rows) < 2 || rows[0].User.Username != "bob" {
+		t.Errorf("bandwidth sort first = %+v, want bob", rows)
+	}
+	var bobRow *UserRow
+	for i := range rows {
+		if rows[i].User.Username == "bob" {
+			bobRow = &rows[i]
+			break
+		}
+	}
+	if bobRow == nil || bobRow.LastSeenAt == nil {
+		t.Fatalf("bob last_seen missing: %+v", bobRow)
+	}
+	if bobRow.LastSeenAt.Before(newer.Add(-time.Minute)) {
+		t.Errorf("bob last_seen = %v, want ~%v", bobRow.LastSeenAt, newer)
 	}
 }
 

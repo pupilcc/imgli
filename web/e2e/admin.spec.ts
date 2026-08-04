@@ -93,15 +93,18 @@ test('管理后台:用户管理与图片管理链路', async ({ page }) => {
   await expect(page).toHaveURL(/[?&]q=pleb/)
   await expect(page.getByText('boss@img.li')).toHaveCount(0)
   await expect(page.getByText('pleb@img.li')).toBeVisible()
+  // 图标按钮 + 两击确认（ArmedButton）
   await page.getByRole('button', { name: '封禁' }).click()
-  await page.getByRole('button', { name: '确认封禁？' }).click()
+  await page.getByRole('button', { name: '确认封禁' }).click()
   // 状态 tag 用 class 定位——「已封禁/正常」文本与筛选 select 的 option 撞车,strict 模式不可用 getByText
   await expect(page.locator('main [class*=stErr]')).toBeVisible()
   await page.getByRole('button', { name: '解封' }).click()
+  await page.getByRole('button', { name: '确认解封' }).click()
   await expect(page.locator('main [class*=stOk]')).toBeVisible()
 
-  // 重置密码 Modal
+  // 重置密码：图标武装 → 开 Modal → 确认重置
   await page.getByRole('button', { name: '重置密码' }).click()
+  await page.getByRole('button', { name: '确认' }).click()
   await page.getByRole('button', { name: '确认重置' }).click()
   await expect(page.getByText(/仅显示一次/)).toBeVisible()
   await page.getByRole('button', { name: '关闭' }).click()

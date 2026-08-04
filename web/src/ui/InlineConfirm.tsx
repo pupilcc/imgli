@@ -1,4 +1,4 @@
-import { useEffect, useState, type CSSProperties, type ReactNode } from 'react'
+import { useEffect, useState, type ReactNode } from 'react'
 import { useT } from '../i18n'
 import { Button } from './Button'
 
@@ -10,7 +10,7 @@ interface Props {
   disabled?: boolean
 }
 
-// 轻量破坏操作的内联二次确认：一击待确认（err 边框），2.5s 未确认自动还原。
+/** Inline two-step confirm using Button variants. */
 export function InlineConfirm({ label, confirmLabel, onConfirm, timeoutMs = 2500, disabled }: Props) {
   const { t } = useT()
   const [armed, setArmed] = useState(false)
@@ -21,10 +21,9 @@ export function InlineConfirm({ label, confirmLabel, onConfirm, timeoutMs = 2500
   }, [armed, timeoutMs])
 
   const resolvedConfirm = confirmLabel ?? t('ui.confirmDelete')
-  const idleStyle: CSSProperties = { color: 'var(--err)' }
   if (!armed) {
     return (
-      <Button variant="secondary" style={idleStyle} disabled={disabled} onClick={() => setArmed(true)}>
+      <Button variant="secondary" className="text-err" disabled={disabled} onClick={() => setArmed(true)}>
         {label}
       </Button>
     )

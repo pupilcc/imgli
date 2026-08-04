@@ -9,6 +9,7 @@ import {
 } from '../../../api/adminHooks'
 import type { AdminImageItem } from '../../../api/types'
 import { useT } from '../../../i18n'
+import { cn } from '../../../lib/cn'
 import { formatBytes } from '../../../lib/format'
 import { useAdminSearchParam } from '../../../lib/useAdminSearchParam'
 import { PageHeader } from '../../../shell/PageHeader'
@@ -16,11 +17,10 @@ import { useGlobal } from '../../../store'
 import { ArmedButton } from '../../../ui/ArmedButton'
 import { Button } from '../../../ui/Button'
 import { EmptyState } from '../../../ui/EmptyState'
+import { AdminFilters, AdminSelect } from '../ui/adminChrome'
 import { AdminQueryGate } from '../ui/AdminQueryGate'
 import { Pager } from '../ui/Pager'
 import { AdminImageDetail } from './AdminImageDetail'
-import forms from '../ui/adminForms.module.css'
-import styles from './ImagesAdminPage.module.css'
 
 function purgeToast(
   t: (k: string, v?: Record<string, string | number>) => string,
@@ -30,6 +30,14 @@ function purgeToast(
   if (res.physical_queued) return t('adminA.toastPurgedQueued')
   return t('adminA.toastPurgedNoQueue')
 }
+
+const quickBtn =
+  'flex h-6 w-6 cursor-pointer items-center justify-center rounded-[2px] border-0 bg-surface text-[11px] text-ink hover:bg-soft'
+const quickArmed = 'w-auto min-w-6 bg-err px-1.5 text-2xs font-semibold text-white'
+const batchAct =
+  'cursor-pointer whitespace-nowrap rounded-sm border-0 bg-[rgba(128,128,128,0.22)] px-3 py-[7px] text-xs font-semibold text-btn-text hover:enabled:bg-[rgba(128,128,128,0.38)] disabled:cursor-not-allowed disabled:opacity-55'
+const toolBtn =
+  'cursor-pointer rounded-[2px] border border-border bg-surface px-2.5 py-1 font-mono text-[11px] text-ink hover:border-muted'
 
 export function ImagesAdminPage() {
   const { t } = useT()
@@ -138,46 +146,53 @@ export function ImagesAdminPage() {
     return it && !it.in_trash && it.user_id != null
   })
 
+  const badgeBase =
+    'rounded-[2px] border border-warn bg-surface px-1.5 py-px font-mono text-[9px] tracking-[0.08em] text-warn'
+
   return (
     <div>
       <PageHeader
         kicker="ALL IMAGES"
         title={t('adminA.imagesTitle')}
         extra={
-          <div className={forms.filters}>
+          <AdminFilters>
             {user && (
-              <span className={styles.chip}>
+              <span className="inline-flex items-center gap-1.5 rounded-[2px] border border-border bg-soft px-2 py-1 font-mono text-xs-plus">
                 {t('adminA.userFilterChip', { user })}
-                <button type="button" aria-label={t('adminA.clearUserFilterAria')} onClick={() => setParam('user', '')}>
+                <button
+                  type="button"
+                  className="cursor-pointer border-0 bg-transparent p-0 text-xs leading-none text-muted hover:text-err"
+                  aria-label={t('adminA.clearUserFilterAria')}
+                  onClick={() => setParam('user', '')}
+                >
                   ×
                 </button>
               </span>
             )}
-            <select
+            <AdminSelect
               value={deleted}
               onChange={(e) => setParam('deleted', e.target.value === 'live' ? '' : e.target.value)}
-              className={forms.select}
               aria-label={t('adminA.filterScopeAria')}
             >
               <option value="live">{t('adminA.scopeLive')}</option>
               <option value="trash">{t('adminA.scopeTrash')}</option>
               <option value="all">{t('adminA.scopeAll')}</option>
-            </select>
-            <select value={status} onChange={(e) => setParam('status', e.target.value)} className={forms.select} aria-label={t('adminA.filterStatusAria')}>
+            </AdminSelect>
+            <AdminSelect value={status} onChange={(e) => setParam('status', e.target.value)} aria-label={t('adminA.filterStatusAria')}>
               <option value="">{t('adminA.allStatuses')}</option>
               <option value="normal">{t('adminA.statusNormal')}</option>
               <option value="pending">{t('adminA.statusPending')}</option>
               <option value="rejected">{t('adminA.statusRejected')}</option>
-            </select>
-            <select value={policy ?? ''} onChange={(e) => setParam('policy', e.target.value)} className={forms.select} aria-label={t('adminA.filterPolicyAria')}>
+            </AdminSelect>
+            <AdminSelect value={policy ?? ''} onChange={(e) => setParam('policy', e.target.value)} aria-label={t('adminA.filterPolicyAria')}>
               <option value="">{t('adminA.allPolicies')}</option>
               {(policiesQ.data?.items ?? []).map((p) => (
                 <option key={p.id} value={p.id}>
                   {p.name}
                 </option>
               ))}
-            </select>
-          </div>
+            </AdminSelect>
+          </AdminFilters>
         }
       />
       <AdminQueryGate query={images}>
@@ -194,36 +209,41 @@ export function ImagesAdminPage() {
             )
           ) : (
             <>
-              <div className={styles.toolbar}>
-                <button type="button" className={styles.toolBtn} onClick={() => selectPage(data.items)}>
+              <div className="mb-3 flex flex-wrap items-center gap-2.5">
+                <button type="button" className={toolBtn} onClick={() => selectPage(data.items)}>
                   {t('adminA.selectPage')}
                 </button>
                 {selected.size > 0 && (
-                  <button type="button" className={styles.toolBtn} onClick={() => setSelected(new Set())}>
+                  <button type="button" className={toolBtn} onClick={() => setSelected(new Set())}>
                     {t('adminA.clearSelection')}
                   </button>
                 )}
-                <span className={styles.toolHint}>{t('adminA.selectHint')}</span>
+                <span className="font-mono text-xs-plus text-muted">{t('adminA.selectHint')}</span>
               </div>
-              <div className={styles.grid}>
+              <div className="grid grid-cols-[repeat(auto-fill,minmax(170px,1fr))] gap-3.5">
                 {data.items.map((it) => {
                   const showSoft = !it.in_trash && it.user_id != null
                   const isSel = selected.has(it.key)
                   return (
                     <div
                       key={it.key}
-                      className={[styles.card, isSel && styles.cardSelected].filter(Boolean).join(' ')}
+                      className={cn(
+                        // "card" kept for e2e [class*=card]
+                        'card group relative animate-[rise_0.28s_both] cursor-pointer overflow-hidden rounded-sm border border-border bg-surface hover:border-muted',
+                        isSel && 'border-btn shadow-[0_0_0_1px_var(--btn)]',
+                      )}
                       onClick={() => setDetail(it)}
                     >
-                      <div className={styles.thumbBox}>
-                        <img className={styles.thumb} src={it.links.thumbnail_url} alt={it.name} loading="lazy" />
+                      <div className="relative aspect-square bg-soft">
+                        <img className="block h-full w-full object-cover" src={it.links.thumbnail_url} alt={it.name} loading="lazy" />
                         <label
-                          className={styles.check}
+                          className="absolute top-2 left-2 z-[2] flex h-[22px] w-[22px] cursor-pointer items-center justify-center rounded-[2px] bg-black/35"
                           onClick={(e) => e.stopPropagation()}
                           title={t('adminA.selectImage')}
                         >
                           <input
                             type="checkbox"
+                            className="m-0 cursor-pointer"
                             checked={isSel}
                             onChange={() => {
                               setSelected((prev) => {
@@ -235,19 +255,23 @@ export function ImagesAdminPage() {
                             }}
                           />
                         </label>
-                        <div className={styles.badges}>
-                          {it.in_trash && <span className={styles.bErr}>{t('adminA.trashBadge')}</span>}
-                          {it.status === 'pending' && <span className={styles.bWarn}>{t('adminA.statusPending')}</span>}
-                          {it.status === 'rejected' && <span className={styles.bErr}>{t('adminA.statusRejected')}</span>}
-                          {it.is_whitelisted && <span className={styles.bWl}>WL</span>}
+                        <div className="absolute top-2 right-2 flex gap-1">
+                          {it.in_trash && <span className={cn(badgeBase, 'border-err text-err')}>{t('adminA.trashBadge')}</span>}
+                          {it.status === 'pending' && <span className={badgeBase}>{t('adminA.statusPending')}</span>}
+                          {it.status === 'rejected' && <span className={cn(badgeBase, 'border-err text-err')}>{t('adminA.statusRejected')}</span>}
+                          {it.is_whitelisted && (
+                            <span className="rounded-[2px] border border-btn bg-btn px-1.5 py-px font-mono text-[9px] tracking-[0.08em] text-btn-text">
+                              WL
+                            </span>
+                          )}
                         </div>
-                        <div className={styles.hoverBar}>
+                        <div className="absolute right-0 bottom-0 left-0 flex justify-end gap-1 bg-linear-to-t from-black/28 to-transparent p-1.5 opacity-0 transition-opacity duration-100 group-hover:opacity-100">
                           {!it.in_trash && (
                             <ArmedButton
                               title={it.is_whitelisted ? t('adminA.unwhitelist') : t('adminA.whitelist')}
                               armedTitle={it.is_whitelisted ? t('adminA.confirmUnwhitelist') : t('adminA.confirmWhitelist')}
-                              className={styles.quickBtn}
-                              armedClassName={styles.quickArmed}
+                              className={quickBtn}
+                              armedClassName={quickArmed}
                               armedChildren={t('adminA.confirmShort')}
                               onConfirm={() => wl.mutate({ key: it.key, on: !it.is_whitelisted })}
                             >
@@ -258,8 +282,8 @@ export function ImagesAdminPage() {
                             <ArmedButton
                               title={t('adminA.moveToTrash')}
                               armedTitle={t('adminA.confirmMoveToTrash')}
-                              className={[styles.quickBtn, styles.quickDanger].join(' ')}
-                              armedClassName={styles.quickArmed}
+                              className={cn(quickBtn, 'text-xs text-err')}
+                              armedClassName={quickArmed}
                               armedChildren={t('adminA.confirmShort')}
                               onConfirm={() => onSoftDelete(it)}
                             >
@@ -269,8 +293,8 @@ export function ImagesAdminPage() {
                           <ArmedButton
                             title={t('adminA.purgePermanent')}
                             armedTitle={t('adminA.confirmPurge')}
-                            className={[styles.quickBtn, styles.quickPurge].join(' ')}
-                            armedClassName={styles.quickArmed}
+                            className={cn(quickBtn, 'text-[13px] font-bold text-err')}
+                            armedClassName={quickArmed}
                             armedChildren={t('adminA.confirmShort')}
                             onConfirm={() => onPurge(it)}
                           >
@@ -278,21 +302,28 @@ export function ImagesAdminPage() {
                           </ArmedButton>
                         </div>
                       </div>
-                      <div className={styles.meta}>
-                        <span className={styles.metaName}>{it.name}</span>
-                        <span className={styles.metaUser}>
+                      <div className="flex items-center gap-2 border-t border-border px-2.5 py-2">
+                        <span className="min-w-0 flex-1 overflow-hidden font-mono text-xs-plus text-ellipsis whitespace-nowrap text-ink">
+                          {it.name}
+                        </span>
+                        <span className="flex-none font-mono text-2xs text-muted">
                           {it.user_id == null ? t('adminA.guestUploader') : it.username}
                         </span>
-                        <span className={styles.metaPolicy} title={it.path || undefined}>
+                        <span
+                          className="max-w-[72px] flex-none overflow-hidden font-mono text-2xs text-ellipsis whitespace-nowrap text-muted"
+                          title={it.path || undefined}
+                        >
                           {it.policy_name || it.policy_driver || '—'}
                         </span>
-                        <span className={styles.metaSize}>{formatBytes(it.size)}</span>
+                        <span className="flex-none font-mono text-2xs text-muted">{formatBytes(it.size)}</span>
                       </div>
                     </div>
                   )
                 })}
               </div>
-              <p className={styles.stat}>{t('adminA.imagesTotal', { total: data.total })}</p>
+              <p className="mt-2.5 mr-0.5 ml-0.5 font-mono text-xs-plus text-muted">
+                {t('adminA.imagesTotal', { total: data.total })}
+              </p>
               <Pager
                 page={page}
                 limit={data.limit}
@@ -305,12 +336,18 @@ export function ImagesAdminPage() {
       </AdminQueryGate>
 
       {selected.size > 0 && (
-        <div className={styles.batchBar} role="toolbar" aria-label={t('adminA.batchToolbar')}>
-          <span className={styles.batchCount}>{t('adminA.selectedCount', { count: selected.size })}</span>
+        <div
+          className="fixed bottom-6 left-1/2 z-40 flex -translate-x-1/2 items-center gap-1.5 rounded bg-btn py-2 pr-2 pl-4 text-btn-text shadow-[0_8px_28px_rgba(0,0,0,0.25)]"
+          role="toolbar"
+          aria-label={t('adminA.batchToolbar')}
+        >
+          <span className="mr-2 whitespace-nowrap text-sm-plus font-bold">
+            {t('adminA.selectedCount', { count: selected.size })}
+          </span>
           {canSoftBatch && (
             <button
               type="button"
-              className={[styles.batchAct, trashArmed && styles.batchDanger].filter(Boolean).join(' ')}
+              className={cn(batchAct, trashArmed && 'bg-err text-white hover:enabled:bg-err')}
               disabled={busy}
               onClick={() => {
                 if (trashArmed) runBatch('trash')
@@ -325,7 +362,7 @@ export function ImagesAdminPage() {
           )}
           <button
             type="button"
-            className={[styles.batchAct, purgeArmed && styles.batchDanger].filter(Boolean).join(' ')}
+            className={cn(batchAct, purgeArmed && 'bg-err text-white hover:enabled:bg-err')}
             disabled={busy}
             onClick={() => {
               if (purgeArmed) runBatch('purge')
@@ -337,7 +374,12 @@ export function ImagesAdminPage() {
           >
             {purgeArmed ? t('adminA.confirmPurge') : t('adminA.batchPurge')}
           </button>
-          <button type="button" className={styles.batchClose} title={t('adminA.clearSelection')} onClick={() => setSelected(new Set())}>
+          <button
+            type="button"
+            className="cursor-pointer border-0 bg-transparent px-2.5 py-[7px] text-sm leading-none text-btn-text opacity-70 hover:opacity-100"
+            title={t('adminA.clearSelection')}
+            onClick={() => setSelected(new Set())}
+          >
             ×
           </button>
         </div>

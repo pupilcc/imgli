@@ -15,7 +15,14 @@ import { InlineConfirm } from '../../ui/InlineConfirm'
 import { Segmented } from '../../ui/Segmented'
 import { Tag } from '../../ui/Tag'
 import { Toggle } from '../../ui/Toggle'
-import styles from './SettingsPage.module.css'
+
+const field = 'flex flex-col gap-1.5'
+const label = 'text-xs font-semibold text-muted'
+const input =
+  'rounded-sm border border-border bg-bg px-3 py-[9px] font-inherit text-[13px] text-ink outline-none focus:border-muted'
+const kicker = 'mb-3 font-mono text-2xs tracking-[0.14em] text-muted'
+const card = 'flex flex-col gap-3.5 rounded-sm border border-border bg-surface p-[18px]'
+const section = 'mb-7'
 
 export function PreferencesTab() {
   const { t, lang } = useT()
@@ -68,16 +75,16 @@ export function PreferencesTab() {
 
   return (
     <div>
-      <div className={styles.section}>
-        <div className={styles.kicker}>{t('settings.preferencesKicker')}</div>
-        <div className={styles.card}>
-          <div className={styles.field}>
-            <label className={styles.label} htmlFor="pref-album">
+      <div className={section}>
+        <div className={kicker}>{t('settings.preferencesKicker')}</div>
+        <div className={card}>
+          <div className={field}>
+            <label className={label} htmlFor="pref-album">
               {t('settings.defaultAlbum')}
             </label>
             <select
               id="pref-album"
-              className={styles.input}
+              className={input}
               value={albumId ?? 'none'}
               onChange={(e) => setAlbumId(e.target.value === 'none' ? null : Number(e.target.value))}
             >
@@ -90,8 +97,8 @@ export function PreferencesTab() {
             </select>
           </div>
 
-          <div className={styles.field}>
-            <span className={styles.label}>{t('settings.defaultVisibility')}</span>
+          <div className={field}>
+            <span className={label}>{t('settings.defaultVisibility')}</span>
             <Segmented<'public' | 'private'>
               options={[
                 { value: 'public', label: t('settings.public') },
@@ -103,13 +110,13 @@ export function PreferencesTab() {
           </div>
 
           {showPolicy && (
-            <div className={styles.field}>
-              <label className={styles.label} htmlFor="pref-policy">
+            <div className={field}>
+              <label className={label} htmlFor="pref-policy">
                 {t('settings.defaultPolicy')}
               </label>
               <select
                 id="pref-policy"
-                className={styles.input}
+                className={input}
                 value={policyId ?? 'none'}
                 onChange={(e) => setPolicyId(e.target.value === 'none' ? null : Number(e.target.value))}
               >
@@ -123,8 +130,8 @@ export function PreferencesTab() {
             </div>
           )}
 
-          <div className={styles.field}>
-            <span className={styles.label}>{t('settings.autoCopy')}</span>
+          <div className={field}>
+            <span className={label}>{t('settings.autoCopy')}</span>
             <Segmented<Preferences['auto_copy_format']>
               options={[
                 { value: '', label: t('settings.autoCopyOff') },
@@ -139,9 +146,9 @@ export function PreferencesTab() {
             />
           </div>
 
-          <div className={styles.field}>
-            <span className={styles.label}>{t('settings.watermarkImage')}</span>
-            <div className={styles.avatarActions}>
+          <div className={field}>
+            <span className={label}>{t('settings.watermarkImage')}</span>
+            <div className="flex flex-wrap items-center gap-2">
               {user.watermark_set ? (
                 <>
                   <Tag variant="ok">{t('settings.watermarkUploaded')}</Tag>
@@ -176,20 +183,20 @@ export function PreferencesTab() {
             </div>
           </div>
 
-          <div className={styles.field}>
-            <div className={styles.toggleRow}>
-              <span className={styles.label}>{t('settings.enableWatermark')}</span>
+          <div className={field}>
+            <div className="flex items-center justify-between">
+              <span className={label}>{t('settings.enableWatermark')}</span>
               <Toggle aria-label={t('settings.enableWatermark')} checked={wmEnabled} onChange={setWmEnabled} />
             </div>
           </div>
 
-          <div className={styles.field}>
-            <label className={styles.label} htmlFor="pref-wm-pos">
+          <div className={field}>
+            <label className={label} htmlFor="pref-wm-pos">
               {t('settings.watermarkPosition')}
             </label>
             <select
               id="pref-wm-pos"
-              className={styles.input}
+              className={input}
               value={wmPos}
               onChange={(e) => setWmPos(e.target.value)}
             >
@@ -201,16 +208,16 @@ export function PreferencesTab() {
             </select>
           </div>
 
-          <div className={styles.field}>
-            <div className={styles.toggleRow}>
-              <label className={styles.label} htmlFor="pref-wm-opacity">
+          <div className={field}>
+            <div className="flex items-center justify-between">
+              <label className={label} htmlFor="pref-wm-opacity">
                 {t('settings.opacity')}
               </label>
-              <span className={styles.mono}>{wmOpacity.toFixed(2)}</span>
+              <span className="text-[13px] text-muted tabular-nums">{wmOpacity.toFixed(2)}</span>
             </div>
             <input
               id="pref-wm-opacity"
-              className={styles.slider}
+              className="w-full"
               type="range"
               min={0.1}
               max={1}
@@ -220,13 +227,13 @@ export function PreferencesTab() {
             />
           </div>
 
-          <div className={styles.field}>
-            <label className={styles.label} htmlFor="pref-wm-margin">
+          <div className={field}>
+            <label className={label} htmlFor="pref-wm-margin">
               {t('settings.margin')}
             </label>
             <input
               id="pref-wm-margin"
-              className={styles.input}
+              className={input}
               type="number"
               min={0}
               max={256}
@@ -237,7 +244,7 @@ export function PreferencesTab() {
 
           <Button
             variant="primary"
-            className={styles.saveBtn}
+            className="self-start"
             disabled={save.isPending || policies.isPending}
             onClick={submit}
           >
