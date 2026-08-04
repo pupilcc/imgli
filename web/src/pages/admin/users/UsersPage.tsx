@@ -1,5 +1,4 @@
 import { useEffect, useState } from 'react'
-import { Link } from 'react-router'
 import { useAdminGroups, useAdminUsers, useResetAdminPassword, useUpdateAdminUser } from '../../../api/adminHooks'
 import { useSession } from '../../../api/hooks'
 import type { AdminUser } from '../../../api/types'
@@ -13,12 +12,27 @@ import { ArmedButton } from '../../../ui/ArmedButton'
 import { Button } from '../../../ui/Button'
 import { EmptyState } from '../../../ui/EmptyState'
 import { Modal } from '../../../ui/Modal'
+import {
+  AdminFilters,
+  AdminSearch,
+  AdminSelect,
+  AdminSortTh,
+  AdminTable,
+  AdminTableHead,
+  AdminTableRow,
+  IconLink,
+  StatusPill,
+  iconActionArmedClass,
+  iconActionArmedOkClass,
+  iconActionClass,
+} from '../ui/adminChrome'
 import { AdminQueryGate } from '../ui/AdminQueryGate'
 import { Pager } from '../ui/Pager'
-import forms from '../ui/adminForms.module.css'
-import styles from './UsersPage.module.css'
 
 type SortKey = '' | 'bandwidth' | 'storage' | 'created' | 'last_seen'
+
+const COLS =
+  'minmax(140px,1.4fr) minmax(90px,0.9fr) minmax(48px,0.45fr) minmax(88px,0.85fr) minmax(100px,0.95fr) minmax(108px,0.9fr) minmax(108px,0.9fr) minmax(56px,0.55fr) minmax(104px,auto)'
 
 function sortLabel(t: (k: string) => string, sort: string): string {
   switch (sort) {
@@ -35,6 +49,31 @@ function sortLabel(t: (k: string) => string, sort: string): string {
   }
 }
 
+function UsageCell({
+  used,
+  quota,
+  suffix,
+}: {
+  used: number
+  quota: number
+  suffix?: string
+}) {
+  const pct = quota > 0 ? Math.min(100, Math.round((used / quota) * 100)) : 0
+  return (
+    <div className="flex w-full min-w-0 items-center justify-end gap-2">
+      {quota > 0 && (
+        <span className="inline-block h-[3px] w-9 flex-none overflow-hidden rounded-sm bg-soft" title={`${pct}%`}>
+          <span className="block h-full bg-ink" style={{ width: `${pct}%` }} />
+        </span>
+      )}
+      <span className="whitespace-nowrap font-mono text-xs-plus text-muted tabular-nums">
+        {formatBytes(used)}
+        {suffix}
+      </span>
+    </div>
+  )
+}
+
 export function UsersPage() {
   const { t } = useT()
   const { params, setParams, setParam } = useAdminSearchParam()
@@ -44,20 +83,10 @@ export function UsersPage() {
   const page = Number(params.get('page')) || 1
 
   const [input, setInput] = useState(q)
-  // URL 是筛选唯一真源:q 因非输入原因变化(后退/外部跳转再返回)时把 input 同步回 q。
   useEffect(() => {
     setInput(q)
   }, [q])
   const debouncedInput = useDebounced(input, 300)
-  // 仅在 debounced 值变化时推 URL;用函数式更新读当前 q,值相等则原样返回不导航——
-  // 外部改 q(setInput 同步)不会触发本 effect,故不会把旧输入覆盖回去。
-  //
-  // 注意:setParams(即 useSearchParams 的 setter)在本项目所用 react-router v7 中
-  // 并非引用稳定——它是 useCallback([navigate, searchParams]),q 变化就会换身份。
-  // 若把它放进本 effect 的依赖数组,任何外部改 q(包括上面的反向同步)都会误触发本
-  // effect,用尚未追上的旧 debouncedInput 把刚同步回去的 q 覆盖掉。因此故意不依赖
-  // setParams:本 effect 只应在 debouncedInput 变化时触发,调用的仍是本次渲染闭包
-  // 里最新的 setParams,足够新鲜。
   useEffect(() => {
     setParams((p) => {
       if ((p.get('q') ?? '') === debouncedInput) return p
@@ -99,47 +128,12 @@ export function UsersPage() {
     setParams((p) => {
       const n = new URLSearchParams(p)
       const cur = n.get('sort') ?? ''
-      // 再点同一列 → 回默认 id
-      if (cur === key || (!key && !cur)) {
-        if (!key) return p
-        n.delete('sort')
-      } else if (key) {
-        n.set('sort', key)
-      } else {
-        n.delete('sort')
-      }
+      if (cur === key) n.delete('sort')
+      else if (key) n.set('sort', key)
+      else n.delete('sort')
       n.delete('page')
       return n
     })
-  }
-
-  const SortTh = ({
-    col,
-    label,
-    align = 'start',
-  }: {
-    col: SortKey
-    label: string
-    align?: 'start' | 'end' | 'center'
-  }) => {
-    const active = (sort || '') === col
-    return (
-      <button
-        type="button"
-        className={[styles.thBtn, styles[`align${align[0].toUpperCase()}${align.slice(1)}`], active && styles.thActive]
-          .filter(Boolean)
-          .join(' ')}
-        aria-label={t('adminA.sortAria', { col: label })}
-        aria-pressed={active}
-        title={active ? t('adminA.sortActive') : t('adminA.sortAria', { col: label })}
-        onClick={() => setSort(col)}
-      >
-        <span>{label}</span>
-        <span className={styles.thMark} aria-hidden>
-          {active ? '▼' : '↕'}
-        </span>
-      </button>
-    )
   }
 
   return (
@@ -148,52 +142,30 @@ export function UsersPage() {
         kicker="USERS"
         title={t('adminA.usersTitle')}
         extra={
-          <div className={forms.filters}>
-            <div className={styles.search}>
-              <span className={styles.searchGlyph}>⌕</span>
-              <input
-                value={input}
-                onChange={(e) => setInput(e.target.value)}
-                placeholder={t('adminA.searchUsersPlaceholder')}
-              />
-            </div>
-            <select
-              value={group ?? ''}
-              onChange={(e) => setParam('group', e.target.value)}
-              className={forms.select}
-              aria-label={t('adminA.filterGroupAria')}
-            >
+          <AdminFilters>
+            <AdminSearch value={input} onChange={setInput} placeholder={t('adminA.searchUsersPlaceholder')} />
+            <AdminSelect value={group ?? ''} onChange={(e) => setParam('group', e.target.value)} aria-label={t('adminA.filterGroupAria')}>
               <option value="">{t('adminA.allGroups')}</option>
               {groups.map((g) => (
                 <option key={g.id} value={g.id}>
                   {g.name}
                 </option>
               ))}
-            </select>
-            <select
-              value={status}
-              onChange={(e) => setParam('status', e.target.value)}
-              className={forms.select}
-              aria-label={t('adminA.filterStatusAria')}
-            >
+            </AdminSelect>
+            <AdminSelect value={status} onChange={(e) => setParam('status', e.target.value)} aria-label={t('adminA.filterStatusAria')}>
               <option value="">{t('adminA.allStatuses')}</option>
               <option value="active">{t('adminA.activeUsers')}</option>
               <option value="banned">{t('adminA.bannedUsers')}</option>
-            </select>
-            <select
-              value={channel}
-              onChange={(e) => setParam('channel', e.target.value)}
-              className={forms.select}
-              aria-label={t('adminA.filterChannelAria')}
-            >
+            </AdminSelect>
+            <AdminSelect value={channel} onChange={(e) => setParam('channel', e.target.value)} aria-label={t('adminA.filterChannelAria')}>
               <option value="">{t('adminA.allChannels')}</option>
               <option value="direct">{t('adminA.channelDirect')}</option>
               <option value="invite">{t('adminA.channelInvite')}</option>
               <option value="utm">{t('adminA.channelUtm')}</option>
               <option value="referer">{t('adminA.channelReferer')}</option>
-            </select>
+            </AdminSelect>
             <a
-              className={styles.csvLink}
+              className="inline-flex h-[34px] items-center rounded-sm border border-border bg-surface px-3 font-mono text-xs text-ink no-underline hover:border-muted"
               href={`/api/v1/admin/export/users.csv?${new URLSearchParams({
                 ...(q ? { q } : {}),
                 ...(group ? { group: String(group) } : {}),
@@ -204,7 +176,7 @@ export function UsersPage() {
             >
               CSV
             </a>
-          </div>
+          </AdminFilters>
         }
       />
       <AdminQueryGate query={users}>
@@ -213,43 +185,60 @@ export function UsersPage() {
             <EmptyState title={t('adminA.noMatchingUsers')} desc={t('adminA.noMatchingUsersDesc')} />
           ) : (
             <>
-              <div className={styles.table}>
-                <div className={`${styles.head} ${styles.row}`} role="row">
-                  <span className={styles.alignStart}>{t('adminA.colUser')}</span>
-                  <span className={styles.alignStart}>{t('adminA.colGroup')}</span>
-                  <span className={styles.alignEnd}>{t('adminA.colImageCount')}</span>
-                  <SortTh col="storage" label={t('adminA.colUsedStorage')} align="end" />
-                  <SortTh col="bandwidth" label={t('adminA.colBandwidth')} align="end" />
-                  <SortTh col="created" label={t('adminA.colRegistered')} align="start" />
-                  <SortTh col="last_seen" label={t('adminA.colLastSeen')} align="start" />
-                  <span className={styles.alignStart}>{t('adminA.colStatus')}</span>
-                  <span className={styles.alignEnd}>{t('adminA.colActions')}</span>
-                </div>
+              <AdminTable minWidth={980}>
+                <AdminTableHead columns={COLS}>
+                  <span className="justify-self-start">{t('adminA.colUser')}</span>
+                  <span className="justify-self-start">{t('adminA.colGroup')}</span>
+                  <span className="justify-self-end">{t('adminA.colImageCount')}</span>
+                  <AdminSortTh
+                    label={t('adminA.colUsedStorage')}
+                    sortAria={t('adminA.sortAria', { col: t('adminA.colUsedStorage') })}
+                    active={sort === 'storage'}
+                    align="end"
+                    onClick={() => setSort('storage')}
+                  />
+                  <AdminSortTh
+                    label={t('adminA.colBandwidth')}
+                    sortAria={t('adminA.sortAria', { col: t('adminA.colBandwidth') })}
+                    active={sort === 'bandwidth'}
+                    align="end"
+                    onClick={() => setSort('bandwidth')}
+                  />
+                  <AdminSortTh
+                    label={t('adminA.colRegistered')}
+                    sortAria={t('adminA.sortAria', { col: t('adminA.colRegistered') })}
+                    active={sort === 'created'}
+                    onClick={() => setSort('created')}
+                  />
+                  <AdminSortTh
+                    label={t('adminA.colLastSeen')}
+                    sortAria={t('adminA.sortAria', { col: t('adminA.colLastSeen') })}
+                    active={sort === 'last_seen'}
+                    onClick={() => setSort('last_seen')}
+                  />
+                  <span className="justify-self-start">{t('adminA.colStatus')}</span>
+                  <span className="justify-self-end">{t('adminA.colActions')}</span>
+                </AdminTableHead>
                 {data.items.map((u) => {
-                  const quota = groupQuota(u.group_id)
-                  const bwQuota = groupBwQuota(u.group_id)
                   const usedBw = u.bandwidth_used_month ?? 0
-                  const pct = quota > 0 ? Math.min(100, Math.round((u.used_storage / quota) * 100)) : 0
-                  const bwPct = bwQuota > 0 ? Math.min(100, Math.round((usedBw / bwQuota) * 100)) : 0
                   return (
-                    <div key={u.id} className={styles.row} role="row">
-                      <div className={`${styles.userCell} ${styles.alignStart}`}>
-                        <span className={styles.initial}>{(u.nickname || u.username).slice(0, 1)}</span>
-                        <div className={styles.userMeta}>
-                          <span className={styles.uname}>{u.username}</span>
-                          <span className={styles.email} title={u.email}>
+                    <AdminTableRow key={u.id} columns={COLS}>
+                      <div className="flex min-w-0 w-full items-center gap-[9px] justify-self-start">
+                        <span className="flex h-[26px] w-[26px] flex-none items-center justify-center rounded-full border border-border bg-soft text-[11px] font-bold">
+                          {(u.nickname || u.username).slice(0, 1)}
+                        </span>
+                        <div className="flex min-w-0 flex-col gap-0.5">
+                          <span className="overflow-hidden text-ellipsis whitespace-nowrap text-[13px] font-bold">{u.username}</span>
+                          <span className="overflow-hidden text-ellipsis whitespace-nowrap font-mono text-xs-plus text-muted" title={u.email}>
                             {u.email}
                             {u.email_verified === false && (
-                              <span className={styles.unverified} title={t('adminA.emailVerifiedNo')}>
-                                {' '}
-                                · {t('adminA.emailVerifiedNo')}
-                              </span>
+                              <span className="text-err opacity-85"> · {t('adminA.emailVerifiedNo')}</span>
                             )}
                           </span>
                         </div>
                       </div>
                       <select
-                        className={`${styles.groupSel} ${styles.alignStart}`}
+                        className="h-[26px] w-full max-w-full justify-self-start rounded-sm border border-border bg-surface px-1.5 font-mono text-xs-plus text-ink"
                         value={u.group_id}
                         aria-label={t('adminA.userGroupAria', { username: u.username })}
                         onChange={(e) => update.mutate({ id: u.id, body: { group_id: Number(e.target.value) } })}
@@ -261,45 +250,31 @@ export function UsersPage() {
                         ))}
                         {groups.length === 0 && <option value={u.group_id}>{groupName(u.group_id)}</option>}
                       </select>
-                      <span className={`${styles.mono} ${styles.alignEnd}`}>{u.image_count}</span>
-                      <div className={`${styles.usageCell} ${styles.alignEnd}`}>
-                        {quota > 0 && (
-                          <span className={styles.usageBar} title={`${pct}%`}>
-                            <span style={{ width: `${pct}%` }} />
-                          </span>
-                        )}
-                        <span className={styles.usageText}>{formatBytes(u.used_storage)}</span>
+                      <span className="justify-self-end font-mono text-[11px] tabular-nums">{u.image_count}</span>
+                      <div className="w-full justify-self-end">
+                        <UsageCell used={u.used_storage} quota={groupQuota(u.group_id)} />
                       </div>
-                      <div className={`${styles.usageCell} ${styles.alignEnd}`}>
-                        {bwQuota > 0 && (
-                          <span className={styles.usageBar} title={`${bwPct}%`}>
-                            <span style={{ width: `${bwPct}%` }} />
-                          </span>
-                        )}
-                        <span className={styles.usageText}>
-                          {formatBytes(usedBw)}
-                          {u.bandwidth_period ? (
-                            <span className={styles.period}> · {u.bandwidth_period}</span>
-                          ) : null}
-                        </span>
+                      <div className="w-full justify-self-end">
+                        <UsageCell
+                          used={usedBw}
+                          quota={groupBwQuota(u.group_id)}
+                          suffix={u.bandwidth_period ? ` · ${u.bandwidth_period}` : undefined}
+                        />
                       </div>
-                      <span className={`${styles.time} ${styles.alignStart}`}>{formatDate(u.created_at)}</span>
-                      <span className={`${styles.time} ${styles.alignStart}`}>
+                      <span className="justify-self-start whitespace-nowrap font-mono text-xs-plus text-muted tabular-nums">
+                        {formatDate(u.created_at)}
+                      </span>
+                      <span className="justify-self-start whitespace-nowrap font-mono text-xs-plus text-muted tabular-nums">
                         {u.last_seen_at ? formatDate(u.last_seen_at) : t('adminA.neverSeen')}
                       </span>
-                      <span
-                        className={[
-                          styles.alignStart,
-                          u.status === 'active' ? styles.stOk : styles.stErr,
-                        ].join(' ')}
-                      >
+                      <StatusPill ok={u.status === 'active'}>
                         {u.status === 'active' ? t('adminA.statusActive') : t('adminA.statusBanned')}
-                      </span>
-                      <div className={`${styles.actions} ${styles.alignEnd}`}>
+                      </StatusPill>
+                      <div className="flex w-full items-center justify-end gap-1 justify-self-end">
                         {u.status === 'active' ? (
                           <ArmedButton
-                            className={styles.iconBtn}
-                            armedClassName={styles.iconBtnArmed}
+                            className={iconActionClass}
+                            armedClassName={iconActionArmedClass}
                             title={t('adminA.ban')}
                             armedTitle={t('adminA.confirmBan')}
                             armedChildren={t('adminA.confirmBan')}
@@ -310,8 +285,8 @@ export function UsersPage() {
                           </ArmedButton>
                         ) : (
                           <ArmedButton
-                            className={styles.iconBtn}
-                            armedClassName={styles.iconBtnArmedOk}
+                            className={iconActionClass}
+                            armedClassName={iconActionArmedOkClass}
                             title={t('adminA.unban')}
                             armedTitle={t('adminA.confirmUnban')}
                             armedChildren={t('adminA.confirmUnban')}
@@ -321,8 +296,8 @@ export function UsersPage() {
                           </ArmedButton>
                         )}
                         <ArmedButton
-                          className={styles.iconBtn}
-                          armedClassName={styles.iconBtnArmed}
+                          className={iconActionClass}
+                          armedClassName={iconActionArmedClass}
                           title={t('adminA.resetPassword')}
                           armedTitle={t('adminA.confirmResetIcon')}
                           armedChildren={t('adminA.confirmResetIcon')}
@@ -330,33 +305,23 @@ export function UsersPage() {
                         >
                           <span aria-hidden>⌁</span>
                         </ArmedButton>
-                        <Link
-                          className={styles.iconLink}
-                          to={`/admin/images?user=${u.id}`}
-                          title={t('adminA.viewImages')}
-                          aria-label={t('adminA.viewImages')}
-                        >
+                        <IconLink to={`/admin/images?user=${u.id}`} title={t('adminA.viewImages')}>
                           <span aria-hidden>▦</span>
-                        </Link>
+                        </IconLink>
                       </div>
-                    </div>
+                    </AdminTableRow>
                   )
                 })}
-              </div>
-              <div className={styles.footer}>
-                <p className={styles.stat}>
+              </AdminTable>
+              <div className="mt-2.5 flex flex-wrap items-center justify-between gap-2.5">
+                <p className="m-0 mx-0.5 font-mono text-xs-plus text-muted">
                   {t('adminA.usersTotal', { total: data.total })}
-                  <span className={styles.statSep}>·</span>
+                  <span className="mx-1.5 opacity-50">·</span>
                   {t('adminA.usersPageHint', { page: data.page, limit: data.limit })}
-                  <span className={styles.statSep}>·</span>
+                  <span className="mx-1.5 opacity-50">·</span>
                   {t('adminA.sortBy')}: {sortLabel(t, sort)}
                 </p>
-                <Pager
-                  page={page}
-                  limit={data.limit}
-                  total={data.total}
-                  onPage={(p) => setParam('page', p > 1 ? String(p) : '')}
-                />
+                <Pager page={page} limit={data.limit} total={data.total} onPage={(p) => setParam('page', p > 1 ? String(p) : '')} />
               </div>
             </>
           )
@@ -364,13 +329,15 @@ export function UsersPage() {
       </AdminQueryGate>
       <Modal open={resetTarget !== null} onClose={closeReset} width={400}>
         {resetTarget && (
-          <div className={styles.resetBox}>
+          <div className="flex flex-col gap-3">
             {reset.data ? (
               <>
-                <h2 className={styles.resetTitle}>{t('adminA.passwordGenerated')}</h2>
-                <div className={styles.pw}>{reset.data.password}</div>
-                <p className={styles.resetHint}>{t('adminA.passwordOnceHint')}</p>
-                <div className={styles.resetBtns}>
+                <h2 className="m-0 text-base font-bold">{t('adminA.passwordGenerated')}</h2>
+                <div className="break-all rounded-sm border border-border bg-soft px-3 py-2.5 font-mono text-[15px] tracking-[0.04em]">
+                  {reset.data.password}
+                </div>
+                <p className="m-0 text-sm-plus text-muted">{t('adminA.passwordOnceHint')}</p>
+                <div className="flex justify-end gap-2">
                   <Button variant="primary" onClick={() => copyText(reset.data!.password, t('adminA.passwordLabel'))}>
                     {t('adminA.copyPassword')}
                   </Button>
@@ -381,13 +348,13 @@ export function UsersPage() {
               </>
             ) : (
               <>
-                <h2 className={styles.resetTitle}>{t('adminA.resetPasswordTitle')}</h2>
-                <p className={styles.resetHint}>
+                <h2 className="m-0 text-base font-bold">{t('adminA.resetPasswordTitle')}</h2>
+                <p className="m-0 text-sm-plus text-muted">
                   {t('adminA.resetPasswordHintBefore')}
                   <b>{resetTarget.username}</b>
                   {t('adminA.resetPasswordHintAfter')}
                 </p>
-                <div className={styles.resetBtns}>
+                <div className="flex justify-end gap-2">
                   <Button variant="primary" disabled={reset.isPending} onClick={() => reset.mutate(resetTarget.id)}>
                     {t('adminA.confirmReset')}
                   </Button>

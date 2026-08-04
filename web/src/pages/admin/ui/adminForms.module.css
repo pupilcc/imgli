@@ -1,11 +1,10 @@
-/* Shared admin form / filter chrome — import as `forms` alongside page modules. */
+/* Deprecated: prefer adminChrome.tsx. Kept for pages not yet fully migrated to TW. */
 
 .filters {
   display: flex;
   gap: 8px;
   align-items: center;
   flex-wrap: wrap;
-  /* When used outside PageHeader.extra, pages may stick this bar themselves */
 }
 
 .select {
@@ -38,18 +37,17 @@
 
 .textarea {
   width: 100%;
-  font: inherit;
-  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
-  font-size: 12px;
-  padding: 10px 12px;
   border: 1px solid var(--border);
-  border-radius: 8px;
-  background: var(--bg);
+  border-radius: 3px;
+  background: var(--surface);
   color: var(--text);
+  font-family: inherit;
+  font-size: 13px;
+  padding: 10px 12px;
   resize: vertical;
+  outline: none;
 }
 
 .textarea:focus {
-  outline: none;
-  border-color: var(--accent, var(--border-strong, var(--muted)));
+  border-color: var(--muted);
 }

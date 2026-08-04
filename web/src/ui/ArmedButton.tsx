@@ -1,4 +1,5 @@
 import { useEffect, useState, type ReactNode } from 'react'
+import { cn } from '../lib/cn'
 
 /** Two-click confirm control (first click arms for 2.5s, second confirms). */
 export function ArmedButton({
@@ -18,7 +19,6 @@ export function ArmedButton({
   className?: string
   armedClassName?: string
   children?: ReactNode
-  /** Visible label while armed; defaults to children (prefer a short confirm word for icon buttons). */
   armedChildren?: ReactNode
   stopPropagation?: boolean
   disabled?: boolean
@@ -39,7 +39,7 @@ export function ArmedButton({
       title={armed ? armedTitle : title}
       aria-label={armed ? armedTitle : title}
       disabled={disabled}
-      className={[className, armed && armedClassName].filter(Boolean).join(' ') || undefined}
+      className={cn(className, armed && armedClassName)}
       onClick={(e) => {
         if (stopPropagation) e.stopPropagation()
         if (disabled) return

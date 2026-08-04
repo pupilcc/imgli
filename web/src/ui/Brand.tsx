@@ -1,27 +1,22 @@
 import type { CSSProperties } from 'react'
-import styles from './Brand.module.css'
+import { cn } from '../lib/cn'
 
 /** 产品字标（固定小写 img.li，与域名/品牌「图鲤」一致）。 */
 export const BRAND_WORDMARK = 'img.li'
 export const BRAND_CN = '图鲤'
 
 type MarkProps = {
-  /** 图形高度（px）；宽度按 viewBox 80×100 等比。导航默认 20。 */
   size?: number
   className?: string
   title?: string
 }
 
-/**
- * 图鲤主标（几何白鲤）。fill 使用 currentColor，跟随主题/反色面板。
- * 鱼眼镂空（evenodd），任意底色可读。
- */
 export function BrandMark({ size = 20, className, title }: MarkProps) {
   const h = size
   const w = (size * 80) / 100
   return (
     <svg
-      className={className}
+      className={cn('block flex-none', className)}
       xmlns="http://www.w3.org/2000/svg"
       viewBox="0 0 80 100"
       width={w}
@@ -31,37 +26,24 @@ export function BrandMark({ size = 20, className, title }: MarkProps) {
       aria-label={title}
       aria-hidden={title ? undefined : true}
     >
-      {/* splash / 域名中点 */}
       <rect x="62" y="8" width="12" height="12" rx="2" />
-      {/* body + hollow eye */}
       <path fillRule="evenodd" d="M44 30 L74 60 L44 90 L14 60 Z M38 52 h8 v8 h-8 Z" />
-      {/* tail */}
       <path d="M14 60 L2 48 L6 60 L2 72 Z" />
     </svg>
   )
 }
 
 type LockupProps = {
-  /** 图形高度，默认 20（导航规范） */
   markSize?: number
-  /** 是否显示 BETA 描边徽章 */
   beta?: boolean
-  /** 自定义右侧徽章文案（如 ADMIN / GUEST），优先于 beta */
   badge?: string
-  /** 反色底（登录左栏等）：中点/徽章跟 currentColor 半透明，不用 --muted */
   invert?: boolean
-  /**
-   * 实例站名（config.site_name）。非空且非产品默认时替换字标文案；
-   * 鲤鱼 mark 始终保留（Community 非全白标）。
-   */
   word?: string | null
   className?: string
-  /** 字标额外样式 */
   wordClassName?: string
   style?: CSSProperties
 }
 
-/** 是否用自定义站名替换产品字标（默认 img.li / imgli 仍走产品锁标样式）。 */
 export function isCustomSiteWord(name?: string | null): boolean {
   const n = (name || '').trim()
   if (!n) return false
@@ -69,10 +51,6 @@ export function isCustomSiteWord(name?: string | null): boolean {
   return lower !== BRAND_WORDMARK && lower !== 'imgli'
 }
 
-/**
- * 横向锁标：鲤鱼 + 等宽 img.li（中点 muted）或实例站名 + 可选徽章。
- * 颜色全部 currentColor / --muted，适配浅底与反色 brand 面板。
- */
 export function BrandLockup({
   markSize = 20,
   beta,
@@ -87,21 +65,35 @@ export function BrandLockup({
   const custom = isCustomSiteWord(word)
   const label = custom ? (word || '').trim() : BRAND_WORDMARK
   return (
-    <span
-      className={[styles.lockup, invert && styles.invert, className].filter(Boolean).join(' ')}
-      style={style}
-    >
-      <BrandMark size={markSize} className={styles.mark} />
+    <span className={cn('inline-flex items-center gap-[9px] leading-none text-inherit', className)} style={style}>
+      <BrandMark size={markSize} />
       {custom ? (
-        <span className={[styles.word, styles.wordCustom, wordClassName].filter(Boolean).join(' ')} title={label}>
+        <span
+          className={cn(
+            'max-w-[12em] overflow-hidden text-ellipsis whitespace-nowrap font-sans text-[14.5px] font-extrabold tracking-[-0.02em] leading-none',
+            wordClassName,
+          )}
+          title={label}
+        >
           {label}
         </span>
       ) : (
-        <span className={[styles.word, wordClassName].filter(Boolean).join(' ')}>
-          img<span className={styles.dot}>.</span>li
+        <span className={cn('font-mono text-[14.5px] font-extrabold tracking-[-0.03em] leading-none', wordClassName)}>
+          img
+          <span className={cn('text-muted opacity-90', invert && 'text-current opacity-50')}>.</span>
+          li
         </span>
       )}
-      {tag ? <span className={styles.badge}>{tag}</span> : null}
+      {tag ? (
+        <span
+          className={cn(
+            'border border-border px-[5px] py-px font-mono text-2xs tracking-[0.08em] leading-[1.4] text-muted',
+            invert && 'border-current text-current opacity-60',
+          )}
+        >
+          {tag}
+        </span>
+      ) : null}
     </span>
   )
 }

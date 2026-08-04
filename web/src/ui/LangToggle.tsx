@@ -1,6 +1,5 @@
 import { useT } from '../i18n'
 import { useSession, useUpdatePreferences } from '../api/hooks'
-import styles from './LangToggle.module.css'
 
 /**
  * 中/EN 语言切换。匿名仅写 localStorage(setLang);登录态额外把语言写入 Preferences.lang
@@ -18,7 +17,7 @@ export function LangToggle() {
   return (
     <button
       type="button"
-      className={styles.btn}
+      className="flex h-[30px] w-[30px] cursor-pointer items-center justify-center rounded-sm border border-border bg-surface text-xs text-ink hover:bg-soft"
       title={lang === 'zh' ? 'Switch to English' : '切换到中文'}
       aria-label="language"
       onClick={toggle}
