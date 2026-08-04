@@ -17,7 +17,7 @@ import {
   type FormState,
   type SettingsTab,
 } from './settingsForm'
-import styles from './SettingsPage.module.css'
+import { s } from './settingsUi'
 import { BasicTab } from './tabs/BasicTab'
 import { HotlinkTab } from './tabs/HotlinkTab'
 import { ModerationTab } from './tabs/ModerationTab'
@@ -260,13 +260,13 @@ export function SettingsPage() {
       <PageHeader kicker="SYSTEM SETTINGS" title={t('adminB.settingsTitle')} />
       <AdminQueryGate query={{ isError: q.isError, data: form ?? undefined, refetch: q.refetch }}>
         {(f) => (
-          <div className={styles.form}>
-            <nav className={styles.tabs} aria-label={t('adminB.settingsTitle')}>
+          <div className={s.form}>
+            <nav className={s.tabs} aria-label={t('adminB.settingsTitle')}>
               {SETTINGS_TABS.map((item) => (
                 <button
                   key={item.key}
                   type="button"
-                  className={[styles.tab, tab === item.key && styles.tabActive].filter(Boolean).join(' ')}
+                  className={[s.tab, tab === item.key && s.tabActive].filter(Boolean).join(' ')}
                   aria-pressed={tab === item.key}
                   onClick={() => setTab(item.key)}
                 >
@@ -319,7 +319,7 @@ export function SettingsPage() {
             {tab === 'hotlink' && <HotlinkTab form={f} set={set} />}
             {tab === 'processing' && <ProcessingTab form={f} set={set} />}
 
-            <div className={styles.actions}>
+            <div className={s.actions}>
               <Button variant="primary" disabled={update.isPending} onClick={submit}>
                 {t('adminB.saveSettings')}
               </Button>

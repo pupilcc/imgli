@@ -8,7 +8,7 @@ import { Segmented } from '../../../../ui/Segmented'
 import { Toggle } from '../../../../ui/Toggle'
 import type { FormFooterGroup, FormLocale, FormSet, FormState } from '../settingsForm'
 import { emptyLocale } from '../settingsForm'
-import styles from '../SettingsPage.module.css'
+import { s } from '../settingsUi'
 
 type SlotsSub = 'public' | 'announcement' | 'footer' | 'html'
 
@@ -42,7 +42,7 @@ export function SlotsTab({ form, set, setForm, setAnn, patchFooterGroup, patchFo
 
   return (
     <>
-      <nav className={styles.subTabs} aria-label={t('adminB.slotsTab')}>
+      <nav className={s.subTabs} aria-label={t('adminB.slotsTab')}>
         {(
           [
             ['public', 'slotsSubPublic'],
@@ -54,7 +54,7 @@ export function SlotsTab({ form, set, setForm, setAnn, patchFooterGroup, patchFo
           <button
             key={key}
             type="button"
-            className={[styles.subTab, sub === key && styles.subTabActive].filter(Boolean).join(' ')}
+            className={[s.subTab, sub === key && s.subTabActive].filter(Boolean).join(' ')}
             aria-pressed={sub === key}
             onClick={() => setSub(key)}
           >
@@ -64,9 +64,9 @@ export function SlotsTab({ form, set, setForm, setAnn, patchFooterGroup, patchFo
       </nav>
 
       {sub === 'public' && (
-        <section className={styles.section}>
-          <h2 className={styles.h2}>{t('adminB.publicCopy')}</h2>
-          <span className={styles.hint}>{t('adminB.publicCopyHint')}</span>
+        <section className={s.section}>
+          <h2 className={s.h2}>{t('adminB.publicCopy')}</h2>
+          <span className={s.hint}>{t('adminB.publicCopyHint')}</span>
           <Input
             label={t('adminB.helpUrl')}
             value={form.helpUrl}
@@ -79,7 +79,7 @@ export function SlotsTab({ form, set, setForm, setAnn, patchFooterGroup, patchFo
             placeholder="https://… or /path"
             onChange={(e) => set('upgradeUrl', e.target.value)}
           />
-          <div className={styles.localePair}>
+          <div className={s.localePair}>
             <Input
               label={`${t('adminB.registerNotice')} · ${t('adminB.localeZh')}`}
               value={form.registerNotice.zh}
@@ -93,9 +93,9 @@ export function SlotsTab({ form, set, setForm, setAnn, patchFooterGroup, patchFo
               onChange={(e) => set('registerNotice', { ...form.registerNotice, en: e.target.value })}
             />
           </div>
-          <span className={styles.hint}>{t('adminB.registerNoticeHint')}</span>
-          <div className={styles.field}>
-            <span className={styles.label}>{t('adminB.shareBranding')}</span>
+          <span className={s.hint}>{t('adminB.registerNoticeHint')}</span>
+          <div className={s.field}>
+            <span className={s.label}>{t('adminB.shareBranding')}</span>
             <Segmented<ShareBranding>
               options={[
                 { value: 'off', label: t('adminB.shareBrandingOff') },
@@ -105,7 +105,7 @@ export function SlotsTab({ form, set, setForm, setAnn, patchFooterGroup, patchFo
               value={form.shareBranding}
               onChange={(v) => set('shareBranding', v)}
             />
-            <span className={styles.hint}>{t('adminB.shareBrandingHint')}</span>
+            <span className={s.hint}>{t('adminB.shareBrandingHint')}</span>
           </div>
           <Input
             label={t('adminB.faviconUrl')}
@@ -113,51 +113,51 @@ export function SlotsTab({ form, set, setForm, setAnn, patchFooterGroup, patchFo
             placeholder="https://…/favicon.svg"
             onChange={(e) => set('faviconUrl', e.target.value)}
           />
-          <span className={styles.hint}>{t('adminB.faviconUrlHint')}</span>
+          <span className={s.hint}>{t('adminB.faviconUrlHint')}</span>
           <Input
             label={t('adminB.sourceUrl')}
             value={form.sourceUrl}
             placeholder="https://github.com/… or self-hosted source"
             onChange={(e) => set('sourceUrl', e.target.value)}
           />
-          <span className={styles.hint}>{t('adminB.sourceUrlHint')}</span>
-          <div className={styles.field}>
-            <div className={styles.sliderHead}>
-              <span className={styles.label}>{t('adminB.ossCredit')}</span>
+          <span className={s.hint}>{t('adminB.sourceUrlHint')}</span>
+          <div className={s.field}>
+            <div className={s.sliderHead}>
+              <span className={s.label}>{t('adminB.ossCredit')}</span>
               <Toggle
                 aria-label={t('adminB.ossCredit')}
                 checked={form.ossCredit === 'on'}
                 onChange={(v) => set('ossCredit', v ? 'on' : 'off')}
               />
             </div>
-            <span className={styles.hint}>{t('adminB.ossCreditHint')}</span>
+            <span className={s.hint}>{t('adminB.ossCreditHint')}</span>
           </div>
-          <div className={styles.field}>
-            <div className={styles.sliderHead}>
-              <span className={styles.label}>{t('adminB.aboutEnabled')}</span>
+          <div className={s.field}>
+            <div className={s.sliderHead}>
+              <span className={s.label}>{t('adminB.aboutEnabled')}</span>
               <Toggle
                 aria-label={t('adminB.aboutEnabled')}
                 checked={form.aboutEnabled}
                 onChange={(v) => set('aboutEnabled', v)}
               />
             </div>
-            <span className={styles.hint}>{t('adminB.aboutEnabledHint')}</span>
+            <span className={s.hint}>{t('adminB.aboutEnabledHint')}</span>
           </div>
-          <div className={styles.localePair}>
-            <div className={styles.field}>
-              <span className={styles.label}>{`${t('adminB.aboutBody')} · ${t('adminB.localeZh')}`}</span>
+          <div className={s.localePair}>
+            <div className={s.field}>
+              <span className={s.label}>{`${t('adminB.aboutBody')} · ${t('adminB.localeZh')}`}</span>
               <textarea
-                className={styles.textarea}
+                className={s.textarea}
                 rows={4}
                 maxLength={4000}
                 value={form.aboutBody.zh}
                 onChange={(e) => set('aboutBody', { ...form.aboutBody, zh: e.target.value })}
               />
             </div>
-            <div className={styles.field}>
-              <span className={styles.label}>{`${t('adminB.aboutBody')} · ${t('adminB.localeEn')}`}</span>
+            <div className={s.field}>
+              <span className={s.label}>{`${t('adminB.aboutBody')} · ${t('adminB.localeEn')}`}</span>
               <textarea
-                className={styles.textarea}
+                className={s.textarea}
                 rows={4}
                 maxLength={4000}
                 value={form.aboutBody.en}
@@ -169,13 +169,13 @@ export function SlotsTab({ form, set, setForm, setAnn, patchFooterGroup, patchFo
       )}
 
       {sub === 'announcement' && (
-        <section className={styles.section}>
-          <div className={styles.h2Row}>
-            <h2 className={styles.h2}>{t('adminB.announcement')}</h2>
+        <section className={s.section}>
+          <div className={s.h2Row}>
+            <h2 className={s.h2}>{t('adminB.announcement')}</h2>
             <Toggle checked={form.ann.enabled} onChange={(v) => setAnn('enabled', v)} />
           </div>
-          <span className={styles.hint}>{t('adminB.announcementHint')}</span>
-          <div className={styles.localePair}>
+          <span className={s.hint}>{t('adminB.announcementHint')}</span>
+          <div className={s.localePair}>
             <Input
               label={`${t('adminB.announcementText')} · ${t('adminB.localeZh')}`}
               value={annText.zh}
@@ -195,7 +195,7 @@ export function SlotsTab({ form, set, setForm, setAnn, patchFooterGroup, patchFo
             placeholder="https://… or /path"
             onChange={(e) => setAnn('link_url', e.target.value)}
           />
-          <div className={styles.localePair}>
+          <div className={s.localePair}>
             <Input
               label={`${t('adminB.announcementLinkLabel')} · ${t('adminB.localeZh')}`}
               value={annLabel.zh}
@@ -213,9 +213,9 @@ export function SlotsTab({ form, set, setForm, setAnn, patchFooterGroup, patchFo
               }
             />
           </div>
-          <div className={styles.field}>
-            <div className={styles.sliderHead}>
-              <span className={styles.label}>{t('adminB.announcementDismissible')}</span>
+          <div className={s.field}>
+            <div className={s.sliderHead}>
+              <span className={s.label}>{t('adminB.announcementDismissible')}</span>
               <Toggle
                 aria-label={t('adminB.announcementDismissible')}
                 checked={form.ann.dismissible}
@@ -223,9 +223,9 @@ export function SlotsTab({ form, set, setForm, setAnn, patchFooterGroup, patchFo
               />
             </div>
           </div>
-          <details className={styles.fold}>
+          <details className={s.fold}>
             <summary>{t('adminB.announcementSchedule')}</summary>
-            <div className={styles.foldBody}>
+            <div className={s.foldBody}>
               <Input
                 label={t('adminB.announcementStarts')}
                 value={form.ann.starts_at}
@@ -244,12 +244,12 @@ export function SlotsTab({ form, set, setForm, setAnn, patchFooterGroup, patchFo
       )}
 
       {sub === 'footer' && (
-        <section className={styles.section}>
-          <h2 className={styles.h2}>{t('adminB.footerLinks')}</h2>
-          <span className={styles.hint}>{t('adminB.footerLinksHint')}</span>
+        <section className={s.section}>
+          <h2 className={s.h2}>{t('adminB.footerLinks')}</h2>
+          <span className={s.hint}>{t('adminB.footerLinksHint')}</span>
           {form.footerGroups.map((g, gi) => (
-            <div key={gi} className={styles.slotCard}>
-              <div className={styles.localePair}>
+            <div key={gi} className={s.slotCard}>
+              <div className={s.localePair}>
                 <Input
                   label={`${t('adminB.footerGroupTitle')} · ${t('adminB.localeZh')}`}
                   value={g.title.zh}
@@ -264,8 +264,8 @@ export function SlotsTab({ form, set, setForm, setAnn, patchFooterGroup, patchFo
                 />
               </div>
               {g.links.map((l, li) => (
-                <div key={li} className={styles.slotRow}>
-                  <div className={styles.localePair}>
+                <div key={li} className={s.slotRow}>
+                  <div className={s.localePair}>
                     <Input
                       label={`${t('adminB.footerLinkLabel')} · ${t('adminB.localeZh')}`}
                       value={l.label.zh}
@@ -301,7 +301,7 @@ export function SlotsTab({ form, set, setForm, setAnn, patchFooterGroup, patchFo
                   </Button>
                 </div>
               ))}
-              <div className={styles.slotActions}>
+              <div className={s.slotActions}>
                 <Button
                   type="button"
                   variant="ghost"
@@ -355,23 +355,23 @@ export function SlotsTab({ form, set, setForm, setAnn, patchFooterGroup, patchFo
       )}
 
       {sub === 'html' && (
-        <section className={styles.section}>
-          <h2 className={styles.h2}>{t('adminB.htmlInject')}</h2>
-          <span className={styles.hintWarn}>{t('adminB.htmlInjectWarn')}</span>
-          <div className={styles.field}>
-            <span className={styles.label}>{t('adminB.htmlHead')}</span>
+        <section className={s.section}>
+          <h2 className={s.h2}>{t('adminB.htmlInject')}</h2>
+          <span className={s.hintWarn}>{t('adminB.htmlInjectWarn')}</span>
+          <div className={s.field}>
+            <span className={s.label}>{t('adminB.htmlHead')}</span>
             <textarea
-              className={styles.textarea}
+              className={s.textarea}
               rows={5}
               value={form.htmlHead}
               onChange={(e) => set('htmlHead', e.target.value)}
               spellCheck={false}
             />
           </div>
-          <div className={styles.field}>
-            <span className={styles.label}>{t('adminB.htmlBodyEnd')}</span>
+          <div className={s.field}>
+            <span className={s.label}>{t('adminB.htmlBodyEnd')}</span>
             <textarea
-              className={styles.textarea}
+              className={s.textarea}
               rows={5}
               value={form.htmlBodyEnd}
               onChange={(e) => set('htmlBodyEnd', e.target.value)}

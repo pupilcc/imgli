@@ -11,21 +11,25 @@ import {
 } from '../../../api/adminHooks'
 import type { AdminGroup } from '../../../api/types'
 import { useT } from '../../../i18n'
+import { cn } from '../../../lib/cn'
 import { PageHeader } from '../../../shell/PageHeader'
 import { useGlobal } from '../../../store'
 import { Button } from '../../../ui/Button'
 import { EmptyState } from '../../../ui/EmptyState'
 import { InlineConfirm } from '../../../ui/InlineConfirm'
 import { Input } from '../../../ui/Input'
+import { AdminField } from '../ui/adminChrome'
 import { AdminQueryGate } from '../ui/AdminQueryGate'
-import forms from '../ui/adminForms.module.css'
-import styles from './GroupsPage.module.css'
 
 const DAY = 86400
 const GB = 1024 ** 3
 const MB = 1024 ** 2
 const toGB = (b: number) => String(+(b / GB).toFixed(2))
 const toMB = (b: number) => String(+(b / MB).toFixed(2))
+
+const hintClass = 'text-xs leading-snug text-muted'
+const grid2Class = 'grid grid-cols-2 gap-3'
+const grid3Class = 'grid grid-cols-3 gap-3'
 
 /** 秒 → 表单「天」：整除用整数，否则保留最多 2 位小数。 */
 export function secToDaysField(sec: number): string {
@@ -167,9 +171,20 @@ function FormSection({
   children: ReactNode
 }) {
   return (
-    <details className={styles.section} open={open}>
-      <summary className={styles.sectionSum}>{title}</summary>
-      <div className={styles.sectionBody}>{children}</div>
+    <details
+      className="group overflow-hidden rounded-lg border border-border bg-bg"
+      open={open}
+    >
+      <summary
+        className={cn(
+          'cursor-pointer select-none list-none px-3 py-2.5 text-sm-plus font-bold tracking-[0.02em] text-ink',
+          'hover:bg-soft marker:content-none [&::-webkit-details-marker]:hidden',
+          "before:font-normal before:text-muted before:content-['▸_'] open:before:content-['▾_']",
+        )}
+      >
+        {title}
+      </summary>
+      <div className="flex flex-col gap-3 border-t border-border px-3 pb-3 pt-3">{children}</div>
     </details>
   )
 }
@@ -184,18 +199,24 @@ function ExtInput({ exts, onChange }: { exts: string[]; onChange(v: string[]): v
     setDraft('')
   }
   return (
-    <div className={forms.field}>
-      <label className={forms.label} htmlFor={inputId}>{t('adminA.allowedExts')}</label>
-      <div className={styles.tags}>
+    <AdminField label={<label htmlFor={inputId}>{t('adminA.allowedExts')}</label>}>
+      <div className="flex flex-wrap gap-1.5 rounded-lg border border-border p-1.5">
         {exts.map((e) => (
-          <span key={e} className={styles.tag}>
+          <span key={e} className="inline-flex items-center gap-1 rounded-xl bg-soft px-2 py-0.5 text-[13px]">
             {e}
-            <button type="button" aria-label={t('adminA.removeExtAria', { ext: e })} onClick={() => onChange(exts.filter((x) => x !== e))}>×</button>
+            <button
+              type="button"
+              className="cursor-pointer border-0 bg-transparent text-muted"
+              aria-label={t('adminA.removeExtAria', { ext: e })}
+              onClick={() => onChange(exts.filter((x) => x !== e))}
+            >
+              ×
+            </button>
           </span>
         ))}
         <input
           id={inputId}
-          className={styles.tagInput}
+          className="min-w-20 flex-1 border-0 bg-transparent font-inherit text-inherit outline-none"
           value={draft}
           onChange={(e) => setDraft(e.target.value)}
           onKeyDown={(e) => {
@@ -208,7 +229,7 @@ function ExtInput({ exts, onChange }: { exts: string[]; onChange(v: string[]): v
           placeholder={t('adminA.extPlaceholder')}
         />
       </div>
-    </div>
+    </AdminField>
   )
 }
 
@@ -317,47 +338,59 @@ export function GroupsPage() {
       />
       <AdminQueryGate query={groupsQ}>
         {() => (
-          <div className={styles.split}>
-            <div className={styles.list}>
+          <div className="mt-2 grid grid-cols-1 gap-5 md:grid-cols-[260px_1fr]">
+            <div className="flex flex-col gap-1">
               {groups.map((g) => (
                 <button
                   key={g.id}
                   type="button"
-                  className={[styles.row, sel === g.id && styles.rowActive].filter(Boolean).join(' ')}
+                  className={cn(
+                    'flex cursor-pointer flex-col items-stretch gap-1.5 rounded-lg border border-border bg-surface px-3 py-2.5 text-left',
+                    sel === g.id && 'border-ink',
+                  )}
                   onClick={() => selectGroup(g)}
                 >
-                  <span className={styles.rowMain}>
-                    <span className={styles.rowName}>{g.name}</span>
+                  <span className="flex min-w-0 items-center gap-2">
+                    <span className="overflow-hidden text-ellipsis whitespace-nowrap font-semibold">{g.name}</span>
                     {(g.is_default || g.is_guest) && (
-                      <span className={styles.builtin}>{g.is_guest ? t('adminA.guest') : t('adminA.defaultGroup')}</span>
+                      <span className="flex-none rounded bg-soft px-1.5 py-px text-[11px] text-muted">
+                        {g.is_guest ? t('adminA.guest') : t('adminA.defaultGroup')}
+                      </span>
                     )}
-                    <span className={styles.rowCount}>{t('adminA.memberCount', { count: g.user_count })}</span>
+                    <span className="ml-auto flex-none text-xs text-muted">
+                      {t('adminA.memberCount', { count: g.user_count })}
+                    </span>
                   </span>
                   {lifecycleBadges(g, t).length > 0 && (
-                    <span className={styles.badgeRow}>
+                    <span className="flex flex-wrap gap-1">
                       {lifecycleBadges(g, t).map((b) => (
-                        <span key={b} className={styles.lifeBadge}>{b}</span>
+                        <span
+                          key={b}
+                          className="whitespace-nowrap rounded-sm border border-border px-1.5 py-px font-mono text-2xs text-muted"
+                        >
+                          {b}
+                        </span>
                       ))}
                     </span>
                   )}
                 </button>
               ))}
             </div>
-            <div className={styles.detail}>
+            <div className="rounded-[10px] border border-border bg-surface p-5">
               {sel === null ? (
                 <EmptyState title={t('adminA.selectOrCreate')} desc={t('adminA.selectOrCreateDesc')} />
               ) : (
-                <div className={styles.form}>
+                <div className="flex flex-col gap-3.5">
                   <Input
                     label={t('adminA.groupName')}
                     value={form.name}
                     disabled={builtin}
-                    extra={builtin ? <span className={forms.hint}>{t('adminA.builtinNameLocked')}</span> : undefined}
+                    extra={builtin ? <span className={hintClass}>{t('adminA.builtinNameLocked')}</span> : undefined}
                     onChange={(e) => set('name', e.target.value)}
                   />
 
                   <FormSection title={t('adminA.sectionQuota')} open>
-                    <div className={styles.grid2}>
+                    <div className={grid2Class}>
                       <Input
                         label={t('adminA.quotaGB')}
                         type="number"
@@ -378,13 +411,13 @@ export function GroupsPage() {
                       type="number"
                       min={0}
                       value={form.bwGB}
-                      extra={<span className={forms.hint}>{t('adminA.bandwidthQuotaHint')}</span>}
+                      extra={<span className={hintClass}>{t('adminA.bandwidthQuotaHint')}</span>}
                       onChange={(e) => set('bwGB', e.target.value)}
                     />
                   </FormSection>
 
                   <FormSection title={t('adminA.sectionRate')} open>
-                    <div className={styles.grid3}>
+                    <div className={grid3Class}>
                       <Input
                         label={t('adminA.ratePerMin')}
                         type="number"
@@ -414,9 +447,9 @@ export function GroupsPage() {
                   </FormSection>
 
                   <FormSection title={t('adminA.sectionLifecycle')} open>
-                    <p className={forms.hint}>{t('adminA.lifecycleHint')}</p>
-                    <p className={forms.hint}>{t('adminA.lifecycleSecHint')}</p>
-                    <div className={styles.grid2}>
+                    <p className={hintClass}>{t('adminA.lifecycleHint')}</p>
+                    <p className={hintClass}>{t('adminA.lifecycleSecHint')}</p>
+                    <div className={grid2Class}>
                       <Input
                         label={t('adminA.defaultExpiresDays')}
                         type="number"
@@ -434,7 +467,7 @@ export function GroupsPage() {
                         onChange={(e) => set('maxExpiresDays', e.target.value)}
                       />
                     </div>
-                    <div className={styles.grid2}>
+                    <div className={grid2Class}>
                       <Input
                         label={t('adminA.defaultMaxViews')}
                         type="number"
@@ -450,7 +483,7 @@ export function GroupsPage() {
                         onChange={(e) => set('maxMaxViews', e.target.value)}
                       />
                     </div>
-                    <div className={styles.grid2}>
+                    <div className={grid2Class}>
                       <Input
                         label={t('adminA.retentionDays')}
                         type="number"
@@ -469,16 +502,15 @@ export function GroupsPage() {
                   </FormSection>
 
                   <FormSection title={t('adminA.sectionPolicies')} open={false}>
-                    <div className={forms.field}>
-                      <span className={forms.label}>{t('adminA.allowedPolicies')}</span>
-                      <div className={styles.policies}>
+                    <AdminField label={t('adminA.allowedPolicies')}>
+                      <div className="flex flex-wrap gap-3">
                         {policiesQ.isError ? (
-                          <span className={forms.hint}>{t('adminA.policiesLoadFailed')}</span>
+                          <span className={hintClass}>{t('adminA.policiesLoadFailed')}</span>
                         ) : policies.length === 0 ? (
-                          <span className={forms.hint}>{t('adminA.noPolicies')}</span>
+                          <span className={hintClass}>{t('adminA.noPolicies')}</span>
                         ) : null}
                         {policies.map((p) => (
-                          <label key={p.id} className={styles.check}>
+                          <label key={p.id} className="inline-flex items-center gap-1.5 text-sm">
                             <input
                               type="checkbox"
                               checked={form.policyIds.includes(p.id)}
@@ -495,13 +527,13 @@ export function GroupsPage() {
                           </label>
                         ))}
                       </div>
-                    </div>
+                    </AdminField>
                   </FormSection>
 
                   {current && (
                     <FormSection title={t('adminA.sectionStock')} open={false}>
-                      <p className={forms.hint}>{t('adminA.lifecycleStockNote')}</p>
-                      <div className={styles.lifeActions}>
+                      <p className={hintClass}>{t('adminA.lifecycleStockNote')}</p>
+                      <div className="flex flex-wrap items-center gap-2">
                         <Button
                           variant="secondary"
                           disabled={lifePreview.isPending || lifeApply.isPending}
@@ -517,11 +549,11 @@ export function GroupsPage() {
                           {t('adminA.lifecycleApply')}
                         </Button>
                       </div>
-                      {lifeMsg && <p className={forms.hint}>{lifeMsg}</p>}
+                      {lifeMsg && <p className={hintClass}>{lifeMsg}</p>}
                     </FormSection>
                   )}
 
-                  <div className={styles.actions}>
+                  <div className="mt-1 flex gap-2.5">
                     <Button
                       variant="primary"
                       disabled={create.isPending || update.isPending || del.isPending}

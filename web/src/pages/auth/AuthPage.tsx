@@ -13,11 +13,13 @@ import { Button } from '../../ui/Button'
 import { Input } from '../../ui/Input'
 import { LangToggle } from '../../ui/LangToggle'
 import { Segmented } from '../../ui/Segmented'
-import styles from './AuthPage.module.css'
 
 type Mode = 'login' | 'reg'
 
 const EMAIL_RE = /^\S+@\S+\.\S+$/
+
+const themeBtn =
+  'flex h-[30px] w-[30px] cursor-pointer items-center justify-center rounded-sm border border-border bg-surface text-sm text-ink hover:bg-soft'
 
 export function AuthPage() {
   const { t, lang } = useT()
@@ -122,49 +124,61 @@ export function AuthPage() {
         : t('auth.submitRegister')
 
   return (
-    <div className={styles.page}>
-      <aside className={styles.brand}>
-        <div className={styles.brandLogo}>
+    <div className="flex min-h-screen">
+      <aside className="relative box-border flex flex-1 flex-col justify-between overflow-hidden bg-btn px-12 py-11 text-btn-text max-[900px]:hidden">
+        <div className="relative z-[1] flex items-center gap-[9px]">
           <BrandLockup beta invert word={config.data?.site_name} />
         </div>
         <div>
-          <div className={styles.slogan}>{t('meta.slogan')}</div>
-          <div className={styles.headline}>
+          <div className="relative z-[1] mb-4 font-mono text-[11px] tracking-[0.14em] opacity-55">
+            {t('meta.slogan')}
+          </div>
+          <div className="relative z-[1] max-w-[420px] text-[34px] font-extrabold leading-snug tracking-[-0.02em]">
             {t('auth.headlineLine1')}
             <br />
             {t('auth.headlineLine2')}
           </div>
         </div>
-        <div className={styles.copyright}>
+        <div className="relative z-[1] font-mono text-xs-plus opacity-45">
           {t('auth.copyright', { year: new Date().getFullYear(), site: siteName })}
         </div>
-        <div className={styles.deco} />
+        <div
+          className="absolute -right-[60px] -bottom-[60px] size-[340px] border border-[rgba(128,128,128,0.3)]"
+          style={{
+            background:
+              'repeating-linear-gradient(45deg, transparent, transparent 7px, rgba(128, 128, 128, 0.25) 7px, rgba(128, 128, 128, 0.25) 8px)',
+          }}
+        />
       </aside>
 
-      <main className={styles.formPane}>
-        <div className={styles.topBar}>
-          <button type="button" className={styles.themeBtn} title={t('nav.toggleTheme')} onClick={toggleTheme}>
+      <main className="relative flex flex-1 flex-col bg-bg">
+        <div className="absolute top-5 right-6 z-[1] flex items-center gap-2">
+          <button type="button" className={themeBtn} title={t('nav.toggleTheme')} onClick={toggleTheme}>
             {theme === 'light' ? '◐' : '◑'}
           </button>
           <LangToggle />
         </div>
-        <div className={styles.formBox}>
-          <div className={styles.kicker}>{isLogin ? t('auth.signInKicker') : t('auth.createAccountKicker')}</div>
-          <h1 className={styles.heading}>{isLogin ? t('auth.welcomeBack') : t('auth.createAccount')}</h1>
+        <div className="mx-auto my-auto w-[360px] max-w-full animate-[rise_0.3s_both] px-6 py-12">
+          <div className="mb-2.5 font-mono text-[11px] tracking-[0.14em] text-muted">
+            {isLogin ? t('auth.signInKicker') : t('auth.createAccountKicker')}
+          </div>
+          <h1 className="mb-6 mt-0 text-2xl font-bold tracking-[-0.015em]">
+            {isLogin ? t('auth.welcomeBack') : t('auth.createAccount')}
+          </h1>
           {!isLogin && !regClosed && (scenarioCopy || registerNotice) && (
-            <p className={styles.trialNote} data-testid="reg-trial-note">
+            <p className="mb-3.5 mt-0 text-sm-plus leading-[1.55] text-muted" data-testid="reg-trial-note">
               {scenarioCopy || registerNotice}
               {(helpURL || upgradeURL) && (
                 <>
                   {' '}
                   {helpURL && (
-                    <a href={helpURL} rel="noopener noreferrer">
+                    <a href={helpURL} rel="noopener noreferrer" className="text-ink underline underline-offset-2">
                       {t('auth.helpLink')}
                     </a>
                   )}
                   {helpURL && upgradeURL ? ' · ' : null}
                   {upgradeURL && (
-                    <a href={upgradeURL} rel="noopener noreferrer">
+                    <a href={upgradeURL} rel="noopener noreferrer" className="text-ink underline underline-offset-2">
                       {t('auth.upgradeLink')}
                     </a>
                   )}
@@ -173,9 +187,11 @@ export function AuthPage() {
             </p>
           )}
 
-          <div className={styles.switch}>
+          <div className="mb-6 [&_button]:py-[9px] [&_button]:text-sm-plus [&_button]:font-bold">
             {regClosed ? (
-              <div className={styles.regClosed}>{t('auth.regClosed')}</div>
+              <div className="border border-dashed border-border px-3 py-2 text-xs text-muted">
+                {t('auth.regClosed')}
+              </div>
             ) : (
               <Segmented<Mode>
                 options={[
@@ -191,7 +207,7 @@ export function AuthPage() {
             )}
           </div>
 
-          <form className={styles.fields} onSubmit={submit} noValidate>
+          <form className="flex flex-col gap-3.5" onSubmit={submit} noValidate>
             {!isLogin && (
               <Input
                 label={t('auth.username')}
@@ -224,8 +240,10 @@ export function AuthPage() {
               onChange={(e) => setPwd(e.target.value)}
             />
             {isLogin && (
-              <div className={styles.forgotRow}>
-                <Link to="/forgot-password" className={styles.forgotLink}>{t('auth.forgotPassword')}</Link>
+              <div className="-mt-1.5 text-right">
+                <Link to="/forgot-password" className="text-xs text-muted hover:text-ink">
+                  {t('auth.forgotPassword')}
+                </Link>
               </div>
             )}
             {!isLogin && regInvite && (
@@ -236,19 +254,22 @@ export function AuthPage() {
                 onChange={(e) => setInvite(e.target.value)}
               />
             )}
-            {error && <div className={styles.error}>{error}</div>}
+            {error && <div className="animate-[fadeIn_0.15s] text-xs text-err">{error}</div>}
             <Button
               variant="primary"
               type="submit"
               data-testid="auth-submit"
-              className={styles.submit}
+              className="mt-1 py-3 text-[13.5px]"
               disabled={busy}
             >
               {submitLabel}
             </Button>
             {isLogin && config.data?.oidc_enabled && (
-              <a href="/api/v1/auth/oidc/start" className={styles.submit} style={{ display: 'block', textAlign: 'center', marginTop: 10 }}>
-                <Button variant="secondary" type="button" style={{ width: '100%' }}>
+              <a
+                href="/api/v1/auth/oidc/start"
+                className="mt-2.5 block py-3 text-center text-[13.5px]"
+              >
+                <Button variant="secondary" type="button" className="w-full">
                   {t('auth.oidcLogin')}
                 </Button>
               </a>

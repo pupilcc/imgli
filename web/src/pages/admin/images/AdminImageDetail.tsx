@@ -7,7 +7,6 @@ import { useGlobal } from '../../../store'
 import { Button } from '../../../ui/Button'
 import { InlineConfirm } from '../../../ui/InlineConfirm'
 import { Modal } from '../../../ui/Modal'
-import styles from './ImagesAdminPage.module.css'
 
 function policyLabel(item: AdminImageItem): string {
   if (item.policy_name) return `${item.policy_name} (#${item.policy_id})`
@@ -49,49 +48,55 @@ export function AdminImageDetail({ item, onClose }: { item: AdminImageItem | nul
   return (
     <Modal open={item !== null} onClose={onClose} width={560}>
       {item && (
-        <div className={styles.detail}>
-          <img className={styles.detailImg} src={item.links.thumbnail_url} alt={item.name} />
-          <div className={styles.detailMeta}>
-            <div className={styles.detailName}>{item.name}</div>
-            <dl className={styles.detailList}>
-              <dt>{t('adminA.uploader')}</dt>
-              <dd>{uploaderLabel(item, t('adminA.guestUploader'))}</dd>
-              <dt>{t('adminA.size')}</dt>
-              <dd>{formatBytes(item.size)}</dd>
-              <dt>{t('adminA.status')}</dt>
-              <dd>
+        <div className="flex flex-col gap-3.5">
+          <img
+            className="max-h-80 w-full rounded-sm bg-soft object-contain"
+            src={item.links.thumbnail_url}
+            alt={item.name}
+          />
+          <div className="flex flex-col gap-2.5">
+            <div className="text-sm font-bold break-all">{item.name}</div>
+            <dl className="m-0 grid grid-cols-[72px_1fr] gap-x-3 gap-y-1 text-sm-plus">
+              <dt className="self-center font-mono text-2xs tracking-[0.08em] text-muted">{t('adminA.uploader')}</dt>
+              <dd className="m-0 font-mono text-[11.5px] break-all">{uploaderLabel(item, t('adminA.guestUploader'))}</dd>
+              <dt className="self-center font-mono text-2xs tracking-[0.08em] text-muted">{t('adminA.size')}</dt>
+              <dd className="m-0 font-mono text-[11.5px] break-all">{formatBytes(item.size)}</dd>
+              <dt className="self-center font-mono text-2xs tracking-[0.08em] text-muted">{t('adminA.status')}</dt>
+              <dd className="m-0 font-mono text-[11.5px] break-all">
                 {statusLabel(item.status)}
                 {item.is_whitelisted && t('adminA.whitelistedSuffix')}
                 {inTrash && ` · ${t('adminA.trashBadge')}`}
               </dd>
-              <dt>NSFW</dt>
-              <dd>{item.nsfw_score == null ? '—' : String(item.nsfw_score)}</dd>
-              <dt>{t('adminA.storagePolicy')}</dt>
-              <dd>{policyLabel(item)}</dd>
-              <dt>{t('adminA.storageDriver')}</dt>
-              <dd>{item.policy_driver || '—'}</dd>
-              <dt>{t('adminA.storageSurface')}</dt>
-              <dd>{item.surface || '—'}</dd>
-              <dt>{t('adminA.storagePath')}</dt>
-              <dd className={styles.detailPath}>
-                <code>{item.path || '—'}</code>
+              <dt className="self-center font-mono text-2xs tracking-[0.08em] text-muted">NSFW</dt>
+              <dd className="m-0 font-mono text-[11.5px] break-all">{item.nsfw_score == null ? '—' : String(item.nsfw_score)}</dd>
+              <dt className="self-center font-mono text-2xs tracking-[0.08em] text-muted">{t('adminA.storagePolicy')}</dt>
+              <dd className="m-0 font-mono text-[11.5px] break-all">{policyLabel(item)}</dd>
+              <dt className="self-center font-mono text-2xs tracking-[0.08em] text-muted">{t('adminA.storageDriver')}</dt>
+              <dd className="m-0 font-mono text-[11.5px] break-all">{item.policy_driver || '—'}</dd>
+              <dt className="self-center font-mono text-2xs tracking-[0.08em] text-muted">{t('adminA.storageSurface')}</dt>
+              <dd className="m-0 font-mono text-[11.5px] break-all">{item.surface || '—'}</dd>
+              <dt className="self-center font-mono text-2xs tracking-[0.08em] text-muted">{t('adminA.storagePath')}</dt>
+              <dd className="m-0 flex items-start gap-2 font-mono text-[11.5px] break-all">
+                <code className="flex-1 font-mono text-[11px] leading-snug break-all">{item.path || '—'}</code>
                 {item.path ? (
                   <Button variant="secondary" onClick={() => copyText(item.path, t('adminA.storagePath'))}>
                     {t('adminA.copy')}
                   </Button>
                 ) : null}
               </dd>
-              <dt>{t('adminA.uploadedAt')}</dt>
-              <dd>{formatDate(item.created_at)}</dd>
+              <dt className="self-center font-mono text-2xs tracking-[0.08em] text-muted">{t('adminA.uploadedAt')}</dt>
+              <dd className="m-0 font-mono text-[11.5px] break-all">{formatDate(item.created_at)}</dd>
             </dl>
-            <div className={styles.detailUrl}>
-              <span>{item.links.url}</span>
+            <div className="flex items-center gap-2 rounded-sm border border-border bg-soft py-1.5 pr-1.5 pl-2.5">
+              <span className="min-w-0 flex-1 overflow-hidden font-mono text-xs-plus text-ellipsis whitespace-nowrap text-muted">
+                {item.links.url}
+              </span>
               <Button variant="secondary" onClick={() => copyText(item.links.url, t('adminA.urlLabel'))}>
                 {t('adminA.copy')}
               </Button>
             </div>
-            <p className={styles.detailHint}>{t('adminA.deleteHint')}</p>
-            <div className={styles.detailBtns}>
+            <p className="m-0 text-[11.5px] leading-[1.45] text-muted">{t('adminA.deleteHint')}</p>
+            <div className="flex flex-wrap justify-end gap-2">
               {!inTrash && (
                 <Button
                   variant="secondary"

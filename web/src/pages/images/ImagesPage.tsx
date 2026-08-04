@@ -12,7 +12,6 @@ import { BatchBar } from './BatchBar'
 import { DetailModal } from './DetailModal'
 import { ImageGrid } from './ImageGrid'
 import { Toolbar } from './Toolbar'
-import styles from './ImagesPage.module.css'
 
 function isFiltered(f: ImagesFilter): boolean {
   return f.q !== '' || f.format !== 'ALL' || f.album !== 'all' || f.visibility !== 'all'
@@ -143,14 +142,16 @@ export function ImagesPage() {
   const onOpen = useCallback((k: string) => setFocusKey(k), [])
 
   return (
-    <div className={styles.page}>
+    <div className="mx-auto max-w-[1120px] pt-11">
       <PageHeader
         kicker="LIBRARY"
         title={t('images.title')}
         extra={
-          <div className={styles.headRight}>
-            <span className={styles.stat}>{t('images.loaded', { count: items.length })}</span>
-            <Link to="/trash" className={styles.trashLink}>
+          <div className="flex items-baseline gap-4">
+            <span className="font-mono text-[11px] tracking-[0.05em] text-muted">
+              {t('images.loaded', { count: items.length })}
+            </span>
+            <Link to="/trash" className="text-xs font-semibold text-muted underline hover:text-ink">
               {t('images.trash')}
             </Link>
           </div>
@@ -168,11 +169,17 @@ export function ImagesPage() {
       />
 
       {images.isLoading ? (
-        <div className={styles.skeletonGrid}>
+        <div className="grid grid-cols-[repeat(auto-fill,minmax(170px,1fr))] gap-3.5">
           {Array.from({ length: 8 }, (_, i) => (
-            <div key={i} className={styles.skeletonCard}>
-              <div className={styles.skeletonThumb} style={{ animationDelay: `${i * 90}ms` }} />
-              <div className={styles.skeletonLine} style={{ animationDelay: `${i * 90}ms` }} />
+            <div key={i} className="overflow-hidden rounded-sm border border-border bg-surface">
+              <div
+                className="aspect-square animate-[pulse_1.4s_infinite] bg-soft"
+                style={{ animationDelay: `${i * 90}ms` }}
+              />
+              <div
+                className="mx-2.5 my-2.5 h-[9px] w-[70%] animate-[pulse_1.4s_infinite] rounded-[1px] bg-soft"
+                style={{ animationDelay: `${i * 90}ms` }}
+              />
             </div>
           ))}
         </div>
@@ -183,9 +190,9 @@ export function ImagesPage() {
           </Button>
         </EmptyState>
       ) : items.length === 0 && isFiltered(effective) ? (
-        <div className={styles.noResults}>
-          <div className={styles.noResultsKicker}>NO RESULTS</div>
-          <div className={styles.noResultsText}>{t('images.noResults')}</div>
+        <div className="animate-[fadeIn_0.2s] py-20 text-center text-muted">
+          <div className="mb-2.5 font-mono text-[11px] tracking-[0.14em]">NO RESULTS</div>
+          <div className="mb-4 text-[13px]">{t('images.noResults')}</div>
           <Button onClick={() => setFilterAndUrl(defaultFilter)}>{t('images.clearFilters')}</Button>
         </div>
       ) : items.length === 0 ? (

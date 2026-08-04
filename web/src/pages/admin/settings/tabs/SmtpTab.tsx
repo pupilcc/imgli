@@ -4,7 +4,7 @@ import { Input } from '../../../../ui/Input'
 import { Segmented } from '../../../../ui/Segmented'
 import { Toggle } from '../../../../ui/Toggle'
 import type { FormSet, FormState } from '../settingsForm'
-import styles from '../SettingsPage.module.css'
+import { s } from '../settingsUi'
 
 interface Props {
   form: FormState
@@ -19,8 +19,8 @@ interface Props {
 export function SmtpTab({ form, set, testTo, setTestTo, testMsg, testPending, onTest }: Props) {
   const { t } = useT()
   return (
-    <section className={styles.section}>
-      <h2 className={styles.h2}>{t('adminB.smtpSection')}</h2>
+    <section className={s.section}>
+      <h2 className={s.h2}>{t('adminB.smtpSection')}</h2>
       <Input
         label={t('adminB.smtpHost')}
         placeholder={t('adminB.smtpHostPlaceholder')}
@@ -43,7 +43,7 @@ export function SmtpTab({ form, set, testTo, setTestTo, testMsg, testPending, on
         label={t('adminB.smtpPassword')}
         placeholder={t('adminB.noPasswordPlaceholder')}
         value={form.smtpPassword}
-        extra={<span className={styles.hint}>{t('adminB.passwordMaskHint')}</span>}
+        extra={<span className={s.hint}>{t('adminB.passwordMaskHint')}</span>}
         onChange={(e) => set('smtpPassword', e.target.value)}
         onFocus={(e) => e.target.select()}
       />
@@ -53,8 +53,8 @@ export function SmtpTab({ form, set, testTo, setTestTo, testMsg, testPending, on
         value={form.smtpFrom}
         onChange={(e) => set('smtpFrom', e.target.value)}
       />
-      <div className={styles.field}>
-        <span className={styles.label}>{t('adminB.encryption')}</span>
+      <div className={s.field}>
+        <span className={s.label}>{t('adminB.encryption')}</span>
         <Segmented
           options={[
             { value: 'none', label: t('adminB.noEncryption') },
@@ -65,20 +65,20 @@ export function SmtpTab({ form, set, testTo, setTestTo, testMsg, testPending, on
           onChange={(v) => set('smtpEnc', v)}
         />
       </div>
-      <div className={styles.field}>
-        <div className={styles.sliderHead}>
-          <span className={styles.label}>{t('adminB.welcomeEmail')}</span>
+      <div className={s.field}>
+        <div className={s.sliderHead}>
+          <span className={s.label}>{t('adminB.welcomeEmail')}</span>
           <Toggle
             aria-label={t('adminB.welcomeEmail')}
             checked={form.welcomeEmail}
             onChange={(v) => set('welcomeEmail', v)}
           />
         </div>
-        <span className={styles.hint}>{t('adminB.welcomeEmailHint')}</span>
+        <span className={s.hint}>{t('adminB.welcomeEmailHint')}</span>
       </div>
-      <div className={styles.field}>
-        <span className={styles.label}>{t('adminB.testSend')}</span>
-        <div className={styles.testRow}>
+      <div className={s.field}>
+        <span className={s.label}>{t('adminB.testSend')}</span>
+        <div className={s.testRow}>
           <Input
             label={t('adminB.testRecipient')}
             placeholder="you@example.com"
@@ -89,7 +89,7 @@ export function SmtpTab({ form, set, testTo, setTestTo, testMsg, testPending, on
             {t('adminB.sendTestEmail')}
           </Button>
         </div>
-        {testMsg && <span className={styles.hint}>{testMsg}</span>}
+        {testMsg && <span className={s.hint}>{testMsg}</span>}
       </div>
     </section>
   )

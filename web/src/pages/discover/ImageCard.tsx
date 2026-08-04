@@ -1,7 +1,6 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router'
 import type { DiscoverRow } from '../../api/types'
-import styles from './ImageCard.module.css'
 
 interface Props {
   row: DiscoverRow
@@ -25,7 +24,7 @@ export function ImageCard({ row, onOpen }: Props) {
 
   return (
     <div
-      className={styles.card}
+      className="card cursor-pointer overflow-hidden rounded-md border border-border bg-surface transition-[transform,border-color,box-shadow] duration-150 ease-out hover:-translate-y-0.5 hover:border-muted hover:shadow-[0_4px_12px_rgba(0,0,0,0.06)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink"
       role="button"
       tabIndex={0}
       onClick={() => onOpen(row)}
@@ -36,14 +35,17 @@ export function ImageCard({ row, onOpen }: Props) {
         }
       }}
     >
-      <div className={styles.thumbBox}>
+      <div className="relative aspect-square bg-soft">
         {imgFailed ? (
-          <div className={styles.thumbPlaceholder} aria-hidden>
+          <div
+            className="flex h-full w-full items-center justify-center font-mono text-[11px] tracking-[0.08em] text-muted"
+            aria-hidden
+          >
             {row.ext?.toUpperCase() || 'IMG'}
           </div>
         ) : (
           <img
-            className={styles.thumb}
+            className="block h-full w-full object-cover"
             src={`/t/${row.key}`}
             alt={row.name}
             loading="lazy"
@@ -51,26 +53,31 @@ export function ImageCard({ row, onOpen }: Props) {
           />
         )}
       </div>
-      <div className={styles.author}>
+      <div className="border-t border-border px-2.5 py-2">
         <Link
           to={`/u/${row.author.username}`}
-          className={styles.authorLink}
+          className="group/author flex min-w-0 items-center gap-2 text-ink no-underline"
           onClick={(e) => e.stopPropagation()}
         >
           {avatarFailed ? (
-            <span className={styles.avatarFallback} aria-hidden>
+            <span
+              className="flex h-[22px] w-[22px] flex-none items-center justify-center rounded-full bg-soft text-[11px] font-semibold text-muted"
+              aria-hidden
+            >
               {initial}
             </span>
           ) : (
             <img
-              className={styles.avatar}
+              className="h-[22px] w-[22px] flex-none rounded-full bg-soft object-cover"
               src={`/avatar/${row.author.user_id}?v=${row.author.avatar_version}`}
               alt=""
               loading="lazy"
               onError={() => setAvatarFailed(true)}
             />
           )}
-          <span className={styles.name}>{displayName}</span>
+          <span className="overflow-hidden text-xs text-ellipsis whitespace-nowrap group-hover/author:underline">
+            {displayName}
+          </span>
         </Link>
       </div>
     </div>

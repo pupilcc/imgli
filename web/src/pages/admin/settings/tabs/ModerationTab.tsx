@@ -4,7 +4,7 @@ import { Input } from '../../../../ui/Input'
 import { Segmented } from '../../../../ui/Segmented'
 import { Toggle } from '../../../../ui/Toggle'
 import type { FormSet, FormState } from '../settingsForm'
-import styles from '../SettingsPage.module.css'
+import { s } from '../settingsUi'
 
 interface Props {
   form: FormState
@@ -16,13 +16,13 @@ interface Props {
 export function ModerationTab({ form, set, testPending, onTest }: Props) {
   const { t } = useT()
   return (
-    <section className={styles.section}>
-      <div className={styles.h2Row}>
-        <h2 className={styles.h2}>{t('adminB.moderation')}</h2>
+    <section className={s.section}>
+      <div className={s.h2Row}>
+        <h2 className={s.h2}>{t('adminB.moderation')}</h2>
         <Toggle checked={form.modEnabled} onChange={(v) => set('modEnabled', v)} />
       </div>
-      <div className={styles.field}>
-        <span className={styles.label}>{t('adminB.provider')}</span>
+      <div className={s.field}>
+        <span className={s.label}>{t('adminB.provider')}</span>
         <Segmented
           options={[
             { value: 'webhook', label: 'Webhook' },
@@ -48,7 +48,7 @@ export function ModerationTab({ form, set, testPending, onTest }: Props) {
           label="API Key"
           placeholder={t('adminB.noKeyPlaceholder')}
           value={form.modApiKey}
-          extra={<span className={styles.hint}>{t('adminB.secretMaskHintSettings')}</span>}
+          extra={<span className={s.hint}>{t('adminB.secretMaskHintSettings')}</span>}
           onChange={(e) => set('modApiKey', e.target.value)}
           onFocus={(e) => e.target.select()}
         />
@@ -65,7 +65,7 @@ export function ModerationTab({ form, set, testPending, onTest }: Props) {
             label="AccessKey Secret"
             placeholder={t('adminB.noKeyPlaceholder')}
             value={form.modAKSecret}
-            extra={<span className={styles.hint}>{t('adminB.secretMaskHintSettings')}</span>}
+            extra={<span className={s.hint}>{t('adminB.secretMaskHintSettings')}</span>}
             onChange={(e) => set('modAKSecret', e.target.value)}
             onFocus={(e) => e.target.select()}
           />
@@ -77,13 +77,13 @@ export function ModerationTab({ form, set, testPending, onTest }: Props) {
           />
         </>
       )}
-      <div className={styles.field}>
-        <div className={styles.sliderHead}>
-          <span className={styles.label}>{t('adminB.threshold')}</span>
-          <span className={styles.mono}>{form.modThreshold.toFixed(2)}</span>
+      <div className={s.field}>
+        <div className={s.sliderHead}>
+          <span className={s.label}>{t('adminB.threshold')}</span>
+          <span className={s.mono}>{form.modThreshold.toFixed(2)}</span>
         </div>
         <input
-          className={styles.slider}
+          className={s.slider}
           type="range"
           min={0}
           max={1}
@@ -93,8 +93,8 @@ export function ModerationTab({ form, set, testPending, onTest }: Props) {
           onChange={(e) => set('modThreshold', Number(e.target.value))}
         />
       </div>
-      <div className={styles.field}>
-        <span className={styles.label}>{t('adminB.overThresholdAction')}</span>
+      <div className={s.field}>
+        <span className={s.label}>{t('adminB.overThresholdAction')}</span>
         <Segmented
           options={[
             { value: 'pending', label: t('adminB.actionPending') },
@@ -104,13 +104,13 @@ export function ModerationTab({ form, set, testPending, onTest }: Props) {
           onChange={(v) => set('modAction', v)}
         />
       </div>
-      <div className={styles.field}>
-        <div className={styles.sliderHead}>
-          <span className={styles.label}>{t('adminB.loginSampleRate')}</span>
-          <span className={styles.mono}>{(form.loginSampleRate * 100).toFixed(0)}%</span>
+      <div className={s.field}>
+        <div className={s.sliderHead}>
+          <span className={s.label}>{t('adminB.loginSampleRate')}</span>
+          <span className={s.mono}>{(form.loginSampleRate * 100).toFixed(0)}%</span>
         </div>
         <input
-          className={styles.slider}
+          className={s.slider}
           type="range"
           min={0}
           max={1}
@@ -119,10 +119,10 @@ export function ModerationTab({ form, set, testPending, onTest }: Props) {
           aria-label={t('adminB.loginSampleRate')}
           onChange={(e) => set('loginSampleRate', Number(e.target.value))}
         />
-        <span className={styles.hint}>{t('adminB.loginSampleRateHint')}</span>
+        <span className={s.hint}>{t('adminB.loginSampleRateHint')}</span>
       </div>
-      <div className={styles.field}>
-        <span className={styles.label}>{t('adminB.onPluginError')}</span>
+      <div className={s.field}>
+        <span className={s.label}>{t('adminB.onPluginError')}</span>
         <Segmented
           options={[
             { value: 'open', label: t('adminB.onPluginErrorOpen') },
@@ -131,18 +131,18 @@ export function ModerationTab({ form, set, testPending, onTest }: Props) {
           value={form.onPluginError}
           onChange={(v) => set('onPluginError', v)}
         />
-        <span className={styles.hint}>{t('adminB.onPluginErrorHint')}</span>
+        <span className={s.hint}>{t('adminB.onPluginErrorHint')}</span>
       </div>
-      <div className={styles.row}>
-        <span className={styles.label}>{t('adminB.notifyOnReject')}</span>
+      <div className={s.row}>
+        <span className={s.label}>{t('adminB.notifyOnReject')}</span>
         <Toggle
           aria-label={t('adminB.notifyOnReject')}
           checked={form.notifyOnReject}
           onChange={(v) => set('notifyOnReject', v)}
         />
       </div>
-      <span className={styles.hint}>{t('adminB.notifyOnRejectHint')}</span>
-      <div className={styles.field}>
+      <span className={s.hint}>{t('adminB.notifyOnRejectHint')}</span>
+      <div className={s.field}>
         <Button variant="secondary" disabled={testPending} onClick={onTest}>
           {t('adminB.testModeration')}
         </Button>

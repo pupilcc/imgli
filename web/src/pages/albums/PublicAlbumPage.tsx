@@ -5,7 +5,6 @@ import { api, ApiError } from '../../api/client'
 import { useT } from '../../i18n'
 import { EmptyState } from '../../ui/EmptyState'
 import { Button } from '../../ui/Button'
-import styles from './PublicAlbumPage.module.css'
 
 type AlbumMeta = {
   id: number
@@ -53,10 +52,12 @@ export function PublicAlbumPage() {
   const notFound = meta.error instanceof ApiError && meta.error.httpStatus === 404
   const rows = imgs.data?.pages.flatMap((p) => p.items) ?? []
 
-  if (meta.isLoading) return <div className={styles.msg}>{t('discover.loading')}</div>
+  if (meta.isLoading) {
+    return <div className="flex flex-col items-center gap-4 px-4 py-12 text-center text-muted">{t('discover.loading')}</div>
+  }
   if (notFound) {
     return (
-      <div className={styles.center}>
+      <div className="flex flex-col items-center gap-4 px-4 py-12 text-center text-muted">
         <EmptyState title={t('albums.publicNotFound')} />
         <Link to="/">
           <Button variant="primary">{t('share.uploadCta')}</Button>
@@ -64,29 +65,36 @@ export function PublicAlbumPage() {
       </div>
     )
   }
-  if (meta.isError || !meta.data) return <div className={styles.msg}>{t('share.loadFailed')}</div>
+  if (meta.isError || !meta.data) {
+    return <div className="flex flex-col items-center gap-4 px-4 py-12 text-center text-muted">{t('share.loadFailed')}</div>
+  }
 
   return (
-    <div className={styles.page}>
-      <header className={styles.head}>
-        <h1 className={styles.title}>{meta.data.name}</h1>
-        <p className={styles.sub}>{t('albums.publicCount', { count: meta.data.image_count })}</p>
+    <div className="mx-auto max-w-[1100px] px-4 pt-6 pb-12">
+      <header className="mb-5">
+        <h1 className="mb-1.5 mt-0 text-[22px] font-bold">{meta.data.name}</h1>
+        <p className="m-0 text-[13px] text-muted">{t('albums.publicCount', { count: meta.data.image_count })}</p>
       </header>
       {imgs.isLoading ? (
-        <div className={styles.msg}>{t('discover.loading')}</div>
+        <div className="flex flex-col items-center gap-4 px-4 py-12 text-center text-muted">{t('discover.loading')}</div>
       ) : rows.length === 0 ? (
         <EmptyState title={t('albums.publicEmpty')} />
       ) : (
         <>
-          <div className={styles.grid}>
+          <div className="grid grid-cols-[repeat(auto-fill,minmax(140px,1fr))] gap-2.5">
             {rows.map((r) => (
-              <button key={r.key} type="button" className={styles.card} onClick={() => setActive(r)}>
-                <img src={r.thumbnail_url} alt={r.name} loading="lazy" />
+              <button
+                key={r.key}
+                type="button"
+                className="aspect-square cursor-pointer overflow-hidden rounded border border-border bg-soft p-0"
+                onClick={() => setActive(r)}
+              >
+                <img src={r.thumbnail_url} alt={r.name} loading="lazy" className="block size-full object-cover" />
               </button>
             ))}
           </div>
           {imgs.hasNextPage && (
-            <div className={styles.more}>
+            <div className="mt-5 flex justify-center">
               <Button variant="secondary" disabled={imgs.isFetchingNextPage} onClick={() => imgs.fetchNextPage()}>
                 {t('discover.loadMore')}
               </Button>
@@ -95,8 +103,17 @@ export function PublicAlbumPage() {
         </>
       )}
       {active && (
-        <div className={styles.lb} role="dialog" onClick={() => setActive(null)}>
-          <img src={active.url} alt={active.name} onClick={(e) => e.stopPropagation()} />
+        <div
+          className="fixed inset-0 z-[80] flex items-center justify-center bg-black/72 p-6"
+          role="dialog"
+          onClick={() => setActive(null)}
+        >
+          <img
+            src={active.url}
+            alt={active.name}
+            className="max-h-[90vh] max-w-[min(96vw,1100px)] rounded object-contain"
+            onClick={(e) => e.stopPropagation()}
+          />
         </div>
       )}
     </div>

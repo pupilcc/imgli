@@ -5,8 +5,6 @@ import { useT } from '../../i18n'
 import { formatBytes } from '../../lib/format'
 import { quotaLevel } from '../../ui/QuotaBar'
 import { Skeleton } from '../../ui/Skeleton'
-import styles from './SettingsPage.module.css'
-import own from './UsageTab.module.css'
 
 const levelColor = { ok: 'var(--text)', warn: 'var(--warn)', full: 'var(--err)' } as const
 
@@ -29,23 +27,28 @@ function MeterCard({
   const unlimited = total <= 0
   return (
     <section>
-      <div className={styles.kicker}>{kicker}</div>
-      <div className={styles.card}>
-        <div className={own.bigRow}>
-          <div className={own.big}>
+      <div className="mb-3 font-mono text-2xs tracking-[0.14em] text-muted">{kicker}</div>
+      <div className="flex flex-col gap-3.5 rounded-sm border border-border bg-surface p-[18px]">
+        <div className="flex items-baseline justify-between gap-3">
+          <div className="text-[22px] font-extrabold tracking-[-0.01em]">
             {formatBytes(used)}{' '}
-            <span className={own.bigSub}>
+            <span className="text-[13px] font-semibold text-muted">
               / {unlimited ? t('ui.quotaUnlimited') : formatBytes(total)}
             </span>
           </div>
-          {period ? <span className={own.period}>{period}</span> : null}
+          {period ? (
+            <span className="shrink-0 font-mono text-[11px] tracking-[0.04em] text-muted">{period}</span>
+          ) : null}
         </div>
         {!unlimited && (
-          <div className={own.track}>
-            <div className={own.fill} style={{ width: `${pct}%`, background: levelColor[level] }} />
+          <div className="my-0 flex h-2 overflow-hidden rounded-[2px] bg-soft">
+            <div
+              className="h-full transition-[width] duration-300"
+              style={{ width: `${pct}%`, background: levelColor[level] }}
+            />
           </div>
         )}
-        <p className={own.note}>{note}</p>
+        <p className="m-0 text-xs leading-relaxed text-muted">{note}</p>
       </div>
     </section>
   )
@@ -61,7 +64,7 @@ export function UsageTab() {
   const period = quota.data.bandwidth_period
 
   return (
-    <div className={own.stack}>
+    <div className="flex flex-col gap-3.5">
       <MeterCard
         kicker={t('settings.usageKicker')}
         used={used}
@@ -69,7 +72,7 @@ export function UsageTab() {
         note={
           <>
             {t('settings.usageNoteBefore')}
-            <Link to="/trash" className={own.link}>
+            <Link to="/trash" className="text-muted underline hover:text-ink">
               {t('settings.usageNoteLink')}
             </Link>
             {t('settings.usageNoteAfter')}

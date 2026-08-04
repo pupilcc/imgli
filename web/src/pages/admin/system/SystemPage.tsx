@@ -10,18 +10,28 @@ import {
   type DoctorLevel,
 } from '../../../api/adminHooks'
 import { useT } from '../../../i18n'
+import { cn } from '../../../lib/cn'
 import { useGlobal } from '../../../store'
 import { Button } from '../../../ui/Button'
 import { PageHeader } from '../../../shell/PageHeader'
 import { AdminQueryGate } from '../ui/AdminQueryGate'
-import styles from './SystemPage.module.css'
 
 const CHECKLIST_KEY = 'imgli_ops_checklist_dismissed'
 
-function levelClass(level: DoctorLevel): string {
-  if (level === 'fail') return styles.levelFail
-  if (level === 'warn') return styles.levelWarn
-  return styles.levelOk
+const sectionClass = 'mb-3.5 rounded-sm border border-border bg-surface p-[18px]'
+const sectionHeadClass = 'mb-3.5 flex flex-wrap items-baseline justify-between gap-3'
+const h2Class = 'm-0 text-sm font-bold tracking-[0.02em]'
+const hintClass = 'mb-3 mt-0 text-xs leading-snug text-muted'
+const bannerCodeClass =
+  'my-2 mb-3 block overflow-x-auto whitespace-pre-wrap rounded-[2px] border border-border bg-bg px-2.5 py-2 font-mono text-xs'
+const monoClass = 'font-mono text-xs'
+const rowClass = 'mb-2.5 flex flex-wrap items-center gap-2'
+const levelBaseClass = 'font-mono text-[11px] font-bold uppercase tracking-[0.06em]'
+
+function levelTone(level: DoctorLevel): string {
+  if (level === 'fail') return 'text-err'
+  if (level === 'warn') return 'text-warn'
+  return 'text-ok'
 }
 
 function normalizeOrigin(raw: string): string {
@@ -162,11 +172,14 @@ export function SystemPage() {
       <PageHeader kicker="SYSTEM" title={t('adminA.systemTitle')} />
 
       {showChecklist && (
-        <div className={styles.banner} role="status">
-          <div className={styles.bannerTitle}>{t('adminA.checklistTitle')}</div>
-          <div className={styles.bannerBody}>{t('adminA.checklistBody')}</div>
-          <code className={styles.bannerCode}>{suggestedEnv}</code>
-          <div className={styles.bannerActions}>
+        <div
+          className="mb-4 rounded-sm border border-warn/50 bg-warn/10 px-4 py-3.5"
+          role="status"
+        >
+          <div className="mb-1.5 font-bold">{t('adminA.checklistTitle')}</div>
+          <div className="mb-2.5 text-[13px] leading-normal text-ink">{t('adminA.checklistBody')}</div>
+          <code className={bannerCodeClass}>{suggestedEnv}</code>
+          <div className="flex flex-wrap items-center gap-2">
             <Button variant="primary" onClick={dismissChecklist}>
               {t('adminA.checklistDismiss')}
             </Button>
@@ -184,14 +197,14 @@ export function SystemPage() {
       <AdminQueryGate query={healthQ}>
         {(data) => (
           <>
-            <section className={styles.section}>
-              <div className={styles.sectionHead}>
-                <h2 className={styles.h2}>{t('adminA.runtimeTitle')}</h2>
+            <section className={sectionClass}>
+              <div className={sectionHeadClass}>
+                <h2 className={h2Class}>{t('adminA.runtimeTitle')}</h2>
                 <Button variant="secondary" disabled={healthQ.isFetching} onClick={() => healthQ.refetch()}>
                   {t('adminA.refreshHealth')}
                 </Button>
               </div>
-              <div className={styles.grid}>
+              <div className="mb-3 grid grid-cols-[repeat(auto-fill,minmax(180px,1fr))] gap-2.5">
                 {[
                   { label: t('adminA.runningVersion'), value: data.runtime.version || verQ.data?.current || '…' },
                   { label: 'IMGLI_BASE_URL', value: data.runtime.base_url },
@@ -210,34 +223,34 @@ export function SystemPage() {
                   },
                 ].map((c) => (
                   <div key={c.label}>
-                    <div className={styles.cellLabel}>{c.label}</div>
-                    <div className={styles.cellValue}>{c.value}</div>
+                    <div className="mb-1 font-mono text-2xs tracking-[0.08em] text-muted">{c.label}</div>
+                    <div className="break-all text-[13px] font-semibold">{c.value}</div>
                   </div>
                 ))}
               </div>
               {originMismatch ? (
-                <div className={styles.mismatch}>
+                <div className="mb-3 rounded-sm border border-err/50 bg-err/10 px-3.5 py-3 text-[13px] leading-normal">
                   {t('adminA.originMismatch', { browser: browserNorm, base: baseNorm })}
                 </div>
               ) : (
-                <div className={styles.okNote}>{t('adminA.originMatch', { origin: browserNorm || baseNorm })}</div>
+                <div className="mb-3 text-[13px] text-muted">{t('adminA.originMatch', { origin: browserNorm || baseNorm })}</div>
               )}
               {data.runtime.install === 'docker' && (
-                <p className={styles.hint}>{t('adminA.dockerUpgradeHint')}</p>
+                <p className={hintClass}>{t('adminA.dockerUpgradeHint')}</p>
               )}
             </section>
 
-            <section className={styles.section}>
-              <div className={styles.sectionHead}>
-                <h2 className={styles.h2}>{t('adminA.doctorTitle')}</h2>
+            <section className={sectionClass}>
+              <div className={sectionHeadClass}>
+                <h2 className={h2Class}>{t('adminA.doctorTitle')}</h2>
                 {data.doctor.hard_fail ? (
-                  <span className={`${styles.level} ${styles.levelFail}`}>FAIL</span>
+                  <span className={cn(levelBaseClass, 'text-err')}>FAIL</span>
                 ) : (
-                  <span className={`${styles.level} ${styles.levelOk}`}>OK</span>
+                  <span className={cn(levelBaseClass, 'text-ok')}>OK</span>
                 )}
               </div>
-              <p className={styles.hint}>{t('adminA.doctorHint')}</p>
-              <table className={styles.table}>
+              <p className={hintClass}>{t('adminA.doctorHint')}</p>
+              <table className="w-full border-collapse text-[13px] [&_th]:border-b [&_th]:border-border [&_th]:px-1.5 [&_th]:py-2 [&_th]:text-left [&_th]:align-top [&_th]:font-mono [&_th]:text-2xs [&_th]:font-semibold [&_th]:tracking-[0.08em] [&_th]:text-muted [&_td]:border-b [&_td]:border-border [&_td]:px-1.5 [&_td]:py-2 [&_td]:text-left [&_td]:align-top">
                 <thead>
                   <tr>
                     <th>{t('adminA.doctorCheck')}</th>
@@ -248,9 +261,9 @@ export function SystemPage() {
                 <tbody>
                   {data.doctor.checks.map((c) => (
                     <tr key={c.name + c.message}>
-                      <td className={styles.mono}>{c.name}</td>
+                      <td className={monoClass}>{c.name}</td>
                       <td>
-                        <span className={`${styles.level} ${levelClass(c.level)}`}>{c.level}</span>
+                        <span className={cn(levelBaseClass, levelTone(c.level))}>{c.level}</span>
                       </td>
                       <td>{c.message}</td>
                     </tr>
@@ -262,11 +275,11 @@ export function SystemPage() {
         )}
       </AdminQueryGate>
 
-      <section className={styles.section}>
-        <h2 className={styles.h2}>{t('adminA.upgradeSection')}</h2>
-        <p className={styles.hint}>{t('adminA.upgradeSectionHint')}</p>
-        <div className={styles.row}>
-          <code className={styles.mono}>{verQ.data?.current ?? healthQ.data?.runtime.version ?? '…'}</code>
+      <section className={sectionClass}>
+        <h2 className={h2Class}>{t('adminA.upgradeSection')}</h2>
+        <p className={hintClass}>{t('adminA.upgradeSectionHint')}</p>
+        <div className={rowClass}>
+          <code className={monoClass}>{verQ.data?.current ?? healthQ.data?.runtime.version ?? '…'}</code>
           <Button variant="secondary" disabled={checkUpdate.isPending} onClick={onCheckUpdate}>
             {t('adminA.checkUpdate')}
           </Button>
@@ -277,15 +290,15 @@ export function SystemPage() {
           )}
         </div>
         {runtime?.install === 'docker' && (
-          <code className={styles.bannerCode}>{t('adminA.dockerRedeploySnippet')}</code>
+          <code className={bannerCodeClass}>{t('adminA.dockerRedeploySnippet')}</code>
         )}
-        {updateMsg && <div className={styles.msg}>{updateMsg}</div>}
+        {updateMsg && <div className="text-[13px] text-muted">{updateMsg}</div>}
       </section>
 
-      <section className={styles.section}>
-        <h2 className={styles.h2}>{t('adminA.cleanupSection')}</h2>
-        <p className={styles.hint}>{t('adminA.cleanupHint')}</p>
-        <div className={styles.row}>
+      <section className={sectionClass}>
+        <h2 className={h2Class}>{t('adminA.cleanupSection')}</h2>
+        <p className={hintClass}>{t('adminA.cleanupHint')}</p>
+        <div className={rowClass}>
           <Button variant="secondary" disabled={previewCleanup.isPending} onClick={onPreviewCleanup}>
             {t('adminA.cleanupPreview')}
           </Button>
@@ -293,19 +306,19 @@ export function SystemPage() {
             {t('adminA.cleanupRun')}
           </Button>
         </div>
-        {cleanupMsg && <div className={styles.msg}>{cleanupMsg}</div>}
+        {cleanupMsg && <div className="text-[13px] text-muted">{cleanupMsg}</div>}
       </section>
 
-      <section className={styles.section}>
-        <h2 className={styles.h2}>{t('adminA.opsLinksTitle')}</h2>
-        <div className={styles.linkRow}>
+      <section className={sectionClass}>
+        <h2 className={h2Class}>{t('adminA.opsLinksTitle')}</h2>
+        <div className="mt-2 flex flex-wrap gap-3 text-[13px] [&_a]:text-ok">
           <Link to="/admin/policies">{t('adminA.linkPoliciesMigrate')}</Link>
           <Link to="/admin/logs">{t('nav.logs')}</Link>
           <a href="https://github.com/yixian-huang/imgli/blob/main/docs/backup.md" target="_blank" rel="noreferrer">
             {t('adminA.linkBackupDocs')}
           </a>
         </div>
-        <p className={styles.hint}>{t('adminA.backupHint')}</p>
+        <p className={cn(hintClass, 'mt-3')}>{t('adminA.backupHint')}</p>
       </section>
     </div>
   )

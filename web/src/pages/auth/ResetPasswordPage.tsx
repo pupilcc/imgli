@@ -8,7 +8,6 @@ import { STRONG_RE } from '../../lib/password'
 import { Button } from '../../ui/Button'
 import { Input } from '../../ui/Input'
 import { AuthShell } from './AuthShell'
-import styles from './AuthPage.module.css'
 
 export function ResetPasswordPage() {
   const { t } = useT()
@@ -42,12 +41,12 @@ export function ResetPasswordPage() {
 
   return (
     <AuthShell>
-      <div className={styles.kicker}>{t('auth.newPasswordKicker')}</div>
-      <h1 className={styles.heading}>{t('auth.setNewPassword')}</h1>
+      <div className="mb-2.5 font-mono text-[11px] tracking-[0.14em] text-muted">{t('auth.newPasswordKicker')}</div>
+      <h1 className="mb-6 mt-0 text-2xl font-bold tracking-[-0.015em]">{t('auth.setNewPassword')}</h1>
       {done ? (
-        <p className={styles.flowText}>{t('auth.passwordResetDone')}</p>
+        <p className="mt-2 mb-0 text-[13.5px] leading-[1.8] text-muted">{t('auth.passwordResetDone')}</p>
       ) : (
-        <form className={styles.fields} onSubmit={submit} noValidate>
+        <form className="flex flex-col gap-3.5" onSubmit={submit} noValidate>
           <Input
             label={t('auth.newPassword')}
             type="password"
@@ -62,13 +61,15 @@ export function ResetPasswordPage() {
             value={pwd2}
             onChange={(e) => setPwd2(e.target.value)}
           />
-          {error && <div className={styles.error}>{error}</div>}
-          <Button variant="primary" type="submit" className={styles.submit} disabled={reset.isPending}>
+          {error && <div className="animate-[fadeIn_0.15s] text-xs text-err">{error}</div>}
+          <Button variant="primary" type="submit" className="mt-1 py-3 text-[13.5px]" disabled={reset.isPending}>
             {t('auth.resetPassword')}
           </Button>
         </form>
       )}
-      <Link to="/login" className={styles.flowLink}>{t('auth.backToLogin')}</Link>
+      <Link to="/login" className="mt-[22px] inline-block text-sm-plus text-muted hover:text-ink">
+        {t('auth.backToLogin')}
+      </Link>
     </AuthShell>
   )
 }

@@ -11,6 +11,7 @@ import {
 import { Link } from 'react-router'
 import type { AdminPolicy, StorageCaps } from '../../../api/types'
 import { useT } from '../../../i18n'
+import { cn } from '../../../lib/cn'
 import { formatBytes } from '../../../lib/format'
 import { useGlobal } from '../../../store'
 import { PageHeader } from '../../../shell/PageHeader'
@@ -20,9 +21,8 @@ import { InlineConfirm } from '../../../ui/InlineConfirm'
 import { Input } from '../../../ui/Input'
 import { Segmented } from '../../../ui/Segmented'
 import { Toggle } from '../../../ui/Toggle'
+import { AdminField, AdminSelect } from '../ui/adminChrome'
 import { AdminQueryGate } from '../ui/AdminQueryGate'
-import forms from '../ui/adminForms.module.css'
-import styles from './PoliciesPage.module.css'
 
 type DriverKind = 'local' | 's3' | 'webdav' | 'ftp'
 
@@ -77,6 +77,14 @@ const NEW_FORM: FormState = {
   tpl: '{Y}/{m}/{d}/{uniqid}.{ext}',
   enabled: true,
 }
+
+const hintClass = 'text-xs leading-snug text-muted'
+const labelClass = 'text-[13px] text-muted'
+const tierBadgeClass =
+  'rounded bg-[color-mix(in_srgb,var(--warn)_25%,var(--soft))] px-1.5 py-px text-[11px] font-medium text-ink'
+const ackRowClass = 'flex items-start gap-2.5 text-[13px] leading-snug'
+const warnInlineClass = 'm-0 text-xs leading-snug text-err'
+const toggleRowClass = 'flex items-center gap-3'
 
 function formOf(p: AdminPolicy): FormState {
   let root = ''
@@ -273,13 +281,19 @@ function PolicyCapsPanel({
   const summary = t(caps.summary_key)
   const losses = caps.feature_loss_keys ?? []
   return (
-    <div className={styles.capsPanel} data-tier={caps.tier}>
-      <div className={styles.capsTitle}>
+    <div
+      className={cn(
+        'flex flex-col gap-2 rounded-lg border border-border bg-soft px-3.5 py-3',
+        caps.tier === 'compat' && 'border-err/45',
+      )}
+      data-tier={caps.tier}
+    >
+      <div className="flex items-center gap-2 text-[13px] font-semibold">
         {t('adminB.capsTitle')}
-        <span className={styles.tierBadge}>{tierLabel(t, caps.tier)}</span>
+        <span className={tierBadgeClass}>{tierLabel(t, caps.tier)}</span>
       </div>
-      <p className={styles.capsSummary}>{summary}</p>
-      <ul className={styles.capsList}>
+      <p className="m-0 text-[13px] leading-snug text-muted">{summary}</p>
+      <ul className="m-0 pl-[1.1em] text-xs text-ink">
         <li>
           {t('adminB.capsPublicCdn')}: {yn(caps.public_cdn_offload_recommended)}
         </li>
@@ -294,8 +308,8 @@ function PolicyCapsPanel({
         </li>
       </ul>
       {losses.length > 0 && (
-        <div className={styles.limitations}>
-          <div className={forms.label}>{t('adminB.capsLimitations')}</div>
+        <div className="[&_ul]:m-1 [&_ul]:mt-1 [&_ul]:pl-[1.1em] [&_ul]:text-xs [&_ul]:text-muted">
+          <div className={labelClass}>{t('adminB.capsLimitations')}</div>
           <ul>
             {losses.map((k) => (
               <li key={k}>{t(k)}</li>
@@ -304,7 +318,7 @@ function PolicyCapsPanel({
         </div>
       )}
       {warnings && warnings.length > 0 && (
-        <ul className={styles.warnList}>
+        <ul className="m-0 pl-[1.1em] text-xs text-err">
           {warnings.map((w) => (
             <li key={w.code} data-severity={w.severity}>
               {t(w.message_key)}
@@ -448,14 +462,13 @@ export function PoliciesPage() {
       <AdminQueryGate query={policiesQ}>
         {() => (
           <>
-          <div className={styles.migratePanel}>
-            <div className={styles.migrateTitle}>{t('adminB.migrateTitle')}</div>
-            <p className={forms.hint}>{t('adminB.migrateDesc')}</p>
-            <div className={styles.migrateRow}>
-              <label className={forms.field}>
-                <span className={forms.label}>{t('adminB.migrateFrom')}</span>
-                <select
-                  className={styles.migrateSelect}
+          <div className="mb-5 rounded-[10px] border border-border bg-soft px-[1.1rem] py-4">
+            <div className="mb-1.5 font-semibold">{t('adminB.migrateTitle')}</div>
+            <p className={hintClass}>{t('adminB.migrateDesc')}</p>
+            <div className="my-3 grid grid-cols-[repeat(auto-fit,minmax(12rem,1fr))] gap-3">
+              <AdminField label={t('adminB.migrateFrom')}>
+                <AdminSelect
+                  className="h-auto w-full py-[0.45rem]"
                   value={migFrom === '' ? '' : String(migFrom)}
                   onChange={(e) => setMigFrom(e.target.value ? Number(e.target.value) : '')}
                 >
@@ -465,12 +478,11 @@ export function PoliciesPage() {
                       {o.label}
                     </option>
                   ))}
-                </select>
-              </label>
-              <label className={forms.field}>
-                <span className={forms.label}>{t('adminB.migrateTo')}</span>
-                <select
-                  className={styles.migrateSelect}
+                </AdminSelect>
+              </AdminField>
+              <AdminField label={t('adminB.migrateTo')}>
+                <AdminSelect
+                  className="h-auto w-full py-[0.45rem]"
                   value={migTo === '' ? '' : String(migTo)}
                   onChange={(e) => setMigTo(e.target.value ? Number(e.target.value) : '')}
                 >
@@ -480,22 +492,28 @@ export function PoliciesPage() {
                       {o.label}
                     </option>
                   ))}
-                </select>
-              </label>
+                </AdminSelect>
+              </AdminField>
               <Input
                 label={t('adminB.migrateLimit')}
                 value={migLimit}
                 onChange={(e) => setMigLimit(e.target.value)}
               />
             </div>
-            <div className={styles.migrateToggles}>
-              <label className={styles.ackRow}>
-                <input type="checkbox" checked={migDry} onChange={(e) => setMigDry(e.target.checked)} />
-                <span>{t('adminB.migrateDryRun')}</span>
-              </label>
-              <label className={styles.ackRow}>
+            <div className="flex flex-wrap items-center gap-x-5 gap-y-3.5">
+              <label className={ackRowClass}>
                 <input
                   type="checkbox"
+                  className="mt-[3px]"
+                  checked={migDry}
+                  onChange={(e) => setMigDry(e.target.checked)}
+                />
+                <span>{t('adminB.migrateDryRun')}</span>
+              </label>
+              <label className={ackRowClass}>
+                <input
+                  type="checkbox"
+                  className="mt-[3px]"
                   checked={migDel}
                   disabled={migDry}
                   onChange={(e) => setMigDel(e.target.checked)}
@@ -507,7 +525,7 @@ export function PoliciesPage() {
               </Button>
             </div>
             {migJobQ.data && (
-              <div className={styles.migrateStatus}>
+              <div className="mt-3 text-[0.9rem] opacity-90">
                 <div>{t('adminB.migrateStatus', { status: migJobQ.data.status })}</div>
                 <div>
                   {t('adminB.migrateProgress', {
@@ -517,38 +535,43 @@ export function PoliciesPage() {
                     failed: migJobQ.data.progress.failed,
                   })}
                 </div>
-                {migJobQ.data.error && <p className={styles.warnInline}>{migJobQ.data.error}</p>}
+                {migJobQ.data.error && <p className={warnInlineClass}>{migJobQ.data.error}</p>}
               </div>
             )}
           </div>
-          <div className={styles.split}>
-            <div className={styles.list}>
+          <div className="mt-2 grid grid-cols-1 gap-5 md:grid-cols-[260px_1fr]">
+            <div className="flex flex-col gap-1">
               {policies.map((p) => (
                 <button
                   key={p.id}
                   type="button"
-                  className={[styles.row, sel === p.id && styles.rowActive].filter(Boolean).join(' ')}
+                  className={cn(
+                    'flex cursor-pointer items-center gap-2 rounded-lg border border-border bg-surface px-3 py-2.5 text-left',
+                    sel === p.id && 'border-ink',
+                  )}
                   onClick={() => selectPolicy(p)}
                 >
-                  <span className={styles.rowName}>{p.name}</span>
-                  {p.tier === 'compat' && <span className={styles.tierBadge}>{t('adminB.tierCompat')}</span>}
-                  {!p.enabled && <span className={styles.off}>{t('adminB.disabled')}</span>}
-                  <span className={styles.rowCount}>
+                  <span className="font-semibold">{p.name}</span>
+                  {p.tier === 'compat' && <span className={tierBadgeClass}>{t('adminB.tierCompat')}</span>}
+                  {!p.enabled && (
+                    <span className="rounded bg-soft px-1.5 py-px text-[11px] text-err">{t('adminB.disabled')}</span>
+                  )}
+                  <span className="ml-auto text-xs text-muted">
                     {t('adminB.fileCount', { count: p.file_count })}
                     {p.used_bytes > 0 ? ` · ${formatBytes(p.used_bytes)}` : ''}
                   </span>
                 </button>
               ))}
             </div>
-            <div className={styles.detail}>
+            <div className="rounded-[10px] border border-border bg-surface p-5">
               {sel === null ? (
                 <EmptyState title={t('adminB.selectOrCreatePolicy')} desc={t('adminB.selectOrCreatePolicyDesc')} />
               ) : (
-                <div className={styles.form}>
+                <div className="flex flex-col gap-3.5">
                   {typeof sel === 'number' && (
-                    <div className={forms.field}>
-                      <span className={forms.hint}>{t('adminB.policyStatsHint')}</span>
-                      <span className={forms.hint}>
+                    <AdminField>
+                      <span className={hintClass}>{t('adminB.policyStatsHint')}</span>
+                      <span className={hintClass}>
                         {t('adminB.fileCount', { count: policies.find((x) => x.id === sel)?.file_count ?? 0 })}
                         {' · '}
                         {formatBytes(policies.find((x) => x.id === sel)?.used_bytes ?? 0)}
@@ -558,14 +581,13 @@ export function PoliciesPage() {
                           trash: policies.find((x) => x.id === sel)?.trash_image_count ?? 0,
                         })}
                       </span>
-                      <Link className={forms.hint} to={`/admin/images?policy=${sel}`}>
+                      <Link className={hintClass} to={`/admin/images?policy=${sel}`}>
                         {t('adminB.viewPolicyImages')}
                       </Link>
-                    </div>
+                    </AdminField>
                   )}
                   <Input label={t('adminB.name')} value={form.name} onChange={(e) => set('name', e.target.value)} />
-                  <div className={forms.field}>
-                    <span className={forms.label}>{t('adminB.driver')}</span>
+                  <AdminField label={t('adminB.driver')}>
                     {sel === 'new' ? (
                       <Segmented<DriverKind>
                         options={[
@@ -581,11 +603,11 @@ export function PoliciesPage() {
                         }}
                       />
                     ) : (
-                      <div className={styles.driver}>{driverLabel}</div>
+                      <div className="rounded-lg border border-border bg-soft px-3 py-2.5 text-muted">{driverLabel}</div>
                     )}
-                  </div>
+                  </AdminField>
                   <PolicyCapsPanel caps={caps} warnings={warnings} />
-                  {form.driver === 'ftp' && <p className={forms.hint}>{t('storage.help.ftpPreferProxy')}</p>}
+                  {form.driver === 'ftp' && <p className={hintClass}>{t('storage.help.ftpPreferProxy')}</p>}
                   {form.driver === 'local' ? (
                     <Input
                       label={t('adminB.storagePath')}
@@ -610,7 +632,7 @@ export function PoliciesPage() {
                       <Input
                         label={t('adminB.password')}
                         value={form.davPassword}
-                        extra={<span className={forms.hint}>{t('adminB.secretMaskHint')}</span>}
+                        extra={<span className={hintClass}>{t('adminB.secretMaskHint')}</span>}
                         onChange={(e) => set('davPassword', e.target.value)}
                         onFocus={(e) => e.target.select()}
                       />
@@ -632,7 +654,7 @@ export function PoliciesPage() {
                       <Input
                         label={t('adminB.password')}
                         value={form.ftpPassword}
-                        extra={<span className={forms.hint}>{t('adminB.secretMaskHint')}</span>}
+                        extra={<span className={hintClass}>{t('adminB.secretMaskHint')}</span>}
                         onChange={(e) => set('ftpPassword', e.target.value)}
                         onFocus={(e) => e.target.select()}
                       />
@@ -642,11 +664,11 @@ export function PoliciesPage() {
                         placeholder="imgli"
                         onChange={(e) => set('ftpPrefix', e.target.value)}
                       />
-                      <div className={styles.toggleRow}>
-                        <span className={forms.label}>{t('adminB.ftpAllowInsecure')}</span>
+                      <div className={toggleRowClass}>
+                        <span className={labelClass}>{t('adminB.ftpAllowInsecure')}</span>
                         <Toggle checked={form.ftpAllowInsecure} onChange={(v) => set('ftpAllowInsecure', v)} />
                       </div>
-                      <span className={forms.hint}>{t('adminB.ftpAllowInsecureHint')}</span>
+                      <span className={hintClass}>{t('adminB.ftpAllowInsecureHint')}</span>
                     </>
                   ) : (
                     <>
@@ -667,12 +689,11 @@ export function PoliciesPage() {
                       <Input
                         label="AccessKey Secret"
                         value={form.s3Secret}
-                        extra={<span className={forms.hint}>{t('adminB.secretMaskHint')}</span>}
+                        extra={<span className={hintClass}>{t('adminB.secretMaskHint')}</span>}
                         onChange={(e) => set('s3Secret', e.target.value)}
                         onFocus={(e) => e.target.select()}
                       />
-                      <div className={forms.field}>
-                        <span className={forms.label}>{t('adminB.pathStyle')}</span>
+                      <AdminField label={t('adminB.pathStyle')}>
                         <Segmented<'true' | 'false'>
                           options={[
                             { value: 'false', label: t('adminB.pathStyleVirtual') },
@@ -681,7 +702,7 @@ export function PoliciesPage() {
                           value={form.s3PathStyle}
                           onChange={(v) => set('s3PathStyle', v)}
                         />
-                      </div>
+                      </AdminField>
                       <Input
                         label={t('adminB.prefix')}
                         value={form.s3Prefix}
@@ -692,7 +713,7 @@ export function PoliciesPage() {
                         label={t('adminB.presignDomain')}
                         value={form.s3PresignDomain}
                         placeholder="https://s3.img.li"
-                        extra={<span className={forms.hint}>{t('adminB.presignDomainHint')}</span>}
+                        extra={<span className={hintClass}>{t('adminB.presignDomainHint')}</span>}
                         onChange={(e) => set('s3PresignDomain', e.target.value)}
                       />
                     </>
@@ -704,23 +725,28 @@ export function PoliciesPage() {
                     onChange={(e) => set('cdn', e.target.value)}
                   />
                   {!caps.public_cdn_offload_recommended && form.cdn.trim() && (
-                    <p className={styles.warnInline}>{t('adminB.warnCdnWithoutCap')}</p>
+                    <p className={warnInlineClass}>{t('adminB.warnCdnWithoutCap')}</p>
                   )}
                   <Input label={t('adminB.pathTemplate')} value={form.tpl} onChange={(e) => set('tpl', e.target.value)} />
-                  <div className={styles.toggleRow}>
-                    <span className={forms.label}>{t('adminB.enabled')}</span>
+                  <div className={toggleRowClass}>
+                    <span className={labelClass}>{t('adminB.enabled')}</span>
                     <Toggle checked={form.enabled} onChange={(v) => set('enabled', v)} />
                   </div>
                   {needsCompatAck && (
-                    <label className={styles.ackRow}>
-                      <input type="checkbox" checked={compatAck} onChange={(e) => setCompatAck(e.target.checked)} />
+                    <label className={ackRowClass}>
+                      <input
+                        type="checkbox"
+                        className="mt-[3px]"
+                        checked={compatAck}
+                        onChange={(e) => setCompatAck(e.target.checked)}
+                      />
                       <span>
                         <strong>{t('adminB.confirmCompatEnableTitle')}</strong> — {t('adminB.confirmCompatEnableBody')} (
                         {t('adminB.confirmCompatEnableAck')})
                       </span>
                     </label>
                   )}
-                  <div className={styles.actions}>
+                  <div className="mt-1 flex items-center gap-2.5">
                     <Button
                       variant="primary"
                       disabled={
@@ -744,7 +770,7 @@ export function PoliciesPage() {
                         />
                       </>
                     )}
-                    {testMsg && <span className={styles.testOk}>{testMsg}</span>}
+                    {testMsg && <span className="text-[13px] text-ok">{testMsg}</span>}
                   </div>
                 </div>
               )}

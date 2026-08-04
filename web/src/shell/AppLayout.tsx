@@ -4,7 +4,6 @@ import { QuotaAlertBar } from '../ui/QuotaAlertBar'
 import { SiteFooter } from '../ui/SiteSlots'
 import { Nav } from './Nav'
 import { TabBar } from './TabBar'
-import styles from './AppLayout.module.css'
 
 export function AppLayout() {
   const { data: user } = useSession()
@@ -12,16 +11,12 @@ export function AppLayout() {
   const quota = useQuota()
   if (!user) return null
   return (
-    <div className={styles.shell}>
+    <div className="flex min-h-dvh flex-col">
       <Nav user={user} />
       {quota.data && (
-        <QuotaAlertBar
-          used={quota.data.used}
-          total={quota.data.total}
-          upgradeUrl={config?.upgrade_url}
-        />
+        <QuotaAlertBar used={quota.data.used} total={quota.data.total} upgradeUrl={config?.upgrade_url} />
       )}
-      <main className={styles.main}>
+      <main className="box-border w-full flex-[1_0_auto] px-6 pb-12 max-md:pb-[100px]">
         <Outlet />
       </main>
       <SiteFooter

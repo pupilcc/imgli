@@ -3,11 +3,14 @@ import { ApiError } from '../../api/client'
 import { usePlaza } from '../../api/hooks'
 import type { DiscoverRow } from '../../api/types'
 import { useT } from '../../i18n'
+import { cn } from '../../lib/cn'
 import { EmptyState } from '../../ui/EmptyState'
 import { Segmented } from '../../ui/Segmented'
 import { ImageCard } from './ImageCard'
 import { Lightbox } from './Lightbox'
-import styles from './ExplorePage.module.css'
+
+const moreBtn =
+  'h-8 cursor-pointer rounded-sm border border-border bg-surface px-[18px] text-sm-plus font-semibold text-ink hover:enabled:bg-soft disabled:cursor-default disabled:opacity-55'
 
 /** 广场公开流：排序 + 网格 + 灯箱。 */
 export function ExplorePage() {
@@ -25,32 +28,32 @@ export function ExplorePage() {
   ]
 
   return (
-    <div className={styles.page}>
-      <div className={styles.head}>
-        <h1 className={styles.title}>{t('discover.title')}</h1>
+    <div className="flex flex-col gap-5">
+      <div className="flex flex-wrap items-center justify-between gap-4">
+        <h1 className="m-0 text-lg font-bold tracking-[0.02em]">{t('discover.title')}</h1>
         {!closed && (
           <Segmented<'new' | 'hot'> options={sortOptions} value={sort} onChange={setSort} />
         )}
       </div>
 
       {closed ? (
-        <div className={styles.centerMsg}>{t('discover.plazaClosed')}</div>
+        <div className="px-4 py-20 text-center text-[13px] text-muted">{t('discover.plazaClosed')}</div>
       ) : q.isLoading ? (
-        <div className={styles.centerMsg}>{t('discover.loading')}</div>
+        <div className="px-4 py-20 text-center text-[13px] text-muted">{t('discover.loading')}</div>
       ) : rows.length === 0 ? (
         <EmptyState title={t('discover.emptyPublic')} />
       ) : (
         <>
-          <div className={styles.grid}>
+          <div className="grid grid-cols-[repeat(auto-fill,minmax(160px,1fr))] gap-3.5">
             {rows.map((r) => (
               <ImageCard key={r.key} row={r} onOpen={setActive} />
             ))}
           </div>
           {q.hasNextPage && (
-            <div className={styles.moreWrap}>
+            <div className="flex justify-center py-2 pb-4">
               <button
                 type="button"
-                className={styles.moreBtn}
+                className={cn(moreBtn)}
                 disabled={q.isFetchingNextPage}
                 onClick={() => q.fetchNextPage()}
               >

@@ -9,7 +9,6 @@ import { EmptyState } from '../../../ui/EmptyState'
 import { Tag } from '../../../ui/Tag'
 import { AdminQueryGate } from '../ui/AdminQueryGate'
 import { Pager } from '../ui/Pager'
-import styles from './ReviewPage.module.css'
 
 function nsfwVariant(score: number | null): 'ok' | 'warn' | 'err' | 'muted' {
   if (score == null) return 'muted'
@@ -39,7 +38,7 @@ export function ReviewPage() {
         title={t('adminA.reviewTitle')}
         extra={
           pageKeys.length > 0 ? (
-            <div className={styles.headerActs}>
+            <div className="flex flex-wrap items-center gap-2">
               <Button
                 variant="primary"
                 disabled={busy}
@@ -91,56 +90,66 @@ export function ReviewPage() {
           return items.length === 0 ? (
             data.total > 0 ? (
               <EmptyState badge="✓" title={t('adminA.pageCleared')} desc={t('adminA.pageClearedReviewDesc')}>
-                <Button variant="secondary" onClick={() => setPage(1)}>{t('adminA.backToPage1')}</Button>
+                <Button variant="secondary" onClick={() => setPage(1)}>
+                  {t('adminA.backToPage1')}
+                </Button>
               </EmptyState>
             ) : (
               <EmptyState badge="✓" title="ALL CLEAR" desc={t('adminA.allClearDesc')} />
             )
           ) : (
-        <>
-          <div className={styles.stream}>
-            {items.map((it) => (
-              <div key={it.key} className={styles.card}>
-                <img className={styles.img} src={it.links.thumbnail_url} alt={it.name} loading="lazy" />
-                <div className={styles.info}>
-                  <div className={styles.name}>{it.name}</div>
-                  <div className={styles.sub}>
-                    {it.username}（#{it.user_id}） · {formatBytes(it.size)}
-                  </div>
-                  <div className={styles.tagRow}>
-                    <Tag variant={nsfwVariant(it.nsfw_score)}>
-                      NSFW {it.nsfw_score == null ? '—' : it.nsfw_score.toFixed(2)}
-                    </Tag>
-                  </div>
-                  {it.triggers && it.triggers.length > 0 ? (
-                    <div className={styles.triggers} title={t('adminA.triggerReasons')}>
-                      {it.triggers.map((tr, i) => {
-                        const bits = [tr.plugin, tr.severity]
-                        if (tr.score != null) bits.push(tr.score.toFixed(2))
-                        if (tr.hits?.length) bits.push(tr.hits.join(','))
-                        return (
-                          <span key={`${tr.plugin}-${i}`} className={styles.triggerChip}>
-                            {bits.join(' · ')}
-                          </span>
-                        )
-                      })}
+            <>
+              <div className="mt-2 grid grid-cols-[repeat(auto-fill,minmax(320px,1fr))] gap-4">
+                {items.map((it) => (
+                  <div key={it.key} className="flex gap-3.5 rounded-sm border border-border bg-surface p-3">
+                    <img
+                      className="h-[140px] w-[140px] flex-none rounded-sm bg-soft object-cover"
+                      src={it.links.thumbnail_url}
+                      alt={it.name}
+                      loading="lazy"
+                    />
+                    <div className="flex min-w-0 flex-col gap-1.5">
+                      <div className="overflow-hidden text-ellipsis whitespace-nowrap font-semibold">{it.name}</div>
+                      <div className="text-[13px] text-muted">
+                        {it.username}（#{it.user_id}） · {formatBytes(it.size)}
+                      </div>
+                      <div className="my-0.5">
+                        <Tag variant={nsfwVariant(it.nsfw_score)}>
+                          NSFW {it.nsfw_score == null ? '—' : it.nsfw_score.toFixed(2)}
+                        </Tag>
+                      </div>
+                      {it.triggers && it.triggers.length > 0 ? (
+                        <div className="flex flex-wrap gap-1.5 text-xs text-muted" title={t('adminA.triggerReasons')}>
+                          {it.triggers.map((tr, i) => {
+                            const bits = [tr.plugin, tr.severity]
+                            if (tr.score != null) bits.push(tr.score.toFixed(2))
+                            if (tr.hits?.length) bits.push(tr.hits.join(','))
+                            return (
+                              <span
+                                key={`${tr.plugin}-${i}`}
+                                className="max-w-full overflow-hidden text-ellipsis whitespace-nowrap rounded-sm border border-border bg-soft px-1.5 py-0.5 font-mono"
+                              >
+                                {bits.join(' · ')}
+                              </span>
+                            )
+                          })}
+                        </div>
+                      ) : null}
+                      <div className="mt-auto flex gap-2">
+                        <Button variant="primary" disabled={busy} onClick={() => decide.mutate({ key: it.key, action: 'approve' })}>
+                          {t('adminA.approve')}
+                        </Button>
+                        <Button variant="danger" disabled={busy} onClick={() => decide.mutate({ key: it.key, action: 'reject' })}>
+                          {t('adminA.reject')}
+                        </Button>
+                      </div>
                     </div>
-                  ) : null}
-                  <div className={styles.acts}>
-                    <Button variant="primary" disabled={busy} onClick={() => decide.mutate({ key: it.key, action: 'approve' })}>
-                      {t('adminA.approve')}
-                    </Button>
-                    <Button variant="danger" disabled={busy} onClick={() => decide.mutate({ key: it.key, action: 'reject' })}>
-                      {t('adminA.reject')}
-                    </Button>
                   </div>
-                </div>
+                ))}
               </div>
-            ))}
-          </div>
-          <p className={styles.stat}>{t('adminA.pendingTotal', { total: data.total })}</p>
-          <Pager page={page} limit={data.limit} total={data.total} onPage={setPage} />
-        </>
+              <p className="mt-4 mb-2 text-[13px] text-muted">{t('adminA.pendingTotal', { total: data.total })}</p>
+              <Pager page={page} limit={data.limit} total={data.total} onPage={setPage} />
+            </>
           )
         }}
       </AdminQueryGate>
