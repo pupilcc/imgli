@@ -81,6 +81,8 @@ export interface UploadResult {
   name: string
   size: number
   instant: boolean
+  /** Same-user live image reuse (no new library row / quota). */
+  reused?: boolean
   links: Links
   /** RFC3339 or null */
   expires_at?: string | null
@@ -386,6 +388,8 @@ export interface AdminPolicy {
   created_at: string
   file_count: number
   used_bytes: number
+  live_image_count?: number
+  trash_image_count?: number
   tier?: string
   caps?: StorageCaps
   effective?: StorageEffective

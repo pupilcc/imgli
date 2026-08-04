@@ -8,8 +8,10 @@ import {
   useTestPolicy,
   useUpdatePolicy,
 } from '../../../api/adminHooks'
+import { Link } from 'react-router'
 import type { AdminPolicy, StorageCaps } from '../../../api/types'
 import { useT } from '../../../i18n'
+import { formatBytes } from '../../../lib/format'
 import { useGlobal } from '../../../store'
 import { PageHeader } from '../../../shell/PageHeader'
 import { Button } from '../../../ui/Button'
@@ -531,7 +533,10 @@ export function PoliciesPage() {
                   <span className={styles.rowName}>{p.name}</span>
                   {p.tier === 'compat' && <span className={styles.tierBadge}>{t('adminB.tierCompat')}</span>}
                   {!p.enabled && <span className={styles.off}>{t('adminB.disabled')}</span>}
-                  <span className={styles.rowCount}>{t('adminB.fileCount', { count: p.file_count })}</span>
+                  <span className={styles.rowCount}>
+                    {t('adminB.fileCount', { count: p.file_count })}
+                    {p.used_bytes > 0 ? ` · ${formatBytes(p.used_bytes)}` : ''}
+                  </span>
                 </button>
               ))}
             </div>
@@ -540,6 +545,24 @@ export function PoliciesPage() {
                 <EmptyState title={t('adminB.selectOrCreatePolicy')} desc={t('adminB.selectOrCreatePolicyDesc')} />
               ) : (
                 <div className={styles.form}>
+                  {typeof sel === 'number' && (
+                    <div className={forms.field}>
+                      <span className={forms.hint}>{t('adminB.policyStatsHint')}</span>
+                      <span className={forms.hint}>
+                        {t('adminB.fileCount', { count: policies.find((x) => x.id === sel)?.file_count ?? 0 })}
+                        {' · '}
+                        {formatBytes(policies.find((x) => x.id === sel)?.used_bytes ?? 0)}
+                        {' · '}
+                        {t('adminB.policyImageSplit', {
+                          live: policies.find((x) => x.id === sel)?.live_image_count ?? 0,
+                          trash: policies.find((x) => x.id === sel)?.trash_image_count ?? 0,
+                        })}
+                      </span>
+                      <Link className={forms.hint} to={`/admin/images?policy=${sel}`}>
+                        {t('adminB.viewPolicyImages')}
+                      </Link>
+                    </div>
+                  )}
                   <Input label={t('adminB.name')} value={form.name} onChange={(e) => set('name', e.target.value)} />
                   <div className={forms.field}>
                     <span className={forms.label}>{t('adminB.driver')}</span>

@@ -94,6 +94,16 @@ curl -sfS https://img.li/healthz
 
 详见 [`user-groups-lifecycle.md`](user-groups-lifecycle.md)。
 
+## 升级到 v0.9.2（秒传复用 · 站名 · 策略统计）
+
+1. 滚动部署新二进制/镜像即可（无新迁移要求；API 多返回 `reused` 与策略
+   `live_image_count` / `trash_image_count`，旧客户端可忽略）。
+2. **同用户秒传**：相同内容且可见性/相册/过期/次数/口令一致时返回原 `key`，图库不增行、不二次扣配额；跨用户仍各自 key + 共享物理文件。
+3. **站点名称**：后台改 `site_name` 后刷新前台，顶栏字标应显示站名（鲤鱼标仍在）。
+4. **存储策略**：列表对象数含回收站仍占用的物理文件；详情有在线/回收站图片拆分——勿与「在线图片列表」直接对表。
+
+验收清单：[`superpowers/plans/2026-08-04-v0.9.2-acceptance.md`](superpowers/plans/2026-08-04-v0.9.2-acceptance.md)。
+
 ## 相关运维文档
 
 - 存储搬迁：[`storage-migrate.md`](storage-migrate.md)

@@ -87,6 +87,11 @@ verify upstream docs before migrating.
   [user-groups-lifecycle](docs/user-groups-lifecycle.md) ·
   [cleanup vs CDN](docs/ops-cleanup-cdn-boundary.md) ·
   [security-hardening](docs/security-hardening.md#faq-reverse-proxy-loginregister-cross-site-rejected).
+- **Patch polish (v0.9.2)** — same-user instant upload reuse (no library
+  duplicates / double quota); `site_name` on nav wordmark (carp mark kept);
+  storage policy live/trash image counts + object bytes. Acceptance:
+  [docs/superpowers/plans/2026-08-04-v0.9.2-acceptance.md](docs/superpowers/plans/2026-08-04-v0.9.2-acceptance.md);
+  customization IA: [docs/design/site-customization-ia.md](docs/design/site-customization-ia.md).
 - **Polish** — bilingual UI (中文/English), PWA, light/dark/**system** theme,
   text watermark (embedded CJK font subset), admin dashboard with audit logs
   and light ops analytics.
@@ -107,7 +112,7 @@ imgli serve
 Pin a version or install location:
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/yixian-huang/imgli/main/scripts/install.sh | sh -s -- v0.9.0
+curl -fsSL https://raw.githubusercontent.com/yixian-huang/imgli/main/scripts/install.sh | sh -s -- v0.9.2
 PREFIX=/usr/local/bin curl -fsSL https://raw.githubusercontent.com/yixian-huang/imgli/main/scripts/install.sh | sh
 ```
 
@@ -123,7 +128,7 @@ docker run --rm -p 8686:8686 -v imgli-data:/data \
 # → http://localhost:8686  (first registered user becomes admin)
 ```
 
-Pin a release with `ghcr.io/yixian-huang/imgli:v0.9.0` (see
+Pin a release with `ghcr.io/yixian-huang/imgli:v0.9.2` (see
 [Releases](https://github.com/yixian-huang/imgli/releases)).
 
 ### Docker Compose
@@ -144,7 +149,7 @@ Backup / restore: [`docs/backup.md`](docs/backup.md).
 
 ```bash
 make build          # needs Go ≥ 1.26 and Node ≥ 24
-./imgli version     # git tag via ldflags, e.g. v0.9.0
+./imgli version     # git tag via ldflags, e.g. v0.9.2
 ./imgli serve       # → http://localhost:8686
 ```
 
@@ -248,6 +253,7 @@ Changelog: [CHANGELOG.md](CHANGELOG.md). Security: [SECURITY.md](SECURITY.md) ·
 - Storage matrices: [S3](docs/s3-compatibility.md) · [WebDAV](docs/webdav-compatibility.md) · [FTP dual-track](docs/storage-ftp.md)
 - **Storage migrate (ops):** [docs/storage-migrate.md](docs/storage-migrate.md) — CLI + Admin job
 - **User-group lifecycle (v0.9):** [docs/user-groups-lifecycle.md](docs/user-groups-lifecycle.md) — expiry/max-views, retention, force age, stock clamp
+- **v0.9.2 acceptance / site customization IA:** [acceptance](docs/superpowers/plans/2026-08-04-v0.9.2-acceptance.md) · [IA draft](docs/design/site-customization-ia.md)
 - **Cleanup vs CDN:** [docs/ops-cleanup-cdn-boundary.md](docs/ops-cleanup-cdn-boundary.md) — cleanup kinds + CDN boundary
 - **Deploy checklist:** [docs/ops-deploy-checklist.md](docs/ops-deploy-checklist.md)
 - **Reverse proxy / CSRF:** [docs/security-hardening.md](docs/security-hardening.md#faq-reverse-proxy-loginregister-cross-site-rejected) (admin System/Ops health in v0.7+)

@@ -29,6 +29,8 @@ GitHub and the product knowledge base.
 | FTP dual track | `docs/storage-ftp.md` | `docs-imgli/ftp` |
 | Caps design | `docs/design/storage-caps-draft.md` | user-facing Caps described on storage pages only |
 | **User-group lifecycle (v0.9)** | `docs/user-groups-lifecycle.md` | short how-to + link (no dual full copy) |
+| **v0.9.2 acceptance** | `docs/superpowers/plans/2026-08-04-v0.9.2-acceptance.md` | optional release notes pointer |
+| **Site customization IA** | `docs/design/site-customization-ia.md` | settings surface roadmap (L0–L2) |
 | **Cleanup vs CDN** | `docs/ops-cleanup-cdn-boundary.md` | ops FAQ blurb + link |
 | Production VIP deploy | *(not in public repo detail)* | internal `imgli/ops-*` only |
 

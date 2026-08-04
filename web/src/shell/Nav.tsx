@@ -55,7 +55,7 @@ export function Nav({ user }: { user: User }) {
   return (
     <header className={styles.nav}>
       <Link to="/" className={styles.brand} aria-label={t('nav.homeAria')}>
-        <BrandLockup beta />
+        <BrandLockup beta word={config?.site_name} />
       </Link>
       <nav className={styles.links}>
         {links.map((l) => (

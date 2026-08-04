@@ -1,4 +1,5 @@
 import type { ReactNode } from 'react'
+import { useConfig } from '../../api/hooks'
 import { useT } from '../../i18n'
 import { BrandLockup } from '../../ui/Brand'
 import { LangToggle } from '../../ui/LangToggle'
@@ -10,11 +11,12 @@ export function AuthShell({ children }: { children: ReactNode }) {
   const { t } = useT()
   const theme = useGlobal((s) => s.theme)
   const toggleTheme = useGlobal((s) => s.toggleTheme)
+  const { data: config } = useConfig()
   return (
     <div className={styles.page}>
       <aside className={styles.brand}>
         <div className={styles.brandLogo}>
-          <BrandLockup beta invert />
+          <BrandLockup beta invert word={config?.site_name} />
         </div>
         <div>
           <div className={styles.slogan}>{t('meta.slogan')}</div>

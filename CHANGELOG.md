@@ -10,6 +10,22 @@ separate version in `go.mod` or `web/package.json`.
 
 ## [Unreleased]
 
+## [0.9.2] - 2026-08-04
+
+Theme: **Instant reuse · site name surface · stats honesty**.
+
+### Fixed
+
+- **Same-user instant upload:** re-uploading the same content with the same options returns the existing live image (`reused: true`) — no duplicate library row, no double quota charge. Different options still create a new link on the shared file; cross-user and guest uploads still get their own keys.
+- **Site name in chrome:** configured `site_name` drives the nav/auth/guest/discover/admin/share wordmark (carp mark kept). Document title already used it; settings now explain the surface.
+- **Storage policy counts:** list shows object count + used bytes; detail adds live/trash image split and a note that objects stay until hard purge. Link to admin images filtered by policy.
+
+### Changed
+
+- Upload copy: instant vs reused hints distinguish “new link, content deduped” vs “library hit, original link”.
+- Quota tooltip and dashboard labels clarify storage includes trash; image counts are live-only.
+- Docs: acceptance cases and site-customization IA (`docs/superpowers/plans/2026-08-04-v0.9.2-acceptance.md`, `docs/design/site-customization-ia.md`).
+
 ## [0.9.1] - 2026-08-03
 
 Theme: **Admin groups UX polish**.
@@ -326,7 +342,8 @@ Theme: **Workflow & Trust** — CLI/integrations, share landing, privacy
 - Bilingual UI (中文/English), PWA, dark mode, text watermark, admin audit logs.
 - Docker Compose quick start and GitHub Actions CI (Go matrix, web, e2e smoke).
 
-[Unreleased]: https://github.com/yixian-huang/imgli/compare/v0.9.1...HEAD
+[Unreleased]: https://github.com/yixian-huang/imgli/compare/v0.9.2...HEAD
+[0.9.2]: https://github.com/yixian-huang/imgli/compare/v0.9.1...v0.9.2
 [0.9.1]: https://github.com/yixian-huang/imgli/compare/v0.9.0...v0.9.1
 [0.9.0]: https://github.com/yixian-huang/imgli/compare/v0.8.0...v0.9.0
 [0.8.0]: https://github.com/yixian-huang/imgli/compare/v0.7.4...v0.8.0

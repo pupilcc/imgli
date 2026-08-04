@@ -140,6 +140,24 @@ func (s *Service) Save(ctx context.Context, tmpPath, filename string, u *model.U
 	var existing model.File
 	hit := s.db.First(&existing, "hash = ? AND surface = ?", hash, surface).Error == nil
 	if hit {
+		// 链接策略：复用既有文件所在策略(架构 spec「全局去重优先」)。
+		var filePolicy model.StoragePolicy
+		if err := s.db.First(&filePolicy, existing.StoragePolicyID).Error; err == nil {
+			policy = &filePolicy
+		}
+		// 同用户 + 同选项 live 图 → 幂等返回原 key（图库不重复、不二次扣配额）。
+		// 跨用户/游客/选项不同仍走 commitInstant 新建 image。
+		if u != nil {
+			if prev, ok := s.findReusableLiveImage(u.ID, existing.ID, surface, albumID, opts); ok {
+				if filename != "" && prev.Name != filename {
+					_ = s.db.Model(prev).Update("name", filename).Error
+					prev.Name = filename
+				}
+				// 刷新 File.RefCount 展示用（未 +1）
+				_ = s.db.First(&existing, existing.ID).Error
+				return &Result{Image: prev, File: &existing, Policy: policy, Instant: true, Reused: true}, nil
+			}
+		}
 		img, err := s.commitInstant(u, &existing, filename, meta.Ext, vis, ip, size, albumID, opts.ExpiresAt, opts.MaxViews, opts.AccessPasswordHash, group.StorageQuota)
 		if err != nil {
 			return nil, err
@@ -150,13 +168,7 @@ func (s *Service) Save(ctx context.Context, tmpPath, filename string, u *model.U
 		if img.Status == "normal" {
 			s.enqueueModerate(img.ID)
 		}
-		// 秒传复用既有文件所在策略生成链接(架构 spec「全局去重优先」裁决)——本次
-		// 解析出的目标策略只约束新落盘;查不到时退回解析结果兜底(codex 评审 Task4)。
-		var filePolicy model.StoragePolicy
-		if err := s.db.First(&filePolicy, existing.StoragePolicyID).Error; err == nil {
-			policy = &filePolicy
-		}
-		return &Result{Image: img, File: &existing, Policy: policy, Instant: true}, nil
+		return &Result{Image: img, File: &existing, Policy: policy, Instant: true, Reused: false}, nil
 	}
 
 	// 落盘：渲染路径 → 驱动 Put

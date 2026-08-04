@@ -89,9 +89,10 @@ export function NavQuotaCluster({
     showBw && bandwidth.total > 0
       ? Math.min(100, Math.round((bandwidth.used / bandwidth.total) * 100))
       : 0
+  const trashHint = t('ui.quotaTitleHint')
   const title = showBw
-    ? `${t('ui.quotaTitle')}: ${formatPair(storage.used, storage.total)} · ${t('ui.bandwidthTitle')}: ${formatPair(bandwidth!.used, bandwidth!.total)}`
-    : `${t('ui.quotaTitle')}: ${formatPair(storage.used, storage.total)}`
+    ? `${t('ui.quotaTitle')}: ${formatPair(storage.used, storage.total)} (${trashHint}) · ${t('ui.bandwidthTitle')}: ${formatPair(bandwidth!.used, bandwidth!.total)}`
+    : `${t('ui.quotaTitle')}: ${formatPair(storage.used, storage.total)} (${trashHint})`
 
   return (
     <Link to={to} title={title} className={styles.cluster} data-testid="nav-quota-cluster">

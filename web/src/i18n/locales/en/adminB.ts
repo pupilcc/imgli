@@ -41,7 +41,12 @@ export default {
   policiesTitle: 'Storage policies',
   newPolicy: '+ New policy',
   disabled: 'Disabled',
-  fileCount: '{count} files',
+  fileCount: '{count} objects',
+  policyUsedBytes: '{size}',
+  policyImageSplit: 'Live {live} · Trash {trash}',
+  policyStatsHint:
+    'Object count and bytes are physical files (including trash-held refs); they drop only after hard purge with no shared refs. Live/trash are image rows.',
+  viewPolicyImages: 'View images for this policy →',
   selectOrCreatePolicy: 'Select or create a policy',
   selectOrCreatePolicyDesc:
     'Prefer local disk or S3; WebDAV for netdisks/OpenList; FTP is compatibility-tier. Pick a policy or create one.',
@@ -146,6 +151,8 @@ export default {
   settingsTitle: 'System settings',
   basic: 'General',
   siteName: 'Site name',
+  siteNameHint:
+    'Used for the tab title, nav wordmark, footer, mail, and share branding. The carp mark stays; full logo white-label is not offered in Community.',
   regMode: 'Registration mode',
   regOpen: 'Open',
   regInvite: 'Invite only',
@@ -302,7 +309,7 @@ export default {
   noDetail: '(no detail)',
   logsTotal: '{total} total',
   faviconUrl: 'Custom favicon URL',
-  faviconUrlHint: 'Replaces the browser tab icon only — navigation BrandLockup stays fixed. Empty = built-in icons.',
+  faviconUrlHint: 'Replaces the browser tab icon only. Nav wordmark follows site name; carp mark stays. Empty = built-in icons.',
   sourceUrl: 'Corresponding source URL',
   sourceUrlHint: 'Optional AGPL corresponding-source link for network services. Empty hides the link.',
   ossCredit: 'Footer “based on imgli”',

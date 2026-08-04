@@ -1,5 +1,5 @@
 import { Link, Outlet } from 'react-router'
-import { useSession } from '../../api/hooks'
+import { useConfig, useSession } from '../../api/hooks'
 import { useT } from '../../i18n'
 import { BrandLockup } from '../../ui/Brand'
 import { LangToggle } from '../../ui/LangToggle'
@@ -12,12 +12,13 @@ export function DiscoverLayout() {
   const theme = useGlobal((s) => s.theme)
   const toggleTheme = useGlobal((s) => s.toggleTheme)
   const { data: user } = useSession()
+  const { data: config } = useConfig()
 
   return (
     <>
       <header className={styles.nav}>
-        <Link to="/explore" className={styles.brand} aria-label="img.li">
-          <BrandLockup />
+        <Link to="/explore" className={styles.brand} aria-label={config?.site_name?.trim() || 'img.li'}>
+          <BrandLockup word={config?.site_name} />
         </Link>
         <div className={styles.right}>
           <button type="button" className={styles.themeBtn} title={t('nav.toggleTheme')} onClick={toggleTheme}>

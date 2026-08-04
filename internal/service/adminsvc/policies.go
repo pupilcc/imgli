@@ -41,11 +41,15 @@ var (
 // defaultPathTemplate 是②b 约定的默认存储路径模板，PathTemplate 留空时套用。
 const defaultPathTemplate = "{Y}/{m}/{d}/{uniqid}.{ext}"
 
-// PolicyRow 是列表项：存储策略 + 实时算出的引用文件数与已用字节。
+// PolicyRow 是列表项：存储策略 + 实时算出的引用文件数、已用字节与图片 live/trash 拆分。
+// FileCount/UsedBytes 按 files 表（物理对象，含仅被回收站引用的对象）；
+// LiveImageCount/TrashImageCount 按 images 软删态拆分，避免运营把「对象数」当成「在线图数」。
 type PolicyRow struct {
-	Policy    model.StoragePolicy
-	FileCount int64
-	UsedBytes int64
+	Policy          model.StoragePolicy
+	FileCount       int64
+	UsedBytes       int64
+	LiveImageCount  int64
+	TrashImageCount int64
 }
 
 // PolicyPatch 是 UpdatePolicy 的部分更新载荷：nil 字段保持不变。
@@ -228,8 +232,8 @@ func parseDriverConfig(driver, raw string) (map[string]string, error) {
 	return cfg, nil
 }
 
-// ListPolicies 按 id 升序返回全部存储策略，含每条策略实时算出的引用文件数（FileCount）
-// 与已用字节（UsedBytes=SUM(files.size)）。策略数量少，不分页。
+// ListPolicies 按 id 升序返回全部存储策略，含每条策略实时算出的引用文件数（FileCount）、
+// 已用字节（UsedBytes=SUM(files.size)）以及 live/trash 图片数。策略数量少，不分页。
 func (s *Service) ListPolicies() ([]PolicyRow, error) {
 	var policies []model.StoragePolicy
 	if err := s.db.Order("id").Find(&policies).Error; err != nil {
@@ -237,16 +241,34 @@ func (s *Service) ListPolicies() ([]PolicyRow, error) {
 	}
 	rows := make([]PolicyRow, 0, len(policies))
 	for i := range policies {
+		pid := policies[i].ID
 		var fc int64
-		if err := s.db.Model(&model.File{}).Where("storage_policy_id = ?", policies[i].ID).Count(&fc).Error; err != nil {
+		if err := s.db.Model(&model.File{}).Where("storage_policy_id = ?", pid).Count(&fc).Error; err != nil {
 			return nil, err
 		}
 		var used int64
-		if err := s.db.Model(&model.File{}).Where("storage_policy_id = ?", policies[i].ID).
+		if err := s.db.Model(&model.File{}).Where("storage_policy_id = ?", pid).
 			Select("COALESCE(SUM(size),0)").Scan(&used).Error; err != nil {
 			return nil, err
 		}
-		rows = append(rows, PolicyRow{Policy: policies[i], FileCount: fc, UsedBytes: used})
+		var live, trash int64
+		// Unscoped：按 deleted_at 显式拆 live/trash，避免 GORM 软删 scope 干扰 trash 计数。
+		if err := s.db.Unscoped().Table("images").
+			Joins("JOIN files ON files.id = images.file_id").
+			Where("files.storage_policy_id = ? AND images.deleted_at IS NULL", pid).
+			Count(&live).Error; err != nil {
+			return nil, err
+		}
+		if err := s.db.Unscoped().Table("images").
+			Joins("JOIN files ON files.id = images.file_id").
+			Where("files.storage_policy_id = ? AND images.deleted_at IS NOT NULL", pid).
+			Count(&trash).Error; err != nil {
+			return nil, err
+		}
+		rows = append(rows, PolicyRow{
+			Policy: policies[i], FileCount: fc, UsedBytes: used,
+			LiveImageCount: live, TrashImageCount: trash,
+		})
 	}
 	return rows, nil
 }

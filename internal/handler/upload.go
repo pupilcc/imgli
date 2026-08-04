@@ -46,6 +46,7 @@ func uploadResultDTO(res *upload.Result, res2 *storagesvc.Resolver) map[string]a
 		"name":       res.Image.Name,
 		"size":       res.File.Size,
 		"instant":    res.Instant,
+		"reused":     res.Reused,
 		"links":      links,
 		"expires_at": expires,
 	}

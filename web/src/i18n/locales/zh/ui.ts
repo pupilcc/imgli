@@ -1,5 +1,6 @@
 export default {
   quotaTitle: '容量用量',
+  quotaTitleHint: '含回收站未彻底删除的占用',
   bandwidthTitle: '本月流量（出站）',
   quotaUnlimited: '不限',
   navStorageShort: 'STOR',

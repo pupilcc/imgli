@@ -41,8 +41,8 @@ export function SharePage() {
   return (
     <div className={styles.shell}>
       <header className={styles.nav}>
-        <Link to="/" className={styles.brand} aria-label="img.li">
-          <BrandLockup />
+        <Link to="/" className={styles.brand} aria-label={siteName}>
+          <BrandLockup word={cfg.data?.site_name} />
         </Link>
         <div className={styles.right}>
           <button type="button" className={styles.themeBtn} title={t('nav.toggleTheme')} onClick={toggleTheme}>

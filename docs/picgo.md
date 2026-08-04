@@ -29,6 +29,7 @@
     "key": "xxxxxxxxxxxx",
     "name": "shot.png",
     "instant": false,
+    "reused": false,
     "links": {
       "url": "https://img.li/i/xxxxxxxxxxxx.png",
       "markdown": "![shot.png](https://img.li/i/xxxxxxxxxxxx.png)",
@@ -42,6 +43,13 @@
 
 **PicGo 取图链路径（JSON Path）**：`data.links.url`  
 （若插件用 body 前缀写法，常见为 `data.links.url` / `.data.links.url`，以插件说明为准。）
+
+字段说明（v0.9.2+）：
+
+| 字段 | 含义 |
+|---|---|
+| `instant` | 原图未重新落盘（内容哈希命中既有物理文件） |
+| `reused` | **同用户**命中已有 live 图且选项一致，返回**原 `key`**（图库不增行、不二次扣配额）；跨用户秒传仍为 `instant=true` 且 `reused=false` 并新建 key |
 
 常见错误：
 

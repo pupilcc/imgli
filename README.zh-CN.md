@@ -78,6 +78,10 @@
   [用户组生命周期](docs/user-groups-lifecycle.md) ·
   [清理与 CDN](docs/ops-cleanup-cdn-boundary.md) ·
   [反代 FAQ](docs/security-hardening.md#faq-reverse-proxy-loginregister-cross-site-rejected)。
+- **补丁打磨（v0.9.2）**:同用户秒传复用（图库不重复、不二次扣配额）；`site_name` 进顶栏字标
+  （鲤鱼标保留）；存储策略 live/trash 图片数与对象占用。验收：
+  [docs/superpowers/plans/2026-08-04-v0.9.2-acceptance.md](docs/superpowers/plans/2026-08-04-v0.9.2-acceptance.md)；
+  站点定制 IA：[docs/design/site-customization-ia.md](docs/design/site-customization-ia.md)。
 - **细节**:中英双语界面、PWA、浅色/深色/**跟随系统**主题、文字水印(内嵌中文字体子集)、
   带审计日志与轻量运营统计的管理后台。
 
@@ -98,7 +102,7 @@ imgli serve
 固定版本或安装路径：
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/yixian-huang/imgli/main/scripts/install.sh | sh -s -- v0.9.0
+curl -fsSL https://raw.githubusercontent.com/yixian-huang/imgli/main/scripts/install.sh | sh -s -- v0.9.2
 PREFIX=/usr/local/bin curl -fsSL https://raw.githubusercontent.com/yixian-huang/imgli/main/scripts/install.sh | sh
 ```
 
@@ -114,7 +118,7 @@ docker run --rm -p 8686:8686 -v imgli-data:/data \
 # → http://localhost:8686（第一个注册用户即管理员）
 ```
 
-固定版本用 `ghcr.io/yixian-huang/imgli:v0.9.0`（见
+固定版本用 `ghcr.io/yixian-huang/imgli:v0.9.2`（见
 [Releases](https://github.com/yixian-huang/imgli/releases)）。
 
 ### Docker Compose
@@ -135,7 +139,7 @@ TLS 反代片段：[`deploy/Caddyfile.example`](deploy/Caddyfile.example)、
 
 ```bash
 make build          # 需要 Go ≥ 1.26、Node ≥ 24
-./imgli version     # ldflags 注入的 git tag，如 v0.9.0
+./imgli version     # ldflags 注入的 git tag，如 v0.9.2
 ./imgli serve       # → http://localhost:8686
 ```
 
@@ -238,6 +242,7 @@ cd web && npm run e2e   # Playwright,会先构建二进制
 - 存储矩阵：[S3](docs/s3-compatibility.md) · [WebDAV](docs/webdav-compatibility.md) · [FTP 双轨](docs/storage-ftp.md)
 - **跨策略搬迁**：[docs/storage-migrate.md](docs/storage-migrate.md)（CLI + Admin 任务）
 - **用户组生命周期（v0.9）**：[docs/user-groups-lifecycle.md](docs/user-groups-lifecycle.md)（有效期/次数上限、保留与强制存活、存量钳制）
+- **v0.9.2 验收 / 站点定制 IA**：[验收用例](docs/superpowers/plans/2026-08-04-v0.9.2-acceptance.md) · [IA 草案](docs/design/site-customization-ia.md)
 - **清理与 CDN 边界**：[docs/ops-cleanup-cdn-boundary.md](docs/ops-cleanup-cdn-boundary.md)
 - **生产部署检查清单**：[docs/ops-deploy-checklist.md](docs/ops-deploy-checklist.md)
 - **反代 / CSRF**：[docs/security-hardening.md](docs/security-hardening.md#faq-reverse-proxy-loginregister-cross-site-rejected)（v0.7+ 亦可在后台「系统 / 运维」自检）

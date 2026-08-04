@@ -125,7 +125,7 @@ export function AuthPage() {
     <div className={styles.page}>
       <aside className={styles.brand}>
         <div className={styles.brandLogo}>
-          <BrandLockup beta invert />
+          <BrandLockup beta invert word={config.data?.site_name} />
         </div>
         <div>
           <div className={styles.slogan}>{t('meta.slogan')}</div>

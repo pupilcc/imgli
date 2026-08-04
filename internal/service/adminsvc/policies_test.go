@@ -178,11 +178,24 @@ func TestListPoliciesOrderAndAggregates(t *testing.T) {
 	if err := svc.CreatePolicy(p2); err != nil {
 		t.Fatal(err)
 	}
-	// id=1 是 TestDB 播种的本地策略；给它挂两个文件
-	if err := db.Create(&model.File{Hash: "fa", StoragePolicyID: 1, Path: "a", Size: 100, RefCount: 1}).Error; err != nil {
+	// id=1 是 TestDB 播种的本地策略；给它挂两个文件 + live/trash 图
+	fa := &model.File{Hash: "fa", StoragePolicyID: 1, Path: "a", Size: 100, RefCount: 1}
+	fb := &model.File{Hash: "fb", StoragePolicyID: 1, Path: "b", Size: 250, RefCount: 1}
+	if err := db.Create(fa).Error; err != nil {
 		t.Fatal(err)
 	}
-	if err := db.Create(&model.File{Hash: "fb", StoragePolicyID: 1, Path: "b", Size: 250, RefCount: 1}).Error; err != nil {
+	if err := db.Create(fb).Error; err != nil {
+		t.Fatal(err)
+	}
+	liveImg := &model.Image{Key: "livekey00001", FileID: fa.ID, Name: "live.png", Ext: "png", Visibility: "public", Status: "normal"}
+	trashImg := &model.Image{Key: "trashkey0001", FileID: fb.ID, Name: "trash.png", Ext: "png", Visibility: "public", Status: "normal"}
+	if err := db.Create(liveImg).Error; err != nil {
+		t.Fatal(err)
+	}
+	if err := db.Create(trashImg).Error; err != nil {
+		t.Fatal(err)
+	}
+	if err := db.Delete(trashImg).Error; err != nil {
 		t.Fatal(err)
 	}
 
@@ -211,10 +224,13 @@ func TestListPoliciesOrderAndAggregates(t *testing.T) {
 		t.Fatalf("行未找全: %+v", rows)
 	}
 	if seeded.FileCount != 2 || seeded.UsedBytes != 350 {
-		t.Errorf("seeded = %+v, want FileCount=2 UsedBytes=350", *seeded)
+		t.Errorf("seeded files = %+v, want FileCount=2 UsedBytes=350", *seeded)
 	}
-	if second.FileCount != 0 || second.UsedBytes != 0 {
-		t.Errorf("second = %+v, want FileCount=0 UsedBytes=0", *second)
+	if seeded.LiveImageCount != 1 || seeded.TrashImageCount != 1 {
+		t.Errorf("seeded images live=%d trash=%d, want 1/1", seeded.LiveImageCount, seeded.TrashImageCount)
+	}
+	if second.FileCount != 0 || second.UsedBytes != 0 || second.LiveImageCount != 0 || second.TrashImageCount != 0 {
+		t.Errorf("second = %+v, want zeros", *second)
 	}
 }
 

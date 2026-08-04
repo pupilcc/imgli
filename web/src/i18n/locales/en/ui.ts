@@ -1,5 +1,6 @@
 export default {
   quotaTitle: 'Storage usage',
+  quotaTitleHint: 'Includes trash until permanently deleted',
   bandwidthTitle: 'Monthly bandwidth (egress)',
   quotaUnlimited: '∞',
   navStorageShort: 'STOR',

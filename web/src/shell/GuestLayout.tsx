@@ -18,8 +18,8 @@ export function GuestLayout() {
   return (
     <div className={styles.shell}>
       <header className={styles.nav}>
-        <span className={styles.brand} aria-label="img.li">
-          <BrandLockup badge={guestOn ? 'GUEST' : undefined} />
+        <span className={styles.brand} aria-label={config?.site_name?.trim() || 'img.li'}>
+          <BrandLockup badge={guestOn ? 'GUEST' : undefined} word={config?.site_name} />
         </span>
         <div className={styles.right}>
           <button type="button" className={styles.themeBtn} title={t('nav.toggleTheme')} onClick={toggleTheme}>

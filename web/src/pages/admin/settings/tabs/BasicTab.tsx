@@ -10,7 +10,10 @@ export function BasicTab({ form, set }: { form: FormState; set: FormSet }) {
   return (
     <section className={styles.section}>
       <h2 className={styles.h2}>{t('adminB.basic')}</h2>
-      <Input label={t('adminB.siteName')} value={form.siteName} maxLength={64} onChange={(e) => set('siteName', e.target.value)} />
+      <div className={styles.field}>
+        <Input label={t('adminB.siteName')} value={form.siteName} maxLength={64} onChange={(e) => set('siteName', e.target.value)} />
+        <span className={styles.hint}>{t('adminB.siteNameHint')}</span>
+      </div>
       <div className={styles.field}>
         <span className={styles.label}>{t('adminB.regMode')}</span>
         <Segmented

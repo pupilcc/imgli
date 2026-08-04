@@ -41,7 +41,12 @@ export default {
   policiesTitle: '存储策略管理',
   newPolicy: '+ 新建策略',
   disabled: '已停用',
-  fileCount: '{count} 文件',
+  fileCount: '{count} 对象',
+  policyUsedBytes: '{size}',
+  policyImageSplit: '在线 {live} · 回收站 {trash}',
+  policyStatsHint:
+    '对象数/占用按物理文件统计，含回收站仍引用的对象；彻底删除且无共享引用后才会下降。在线/回收站为图片条数。',
+  viewPolicyImages: '查看该策略图片 →',
   selectOrCreatePolicy: '选择或新建存储策略',
   selectOrCreatePolicyDesc:
     '生产推荐本地磁盘或 S3 兼容；WebDAV 适合网盘/OpenList；FTP 为兼容层。从左侧选择策略或新建。',
@@ -145,6 +150,8 @@ export default {
   settingsTitle: '系统设置',
   basic: '基本',
   siteName: '站点名称',
+  siteNameHint:
+    '用于浏览器标题、顶栏字标、页脚署名、邮件与分享页站名。鲤鱼标图形与产品锁标样式在默认名时保留；Community 不提供完整 Logo 白标替换。',
   regMode: '注册模式',
   regOpen: '开放注册',
   regInvite: '邀请注册',
@@ -300,7 +307,7 @@ export default {
   noDetail: '（无详情）',
   logsTotal: '共 {total} 条',
   faviconUrl: '自定义 Favicon URL',
-  faviconUrlHint: '仅替换浏览器图标，不改导航鲤鱼标（BrandLockup 固定）。空则用内置图标。',
+  faviconUrlHint: '仅替换浏览器标签图标。导航字标随站点名称；鲤鱼图形固定。空则用内置图标。',
   sourceUrl: '对应源码 URL',
   sourceUrlHint: 'AGPL 网络服务义务可用：填写对外公开的对应源码地址；空则不展示。',
   ossCredit: '页脚「基于 imgli」',

@@ -47,7 +47,9 @@ export function UploadCard({ item }: { item: QueueItem }) {
     item.status === 'failed'
       ? item.reason
       : item.status === 'instant'
-        ? t('upload.instantHint')
+        ? item.result?.reused
+          ? t('upload.reusedHint')
+          : t('upload.instantHint')
         : item.status === 'processing'
           ? t('upload.processingHint')
           : null

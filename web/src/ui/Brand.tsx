@@ -50,14 +50,27 @@ type LockupProps = {
   badge?: string
   /** 反色底（登录左栏等）：中点/徽章跟 currentColor 半透明，不用 --muted */
   invert?: boolean
+  /**
+   * 实例站名（config.site_name）。非空且非产品默认时替换字标文案；
+   * 鲤鱼 mark 始终保留（Community 非全白标）。
+   */
+  word?: string | null
   className?: string
   /** 字标额外样式 */
   wordClassName?: string
   style?: CSSProperties
 }
 
+/** 是否用自定义站名替换产品字标（默认 img.li / imgli 仍走产品锁标样式）。 */
+export function isCustomSiteWord(name?: string | null): boolean {
+  const n = (name || '').trim()
+  if (!n) return false
+  const lower = n.toLowerCase()
+  return lower !== BRAND_WORDMARK && lower !== 'imgli'
+}
+
 /**
- * 横向锁标：鲤鱼 + 等宽 img.li（中点 muted）+ 可选徽章。
+ * 横向锁标：鲤鱼 + 等宽 img.li（中点 muted）或实例站名 + 可选徽章。
  * 颜色全部 currentColor / --muted，适配浅底与反色 brand 面板。
  */
 export function BrandLockup({
@@ -65,20 +78,29 @@ export function BrandLockup({
   beta,
   badge,
   invert,
+  word,
   className,
   wordClassName,
   style,
 }: LockupProps) {
   const tag = badge ?? (beta ? 'BETA' : undefined)
+  const custom = isCustomSiteWord(word)
+  const label = custom ? (word || '').trim() : BRAND_WORDMARK
   return (
     <span
       className={[styles.lockup, invert && styles.invert, className].filter(Boolean).join(' ')}
       style={style}
     >
       <BrandMark size={markSize} className={styles.mark} />
-      <span className={[styles.word, wordClassName].filter(Boolean).join(' ')}>
-        img<span className={styles.dot}>.</span>li
-      </span>
+      {custom ? (
+        <span className={[styles.word, styles.wordCustom, wordClassName].filter(Boolean).join(' ')} title={label}>
+          {label}
+        </span>
+      ) : (
+        <span className={[styles.word, wordClassName].filter(Boolean).join(' ')}>
+          img<span className={styles.dot}>.</span>li
+        </span>
+      )}
       {tag ? <span className={styles.badge}>{tag}</span> : null}
     </span>
   )

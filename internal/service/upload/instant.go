@@ -8,6 +8,41 @@ import (
 	"github.com/yixian-huang/imgli/internal/model"
 )
 
+// findReusableLiveImage 同用户、同 file、选项一致的 live 图 → 可幂等复用（不新建 key、不扣配额）。
+// 跨用户 / 游客 / 软删图 / 选项不一致 → 不命中。
+func (s *Service) findReusableLiveImage(userID, fileID uint64, visibility string, albumID *uint64, opts Opts) (*model.Image, bool) {
+	var imgs []model.Image
+	// 默认 scope 排除软删；同 file 的 live 图通常很少，拉回内存比对 expires。
+	q := s.db.Where(
+		"user_id = ? AND file_id = ? AND visibility = ? AND max_views = ? AND access_password_hash = ?",
+		userID, fileID, visibility, opts.MaxViews, opts.AccessPasswordHash,
+	)
+	if albumID == nil {
+		q = q.Where("album_id IS NULL")
+	} else {
+		q = q.Where("album_id = ?", *albumID)
+	}
+	if err := q.Order("id ASC").Find(&imgs).Error; err != nil || len(imgs) == 0 {
+		return nil, false
+	}
+	for i := range imgs {
+		if expiresEqual(imgs[i].ExpiresAt, opts.ExpiresAt) {
+			return &imgs[i], true
+		}
+	}
+	return nil, false
+}
+
+func expiresEqual(a, b *time.Time) bool {
+	if a == nil && b == nil {
+		return true
+	}
+	if a == nil || b == nil {
+		return false
+	}
+	return a.Unix() == b.Unix()
+}
+
 func (s *Service) commitInstant(u *model.User, file *model.File, filename, ext, visibility, ip string, size int64, albumID *uint64, expiresAt *time.Time, maxViews int, accessPasswordHash string, storageQuota int64) (*model.Image, error) {
 	// 内容安全 P1：秒传继承同 file 上已有 image 的审核态与最高 nsfw_score，
 	// 防止 rejected/pending 脏 hash 以新 key 复活为 normal。

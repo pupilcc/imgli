@@ -2,8 +2,8 @@ export default {
   // Dashboard
   dashTitle: 'Dashboard',
   usersCount: 'Users',
-  imagesCount: 'Images',
-  totalStorage: 'Storage',
+  imagesCount: 'Images (live)',
+  totalStorage: 'Storage (incl. trash)',
   todayUploads: 'Uploads today',
   pendingImages: 'Pending review',
   rejectedImages: 'Rejected',

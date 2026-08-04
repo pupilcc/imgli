@@ -34,7 +34,20 @@ it('uploading 显示进度条与百分比', () => {
 it('instant 显示秒传徽章与说明', () => {
   render(<UploadCard item={item({ status: 'instant', pct: 100, result: { key: 'k', name: 'shot.png', size: 1, instant: true, links: LINKS } })} />)
   expect(screen.getByText('秒传')).toBeInTheDocument()
-  expect(screen.getByText('已存在相同文件，直接返回链接')).toBeInTheDocument()
+  expect(screen.getByText('内容已秒传，已创建新外链')).toBeInTheDocument()
+})
+
+it('reused 秒传显示原链接说明', () => {
+  render(
+    <UploadCard
+      item={item({
+        status: 'instant',
+        pct: 100,
+        result: { key: 'k', name: 'shot.png', size: 1, instant: true, reused: true, links: LINKS },
+      })}
+    />,
+  )
+  expect(screen.getByText('图库中已有相同图片，返回原链接')).toBeInTheDocument()
 })
 
 it('success 主链输入框 + 复制 URL / 多格式 / 分享页', async () => {

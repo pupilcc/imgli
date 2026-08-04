@@ -16,6 +16,15 @@
   letter-spacing: -0.03em;
   line-height: 1;
 }
+/* 自定义站名：略收紧字距、限宽省略，避免顶栏撑破 */
+.wordCustom {
+  font-family: var(--font-sans, var(--font-mono));
+  letter-spacing: -0.02em;
+  max-width: 12em;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
 .dot {
   color: var(--muted);
   opacity: 0.9;

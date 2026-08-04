@@ -2,8 +2,8 @@ export default {
   // Dashboard
   dashTitle: '仪表盘',
   usersCount: '用户数',
-  imagesCount: '图片数',
-  totalStorage: '总容量',
+  imagesCount: '图片数（在线）',
+  totalStorage: '总容量（含回收站）',
   todayUploads: '今日上传',
   pendingImages: '待审图片',
   rejectedImages: '已拒绝',

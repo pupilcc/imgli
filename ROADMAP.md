@@ -3,7 +3,16 @@
 > **Planning SSOT is internal** (`imgli/roadmap` in the project knowledge base).  
 > This file is a **public, de-sensitized mirror** for contributors. Prefer GitHub Issues + Milestones for execution.
 
-## Latest shipped — v0.9.1 · Admin groups UX polish
+## Latest shipped — v0.9.2 · Instant reuse · site name · stats honesty
+
+Release: https://github.com/yixian-huang/imgli/releases/tag/v0.9.2
+
+Same-user instant reuse (no library dup / double quota), site_name on nav
+wordmark, storage policy live/trash object stats. See
+[CHANGELOG](CHANGELOG.md#092---2026-08-04) and acceptance
+[docs/superpowers/plans/2026-08-04-v0.9.2-acceptance.md](docs/superpowers/plans/2026-08-04-v0.9.2-acceptance.md).
+
+## Previous — v0.9.1 · Admin groups UX polish
 
 Release: https://github.com/yixian-huang/imgli/releases/tag/v0.9.1
 

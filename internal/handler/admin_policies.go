@@ -57,6 +57,8 @@ func policyRowDTO(row *adminsvc.PolicyRow) map[string]any {
 	m := adminPolicyDTO(&row.Policy)
 	m["file_count"] = row.FileCount
 	m["used_bytes"] = row.UsedBytes
+	m["live_image_count"] = row.LiveImageCount
+	m["trash_image_count"] = row.TrashImageCount
 	return m
 }
 

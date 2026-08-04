@@ -89,31 +89,120 @@ func TestSaveInstantDedup(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	// 同内容再传（复制一份，因为 Save 会消费/删除临时文件）
+	// 同用户同选项再传 → 复用 live image（图库不重复、不二次扣配额）
 	tmp2 := pngFile(t, dir, 300, 200)
 	res2, err := svc.Save(context.Background(), tmp2, "b.png", u, Opts{Visibility: "public"}, "1.2.3.4")
 	if err != nil {
 		t.Fatal(err)
 	}
-	if !res2.Instant {
-		t.Error("相同内容第二次应秒传")
+	if !res2.Instant || !res2.Reused {
+		t.Errorf("相同内容同用户应秒传复用: instant=%v reused=%v", res2.Instant, res2.Reused)
 	}
 	if res2.File.ID != res1.File.ID {
 		t.Error("秒传应复用同一 file")
 	}
-	if res2.File.RefCount != 2 {
-		t.Errorf("ref_count 应为 2, got %d", res2.File.RefCount)
+	if res2.Image.Key != res1.Image.Key {
+		t.Errorf("应返回同一 key: got %q want %q", res2.Image.Key, res1.Image.Key)
 	}
-	// 两条独立 image 记录、各自扣配额
+	if res2.File.RefCount != 1 {
+		t.Errorf("复用不应增加 ref_count, got %d", res2.File.RefCount)
+	}
+	if res2.Image.Name != "b.png" {
+		t.Errorf("复用可刷新文件名, got %q", res2.Image.Name)
+	}
 	var cnt int64
 	svc.db.Model(&model.Image{}).Count(&cnt)
-	if cnt != 2 {
-		t.Errorf("image 记录数 %d, want 2", cnt)
+	if cnt != 1 {
+		t.Errorf("image 记录数 %d, want 1", cnt)
+	}
+	var got model.User
+	svc.db.First(&got, u.ID)
+	if got.UsedStorage != res1.File.Size {
+		t.Errorf("复用不应二次扣配额: used=%d want %d", got.UsedStorage, res1.File.Size)
+	}
+}
+
+func TestSaveInstantDifferentOptsCreatesNewImage(t *testing.T) {
+	svc, u, _ := setup(t)
+	alb := model.Album{UserID: u.ID, Name: "alb", Visibility: "private"}
+	if err := svc.db.Create(&alb).Error; err != nil {
+		t.Fatal(err)
+	}
+	dir := t.TempDir()
+	res1, err := svc.Save(context.Background(), pngFile(t, dir, 80, 60), "a.png", u, Opts{Visibility: "public"}, "")
+	if err != nil {
+		t.Fatal(err)
+	}
+	res2, err := svc.Save(context.Background(), pngFile(t, dir, 80, 60), "b.png", u, Opts{Visibility: "public", AlbumID: &alb.ID}, "")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !res2.Instant || res2.Reused {
+		t.Fatalf("选项不同应秒传新建: instant=%v reused=%v", res2.Instant, res2.Reused)
+	}
+	if res2.Image.Key == res1.Image.Key {
+		t.Fatal("应新 key")
+	}
+	if res2.File.RefCount != 2 {
+		t.Fatalf("ref_count=%d want 2", res2.File.RefCount)
 	}
 	var got model.User
 	svc.db.First(&got, u.ID)
 	if got.UsedStorage != res1.File.Size*2 {
-		t.Errorf("秒传也应各扣配额: used=%d want %d", got.UsedStorage, res1.File.Size*2)
+		t.Fatalf("新建应扣配额: used=%d", got.UsedStorage)
+	}
+}
+
+func TestSaveInstantCrossUserCreatesOwnImage(t *testing.T) {
+	svc, a, _ := setup(t)
+	b := &model.User{Username: "bob", Email: "b@img.li", GroupID: 1, Status: "active"}
+	if err := svc.db.Create(b).Error; err != nil {
+		t.Fatal(err)
+	}
+	dir := t.TempDir()
+	resA, err := svc.Save(context.Background(), pngFile(t, dir, 90, 70), "a.png", a, Opts{Visibility: "public"}, "")
+	if err != nil {
+		t.Fatal(err)
+	}
+	resB, err := svc.Save(context.Background(), pngFile(t, dir, 90, 70), "b.png", b, Opts{Visibility: "public"}, "")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !resB.Instant || resB.Reused {
+		t.Fatalf("跨用户应秒传不复用: instant=%v reused=%v", resB.Instant, resB.Reused)
+	}
+	if resB.Image.Key == resA.Image.Key {
+		t.Fatal("不得返回他人 key")
+	}
+	if resB.File.ID != resA.File.ID || resB.File.RefCount != 2 {
+		t.Fatalf("应共享 file: %+v", resB.File)
+	}
+	var ub model.User
+	svc.db.First(&ub, b.ID)
+	if ub.UsedStorage != resB.File.Size {
+		t.Fatalf("B 应扣自己配额: %d", ub.UsedStorage)
+	}
+}
+
+func TestSaveInstantAfterSoftDeleteCreatesNew(t *testing.T) {
+	svc, u, _ := setup(t)
+	dir := t.TempDir()
+	res1, err := svc.Save(context.Background(), pngFile(t, dir, 50, 40), "a.png", u, Opts{Visibility: "public"}, "")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := svc.db.Delete(&model.Image{}, res1.Image.ID).Error; err != nil {
+		t.Fatal(err)
+	}
+	res2, err := svc.Save(context.Background(), pngFile(t, dir, 50, 40), "a.png", u, Opts{Visibility: "public"}, "")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !res2.Instant || res2.Reused {
+		t.Fatalf("软删后应新建非 reuse: instant=%v reused=%v", res2.Instant, res2.Reused)
+	}
+	if res2.Image.Key == res1.Image.Key {
+		t.Fatal("不应复用已软删 key")
 	}
 }
 

@@ -50,6 +50,9 @@ type Result struct {
 	File    *model.File
 	Policy  *model.StoragePolicy
 	Instant bool
+	// Reused 为 true 表示同用户命中已有 live image（同 file + 选项一致），未新建记录、未二次扣配额。
+	// 跨用户秒传仍 Instant=true 且 Reused=false。
+	Reused bool
 }
 
 type Service struct {

@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { Link, NavLink, Outlet } from 'react-router'
 import { useReviewCount } from '../../../api/adminHooks'
-import { useSession } from '../../../api/hooks'
+import { useConfig, useSession } from '../../../api/hooks'
 import { useT } from '../../../i18n'
 import { BrandLockup } from '../../../ui/Brand'
 import { LangToggle } from '../../../ui/LangToggle'
@@ -24,6 +24,7 @@ const NAV = [
 export function AdminLayout() {
   const { t } = useT()
   const { data: user } = useSession()
+  const { data: config } = useConfig()
   const theme = useGlobal((s) => s.theme)
   const toggleTheme = useGlobal((s) => s.toggleTheme)
   const review = useReviewCount()
@@ -56,7 +57,7 @@ export function AdminLayout() {
           ≡
         </button>
         <Link to="/admin" className={styles.brand} aria-label={t('nav.adminHomeAria')}>
-          <BrandLockup badge="ADMIN" />
+          <BrandLockup badge="ADMIN" word={config?.site_name} />
         </Link>
         <div className={styles.right}>
           <Link to="/" className={styles.backLink}>
