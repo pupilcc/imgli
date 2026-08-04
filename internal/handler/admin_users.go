@@ -14,21 +14,28 @@ import (
 	"github.com/yixian-huang/imgli/internal/service/adminsvc"
 )
 
-// adminUserDTO 管理端视角的用户字段（不含 image_count，供 PATCH 响应复用）。
+// adminUserDTO 管理端视角的用户字段（不含 image_count / last_seen，供 PATCH 响应复用）。
 func adminUserDTO(u *model.User) map[string]any {
 	return map[string]any{
 		"id": u.ID, "username": u.Username, "email": u.Email,
 		"nickname": u.Nickname, "group_id": u.GroupID, "status": u.Status,
 		"is_admin": u.IsAdmin, "used_storage": u.UsedStorage,
-		"email_verified": u.EmailVerifiedAt != nil,
-		"signup_channel": u.SignupChannel,
-		"created_at":     u.CreatedAt.Format(time.RFC3339),
+		"bandwidth_used_month": u.BandwidthUsedMonth,
+		"bandwidth_period":     u.BandwidthPeriod,
+		"email_verified":       u.EmailVerifiedAt != nil,
+		"signup_channel":       u.SignupChannel,
+		"created_at":           u.CreatedAt.Format(time.RFC3339),
 	}
 }
 
 func userRowDTO(row *adminsvc.UserRow) map[string]any {
 	m := adminUserDTO(&row.User)
 	m["image_count"] = row.ImageCount
+	if row.LastSeenAt != nil {
+		m["last_seen_at"] = row.LastSeenAt.UTC().Format(time.RFC3339)
+	} else {
+		m["last_seen_at"] = nil
+	}
 	return m
 }
 

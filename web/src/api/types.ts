@@ -253,9 +253,16 @@ export interface AdminUser {
   status: string
   is_admin: boolean
   used_storage: number
+  /** 本月出站已用（字节） */
+  bandwidth_used_month?: number
+  /** 账期 YYYY-MM */
+  bandwidth_period?: string
   created_at: string
+  /** 最近 Web session 签发时间；无 session 为 null */
+  last_seen_at?: string | null
   image_count: number
   email_verified?: boolean
+  signup_channel?: string
 }
 
 export interface AdminUsersPage {

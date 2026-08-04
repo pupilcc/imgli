@@ -10,6 +10,7 @@ export function ArmedButton({
   children,
   armedChildren,
   stopPropagation = true,
+  disabled,
 }: {
   title: string
   armedTitle: string
@@ -20,6 +21,7 @@ export function ArmedButton({
   /** Visible label while armed; defaults to children (prefer a short confirm word for icon buttons). */
   armedChildren?: ReactNode
   stopPropagation?: boolean
+  disabled?: boolean
 }) {
   const [armed, setArmed] = useState(false)
   useEffect(() => {
@@ -27,15 +29,20 @@ export function ArmedButton({
     const t = setTimeout(() => setArmed(false), 2500)
     return () => clearTimeout(t)
   }, [armed])
+  useEffect(() => {
+    if (disabled) setArmed(false)
+  }, [disabled])
 
   return (
     <button
       type="button"
       title={armed ? armedTitle : title}
       aria-label={armed ? armedTitle : title}
+      disabled={disabled}
       className={[className, armed && armedClassName].filter(Boolean).join(' ') || undefined}
       onClick={(e) => {
         if (stopPropagation) e.stopPropagation()
+        if (disabled) return
         if (armed) {
           setArmed(false)
           onConfirm()

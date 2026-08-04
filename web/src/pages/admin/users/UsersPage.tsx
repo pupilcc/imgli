@@ -5,18 +5,35 @@ import { useSession } from '../../../api/hooks'
 import type { AdminUser } from '../../../api/types'
 import { useT } from '../../../i18n'
 import { copyText } from '../../../lib/copy'
-import { formatBytes } from '../../../lib/format'
+import { formatBytes, formatDate } from '../../../lib/format'
 import { useAdminSearchParam } from '../../../lib/useAdminSearchParam'
 import { useDebounced } from '../../../lib/useDebounced'
 import { PageHeader } from '../../../shell/PageHeader'
+import { ArmedButton } from '../../../ui/ArmedButton'
 import { Button } from '../../../ui/Button'
 import { EmptyState } from '../../../ui/EmptyState'
-import { InlineConfirm } from '../../../ui/InlineConfirm'
 import { Modal } from '../../../ui/Modal'
 import { AdminQueryGate } from '../ui/AdminQueryGate'
 import { Pager } from '../ui/Pager'
 import forms from '../ui/adminForms.module.css'
 import styles from './UsersPage.module.css'
+
+type SortKey = '' | 'bandwidth' | 'storage' | 'created' | 'last_seen'
+
+function sortLabel(t: (k: string) => string, sort: string): string {
+  switch (sort) {
+    case 'bandwidth':
+      return t('adminA.sortBandwidth')
+    case 'storage':
+      return t('adminA.sortStorage')
+    case 'created':
+      return t('adminA.sortCreated')
+    case 'last_seen':
+      return t('adminA.sortLastSeen')
+    default:
+      return t('adminA.sortId')
+  }
+}
 
 export function UsersPage() {
   const { t } = useT()
@@ -54,7 +71,7 @@ export function UsersPage() {
 
   const { data: me } = useSession()
   const channel = params.get('channel') ?? ''
-  const sort = params.get('sort') ?? ''
+  const sort = (params.get('sort') ?? '') as SortKey
   const users = useAdminUsers({
     q: q || undefined,
     group,
@@ -71,10 +88,58 @@ export function UsersPage() {
   const groups = groupsQ.data?.items ?? []
   const groupName = (id: number) => groups.find((g) => g.id === id)?.name ?? `#${id}`
   const groupQuota = (id: number) => groups.find((g) => g.id === id)?.storage_quota ?? 0
+  const groupBwQuota = (id: number) => groups.find((g) => g.id === id)?.bandwidth_quota_month ?? 0
 
   const closeReset = () => {
     setResetTarget(null)
     reset.reset()
+  }
+
+  const setSort = (key: SortKey) => {
+    setParams((p) => {
+      const n = new URLSearchParams(p)
+      const cur = n.get('sort') ?? ''
+      // 再点同一列 → 回默认 id
+      if (cur === key || (!key && !cur)) {
+        if (!key) return p
+        n.delete('sort')
+      } else if (key) {
+        n.set('sort', key)
+      } else {
+        n.delete('sort')
+      }
+      n.delete('page')
+      return n
+    })
+  }
+
+  const SortTh = ({
+    col,
+    label,
+    align = 'start',
+  }: {
+    col: SortKey
+    label: string
+    align?: 'start' | 'end' | 'center'
+  }) => {
+    const active = (sort || '') === col
+    return (
+      <button
+        type="button"
+        className={[styles.thBtn, styles[`align${align[0].toUpperCase()}${align.slice(1)}`], active && styles.thActive]
+          .filter(Boolean)
+          .join(' ')}
+        aria-label={t('adminA.sortAria', { col: label })}
+        aria-pressed={active}
+        title={active ? t('adminA.sortActive') : t('adminA.sortAria', { col: label })}
+        onClick={() => setSort(col)}
+      >
+        <span>{label}</span>
+        <span className={styles.thMark} aria-hidden>
+          {active ? '▼' : '↕'}
+        </span>
+      </button>
+    )
   }
 
   return (
@@ -92,7 +157,12 @@ export function UsersPage() {
                 placeholder={t('adminA.searchUsersPlaceholder')}
               />
             </div>
-            <select value={group ?? ''} onChange={(e) => setParam('group', e.target.value)} className={forms.select} aria-label={t('adminA.filterGroupAria')}>
+            <select
+              value={group ?? ''}
+              onChange={(e) => setParam('group', e.target.value)}
+              className={forms.select}
+              aria-label={t('adminA.filterGroupAria')}
+            >
               <option value="">{t('adminA.allGroups')}</option>
               {groups.map((g) => (
                 <option key={g.id} value={g.id}>
@@ -100,25 +170,30 @@ export function UsersPage() {
                 </option>
               ))}
             </select>
-            <select value={status} onChange={(e) => setParam('status', e.target.value)} className={forms.select} aria-label={t('adminA.filterStatusAria')}>
+            <select
+              value={status}
+              onChange={(e) => setParam('status', e.target.value)}
+              className={forms.select}
+              aria-label={t('adminA.filterStatusAria')}
+            >
               <option value="">{t('adminA.allStatuses')}</option>
               <option value="active">{t('adminA.activeUsers')}</option>
               <option value="banned">{t('adminA.bannedUsers')}</option>
             </select>
-            <select value={channel} onChange={(e) => setParam('channel', e.target.value)} className={forms.select} aria-label="channel">
-              <option value="">all channels</option>
-              <option value="direct">direct</option>
-              <option value="invite">invite</option>
-              <option value="utm">utm</option>
-              <option value="referer">referer</option>
-            </select>
-            <select value={sort} onChange={(e) => setParam('sort', e.target.value)} className={forms.select} aria-label="sort">
-              <option value="">sort: id</option>
-              <option value="bandwidth">sort: bandwidth</option>
+            <select
+              value={channel}
+              onChange={(e) => setParam('channel', e.target.value)}
+              className={forms.select}
+              aria-label={t('adminA.filterChannelAria')}
+            >
+              <option value="">{t('adminA.allChannels')}</option>
+              <option value="direct">{t('adminA.channelDirect')}</option>
+              <option value="invite">{t('adminA.channelInvite')}</option>
+              <option value="utm">{t('adminA.channelUtm')}</option>
+              <option value="referer">{t('adminA.channelReferer')}</option>
             </select>
             <a
-              className={forms.select}
-              style={{ display: 'inline-flex', alignItems: 'center', textDecoration: 'none', color: 'inherit', padding: '0 10px' }}
+              className={styles.csvLink}
               href={`/api/v1/admin/export/users.csv?${new URLSearchParams({
                 ...(q ? { q } : {}),
                 ...(group ? { group: String(group) } : {}),
@@ -139,31 +214,42 @@ export function UsersPage() {
           ) : (
             <>
               <div className={styles.table}>
-                <div className={`${styles.head} ${styles.row}`}>
-                  <span>{t('adminA.colUser')}</span>
-                  <span>{t('adminA.colEmail')}</span>
-                  <span>{t('adminA.colEmailVerified')}</span>
-                  <span>{t('adminA.colGroup')}</span>
-                  <span>{t('adminA.colImageCount')}</span>
-                  <span>{t('adminA.colUsedStorage')}</span>
-                  <span>{t('adminA.colStatus')}</span>
-                  <span />
+                <div className={`${styles.head} ${styles.row}`} role="row">
+                  <span className={styles.alignStart}>{t('adminA.colUser')}</span>
+                  <span className={styles.alignStart}>{t('adminA.colGroup')}</span>
+                  <span className={styles.alignEnd}>{t('adminA.colImageCount')}</span>
+                  <SortTh col="storage" label={t('adminA.colUsedStorage')} align="end" />
+                  <SortTh col="bandwidth" label={t('adminA.colBandwidth')} align="end" />
+                  <SortTh col="created" label={t('adminA.colRegistered')} align="start" />
+                  <SortTh col="last_seen" label={t('adminA.colLastSeen')} align="start" />
+                  <span className={styles.alignStart}>{t('adminA.colStatus')}</span>
+                  <span className={styles.alignEnd}>{t('adminA.colActions')}</span>
                 </div>
                 {data.items.map((u) => {
                   const quota = groupQuota(u.group_id)
+                  const bwQuota = groupBwQuota(u.group_id)
+                  const usedBw = u.bandwidth_used_month ?? 0
                   const pct = quota > 0 ? Math.min(100, Math.round((u.used_storage / quota) * 100)) : 0
+                  const bwPct = bwQuota > 0 ? Math.min(100, Math.round((usedBw / bwQuota) * 100)) : 0
                   return (
-                    <div key={u.id} className={styles.row}>
-                      <div className={styles.userCell}>
+                    <div key={u.id} className={styles.row} role="row">
+                      <div className={`${styles.userCell} ${styles.alignStart}`}>
                         <span className={styles.initial}>{(u.nickname || u.username).slice(0, 1)}</span>
-                        <span className={styles.uname}>{u.username}</span>
+                        <div className={styles.userMeta}>
+                          <span className={styles.uname}>{u.username}</span>
+                          <span className={styles.email} title={u.email}>
+                            {u.email}
+                            {u.email_verified === false && (
+                              <span className={styles.unverified} title={t('adminA.emailVerifiedNo')}>
+                                {' '}
+                                · {t('adminA.emailVerifiedNo')}
+                              </span>
+                            )}
+                          </span>
+                        </div>
                       </div>
-                      <span className={styles.email}>{u.email}</span>
-                      <span className={u.email_verified ? styles.stOk : styles.stErr}>
-                        {u.email_verified ? t('adminA.emailVerifiedYes') : t('adminA.emailVerifiedNo')}
-                      </span>
                       <select
-                        className={styles.groupSel}
+                        className={`${styles.groupSel} ${styles.alignStart}`}
                         value={u.group_id}
                         aria-label={t('adminA.userGroupAria', { username: u.username })}
                         onChange={(e) => update.mutate({ id: u.id, body: { group_id: Number(e.target.value) } })}
@@ -175,49 +261,103 @@ export function UsersPage() {
                         ))}
                         {groups.length === 0 && <option value={u.group_id}>{groupName(u.group_id)}</option>}
                       </select>
-                      <span className={styles.mono}>{u.image_count}</span>
-                      <div className={styles.usageCell}>
+                      <span className={`${styles.mono} ${styles.alignEnd}`}>{u.image_count}</span>
+                      <div className={`${styles.usageCell} ${styles.alignEnd}`}>
                         {quota > 0 && (
-                          <span className={styles.usageBar}>
+                          <span className={styles.usageBar} title={`${pct}%`}>
                             <span style={{ width: `${pct}%` }} />
                           </span>
                         )}
                         <span className={styles.usageText}>{formatBytes(u.used_storage)}</span>
                       </div>
-                      <span className={u.status === 'active' ? styles.stOk : styles.stErr}>
+                      <div className={`${styles.usageCell} ${styles.alignEnd}`}>
+                        {bwQuota > 0 && (
+                          <span className={styles.usageBar} title={`${bwPct}%`}>
+                            <span style={{ width: `${bwPct}%` }} />
+                          </span>
+                        )}
+                        <span className={styles.usageText}>
+                          {formatBytes(usedBw)}
+                          {u.bandwidth_period ? (
+                            <span className={styles.period}> · {u.bandwidth_period}</span>
+                          ) : null}
+                        </span>
+                      </div>
+                      <span className={`${styles.time} ${styles.alignStart}`}>{formatDate(u.created_at)}</span>
+                      <span className={`${styles.time} ${styles.alignStart}`}>
+                        {u.last_seen_at ? formatDate(u.last_seen_at) : t('adminA.neverSeen')}
+                      </span>
+                      <span
+                        className={[
+                          styles.alignStart,
+                          u.status === 'active' ? styles.stOk : styles.stErr,
+                        ].join(' ')}
+                      >
                         {u.status === 'active' ? t('adminA.statusActive') : t('adminA.statusBanned')}
                       </span>
-                      <div className={styles.actions}>
+                      <div className={`${styles.actions} ${styles.alignEnd}`}>
                         {u.status === 'active' ? (
-                          <InlineConfirm
-                            label={t('adminA.ban')}
-                            confirmLabel={t('adminA.confirmBan')}
+                          <ArmedButton
+                            className={styles.iconBtn}
+                            armedClassName={styles.iconBtnArmed}
+                            title={t('adminA.ban')}
+                            armedTitle={t('adminA.confirmBan')}
+                            armedChildren={t('adminA.confirmBan')}
                             disabled={me?.id === u.id}
                             onConfirm={() => update.mutate({ id: u.id, body: { status: 'banned' } })}
-                          />
+                          >
+                            <span aria-hidden>⊘</span>
+                          </ArmedButton>
                         ) : (
-                          <Button variant="secondary" onClick={() => update.mutate({ id: u.id, body: { status: 'active' } })}>
-                            {t('adminA.unban')}
-                          </Button>
+                          <ArmedButton
+                            className={styles.iconBtn}
+                            armedClassName={styles.iconBtnArmedOk}
+                            title={t('adminA.unban')}
+                            armedTitle={t('adminA.confirmUnban')}
+                            armedChildren={t('adminA.confirmUnban')}
+                            onConfirm={() => update.mutate({ id: u.id, body: { status: 'active' } })}
+                          >
+                            <span aria-hidden>○</span>
+                          </ArmedButton>
                         )}
-                        <Button variant="secondary" onClick={() => setResetTarget(u)}>
-                          {t('adminA.resetPassword')}
-                        </Button>
-                        <Link className={styles.viewLink} to={`/admin/images?user=${u.id}`}>
-                          {t('adminA.viewImages')}
+                        <ArmedButton
+                          className={styles.iconBtn}
+                          armedClassName={styles.iconBtnArmed}
+                          title={t('adminA.resetPassword')}
+                          armedTitle={t('adminA.confirmResetIcon')}
+                          armedChildren={t('adminA.confirmResetIcon')}
+                          onConfirm={() => setResetTarget(u)}
+                        >
+                          <span aria-hidden>⌁</span>
+                        </ArmedButton>
+                        <Link
+                          className={styles.iconLink}
+                          to={`/admin/images?user=${u.id}`}
+                          title={t('adminA.viewImages')}
+                          aria-label={t('adminA.viewImages')}
+                        >
+                          <span aria-hidden>▦</span>
                         </Link>
                       </div>
                     </div>
                   )
                 })}
               </div>
-              <p className={styles.stat}>{t('adminA.usersTotal', { total: data.total })}</p>
-              <Pager
-                page={page}
-                limit={data.limit}
-                total={data.total}
-                onPage={(p) => setParam('page', p > 1 ? String(p) : '')}
-              />
+              <div className={styles.footer}>
+                <p className={styles.stat}>
+                  {t('adminA.usersTotal', { total: data.total })}
+                  <span className={styles.statSep}>·</span>
+                  {t('adminA.usersPageHint', { page: data.page, limit: data.limit })}
+                  <span className={styles.statSep}>·</span>
+                  {t('adminA.sortBy')}: {sortLabel(t, sort)}
+                </p>
+                <Pager
+                  page={page}
+                  limit={data.limit}
+                  total={data.total}
+                  onPage={(p) => setParam('page', p > 1 ? String(p) : '')}
+                />
+              </div>
             </>
           )
         }
