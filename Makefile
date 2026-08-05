@@ -1,18 +1,23 @@
-.PHONY: build build-go build-vips web test test-web test-vips font-subset run release-snapshot
+.PHONY: build build-go build-vips web test test-web test-vips font-subset run release-snapshot docker-build
 
 VERSION ?= $(shell git describe --tags --always --dirty 2>/dev/null || echo dev)
 
 web:
 	cd web && npm install --no-fund --no-audit && npm run build
 
+# 本地默认：纯 Go（CGO 关、无系统 libvips；CI 同）。发行 Docker 镜像默认带 vips（见 Dockerfile）。
 build-go:
 	go build -ldflags "-X github.com/yixian-huang/imgli/internal/version.Version=$(VERSION)" -o imgli ./cmd/imgli
 
-# libvips 构建:缩略图 WebP(需本机 pkg-config vips + cgo；交叉编译请在目标机本机构建)。
+# libvips 构建:WebP 缩略图 + 原图转 WebP（需本机 pkg-config vips + cgo；交叉编译请在目标机本机构建）。
 build-vips: web
 	CGO_ENABLED=1 go build -tags vips -ldflags "-X github.com/yixian-huang/imgli/internal/version.Version=$(VERSION)-vips" -o imgli ./cmd/imgli
 
 build: web build-go
+
+# 与生产一致的发行镜像（含 libvips）。
+docker-build:
+	docker build --build-arg VERSION=$(VERSION) -t imgli:local .
 
 test:
 	go vet ./...

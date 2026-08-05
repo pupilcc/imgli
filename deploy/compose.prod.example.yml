@@ -5,6 +5,7 @@
 #   # set IMGLI_BASE_URL to your public HTTPS origin
 #   docker compose -f docker-compose.prod.yml up -d
 #
+# Official images build with libvips (WebP thumbnails + optional original→WebP).
 # Prefer a reverse proxy (Caddy/Traefik/Nginx) in front for TLS.
 # Bind app to loopback only when the proxy is on the same host (see ports).
 

@@ -212,6 +212,23 @@ export function SystemPage() {
                   { label: 'listen', value: data.runtime.listen },
                   { label: t('adminA.installShape'), value: data.runtime.install },
                   { label: 'data_dir', value: data.runtime.data_dir },
+                  {
+                    label: t('adminA.imagingBackend'),
+                    value: data.runtime.imaging_backend || '—',
+                  },
+                  {
+                    label: t('adminA.webpEncode'),
+                    value:
+                      data.runtime.webp_encode === true
+                        ? t('adminA.capabilityYes')
+                        : data.runtime.webp_encode === false
+                          ? t('adminA.capabilityNo')
+                          : '—',
+                  },
+                  {
+                    label: t('adminA.thumbExt'),
+                    value: data.runtime.thumb_ext ? `.${data.runtime.thumb_ext}` : '—',
+                  },
                   { label: t('adminA.requestHost'), value: data.runtime.request_host || '—' },
                   {
                     label: 'X-Forwarded-Proto',
@@ -228,6 +245,14 @@ export function SystemPage() {
                   </div>
                 ))}
               </div>
+              <p className={hintClass}>
+                {data.runtime.webp_encode
+                  ? t('adminA.imagingHintVips')
+                  : t('adminA.imagingHintPureGo')}{' '}
+                <Link to="/admin/settings" className="text-ink underline-offset-2 hover:underline">
+                  {t('adminA.imagingSettingsLink')}
+                </Link>
+              </p>
               {originMismatch ? (
                 <div className="mb-3 rounded-sm border border-err/50 bg-err/10 px-3.5 py-3 text-[13px] leading-normal">
                   {t('adminA.originMismatch', { browser: browserNorm, base: baseNorm })}

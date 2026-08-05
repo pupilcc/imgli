@@ -73,6 +73,11 @@ export interface FormState {
   twSizeRatio: number
   maxEdge: number
   stripExif: boolean
+  jpegQuality: number
+  outputFormat: 'keep' | 'webp'
+  webpQuality: number
+  webpSkipIfLarger: boolean
+  webpEncodeAvailable: boolean
   ann: SiteAnnouncement
   footerGroups: FormFooterGroup[]
   htmlHead: string
@@ -137,6 +142,14 @@ export function formOf(s: AdminSettings): FormState {
     twSizeRatio: tw?.size_ratio != null && tw.size_ratio >= 0.01 ? tw.size_ratio : 0.05,
     maxEdge: s.processing?.max_edge ?? 0,
     stripExif: s.processing?.strip_exif !== false,
+    jpegQuality: s.processing?.jpeg_quality ?? 0,
+    webpEncodeAvailable: s.processing_capabilities?.webp_encode === true,
+    outputFormat:
+      s.processing?.output_format === 'webp' && s.processing_capabilities?.webp_encode === true
+        ? 'webp'
+        : 'keep',
+    webpQuality: s.processing?.webp_quality ?? 0,
+    webpSkipIfLarger: s.processing?.webp_skip_if_larger !== false,
     ann: s.announcement
       ? {
           enabled: !!s.announcement.enabled,

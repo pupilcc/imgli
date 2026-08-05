@@ -53,7 +53,9 @@
 
 ## 特性
 
-- **单二进制**:前端 `go:embed` 内嵌;默认 SQLite、支持 PostgreSQL,无 CGO 依赖。
+- **单二进制**:前端 `go:embed` 内嵌;默认 SQLite、支持 PostgreSQL。本地/CI 默认可无 CGO；
+  **官方 Docker 镜像默认带 libvips**（WebP 缩略图与可选原图转 WebP）。纯 Go 二进制仍可用
+  `make build`；本机要 vips 时用 `make build-vips`。
 - **多存储**:本地盘、**S3 兼容**(MinIO/RustFS 已真机验证,附厂商验证工具包)、WebDAV
   (OpenList/网盘出口;矩阵见 [docs/webdav-compatibility.md](docs/webdav-compatibility.md));
   可选 **FTP 兼容层**(功能受限;优先 OpenList/外置代理,见 [docs/storage-ftp.md](docs/storage-ftp.md));
@@ -84,6 +86,8 @@
   站点定制 IA：[docs/design/site-customization-ia.md](docs/design/site-customization-ia.md)。
 - **v0.9.3**：管理端用户运营表（流量/最近访问/表头排序/图标二次确认）；前端 **Tailwind CSS v4**
   全站样式重写 + 共享 admin chrome。
+- **v0.9.4**：管理端回收站恢复；用户表合并列+展开；图片处理 JPEG 质量 / 原图 WebP（vips）；
+  Docker 默认 libvips；系统页图像能力展示。
 - **细节**:中英双语界面、PWA、浅色/深色/**跟随系统**主题、文字水印(内嵌中文字体子集)、
   带审计日志与轻量运营统计的管理后台。
 
@@ -104,7 +108,7 @@ imgli serve
 固定版本或安装路径：
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/yixian-huang/imgli/main/scripts/install.sh | sh -s -- v0.9.3
+curl -fsSL https://raw.githubusercontent.com/yixian-huang/imgli/main/scripts/install.sh | sh -s -- v0.9.4
 PREFIX=/usr/local/bin curl -fsSL https://raw.githubusercontent.com/yixian-huang/imgli/main/scripts/install.sh | sh
 ```
 
@@ -120,7 +124,7 @@ docker run --rm -p 8686:8686 -v imgli-data:/data \
 # → http://localhost:8686（第一个注册用户即管理员）
 ```
 
-固定版本用 `ghcr.io/yixian-huang/imgli:v0.9.3`（见
+固定版本用 `ghcr.io/yixian-huang/imgli:v0.9.4`（见
 [Releases](https://github.com/yixian-huang/imgli/releases)）。
 
 ### Docker Compose
@@ -141,7 +145,7 @@ TLS 反代片段：[`deploy/Caddyfile.example`](deploy/Caddyfile.example)、
 
 ```bash
 make build          # 需要 Go ≥ 1.26、Node ≥ 24
-./imgli version     # ldflags 注入的 git tag，如 v0.9.3
+./imgli version     # ldflags 注入的 git tag，如 v0.9.4
 ./imgli serve       # → http://localhost:8686
 ```
 

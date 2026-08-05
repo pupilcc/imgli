@@ -74,11 +74,14 @@ release:
     Or download the archive for your OS/arch below, extract, and run
     `./imgli serve`.
 
-    Docker:
+    Docker (recommended for production; image includes libvips / WebP encode):
 
     ```bash
     docker pull ghcr.io/yixian-huang/imgli:{{ .Tag }}
     ```
+
+    GitHub release archives are pure-Go (no CGO). For original→WebP conversion
+    or WebP thumbnails, use the Docker image or build with `make build-vips`.
 
 snapshot:
   version_template: "{{ incpatch .Version }}-next"

@@ -33,6 +33,8 @@ function mockBackend(items: unknown[], opts: { pageEmptiedTotal?: number } = {})
         return Promise.resolve(jsonRes(env({ items: [{ id: 1, name: '本地', driver: 'local', config: '{}', cdn_domain: '', path_template: '', enabled: true, created_at: '', file_count: 0, used_bytes: 0 }] })))
       if (u.includes('/admin/images/') && method === 'PATCH')
         return Promise.resolve(jsonRes(env(img({ is_whitelisted: true }))))
+      if (u.includes('/admin/images/') && method === 'POST' && u.includes('/restore'))
+        return Promise.resolve(jsonRes(env({ key: 'k1', restored: true })))
       if (u.includes('/admin/images/') && method === 'DELETE') {
         const permanent = u.includes('permanent=1')
         return Promise.resolve(jsonRes(env({
@@ -115,6 +117,18 @@ it('列表:两击确认彻底删除 permanent=1', async () => {
   await waitFor(() => {
     expect(lastReq?.method).toBe('DELETE')
     expect(lastReq?.url).toContain('/api/v1/admin/images/k1?permanent=1')
+  })
+})
+
+it('回收站:两击确认恢复 POST restore', async () => {
+  mockBackend([img({ in_trash: true })])
+  renderPage('/admin/images?deleted=trash')
+  await screen.findByText('cat.png')
+  await userEvent.click(screen.getByTitle('恢复'))
+  await userEvent.click(screen.getByTitle('确认恢复'))
+  await waitFor(() => {
+    expect(lastReq?.method).toBe('POST')
+    expect(lastReq?.url).toContain('/api/v1/admin/images/k1/restore')
   })
 })
 

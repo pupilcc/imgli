@@ -3,7 +3,16 @@
 > **Planning SSOT is internal** (`imgli/roadmap` in the project knowledge base).  
 > This file is a **public, de-sensitized mirror** for contributors. Prefer GitHub Issues + Milestones for execution.
 
-## Latest shipped — v0.9.3 · Admin users ops · Tailwind UI
+## Latest shipped — v0.9.4 · Admin restore · processing WebP · Docker vips
+
+Release: https://github.com/yixian-huang/imgli/releases/tag/v0.9.4
+
+Admin trash restore (single + batch); denser users table with expand details;
+JPEG quality + original WebP (vips) processing; Docker image defaults to
+libvips; System page imaging capability readout. See
+[CHANGELOG](CHANGELOG.md#094---2026-08-05).
+
+## Previous — v0.9.3 · Admin users ops · Tailwind UI
 
 Release: https://github.com/yixian-huang/imgli/releases/tag/v0.9.3
 

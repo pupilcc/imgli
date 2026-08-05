@@ -38,7 +38,12 @@ const SETTINGS = {
     text_watermark: { enabled: false, text: '', position: 'br', opacity: 0.35, size_ratio: 0.05 },
     max_edge: 0,
     strip_exif: true,
+    jpeg_quality: 0,
+    output_format: 'keep',
+    webp_quality: 0,
+    webp_skip_if_larger: true,
   },
+  processing_capabilities: { webp_encode: false },
 }
 
 let putBody: Record<string, unknown> | null = null
@@ -328,6 +333,10 @@ it('图片处理区块:渲染文字水印与最长边', async () => {
   expect(screen.getByLabelText('水印位置')).toBeInTheDocument()
   expect(screen.getByLabelText('字号比例')).toBeInTheDocument()
   expect(screen.getByLabelText('最长边')).toBeInTheDocument()
+  expect(screen.getByLabelText('JPEG 重编码质量')).toBeInTheDocument()
+  expect(screen.getByLabelText('原图输出格式')).toBeInTheDocument()
+  expect(screen.getByLabelText('WebP 质量')).toBeInTheDocument()
+  expect(screen.getByRole('switch', { name: 'WebP 体积变大则回退' })).toBeInTheDocument()
 })
 
 it('图片处理:填 text+开启+保存 → PUT processing 正确且 max_edge 数值化', async () => {
@@ -340,18 +349,23 @@ it('图片处理:填 text+开启+保存 → PUT processing 正确且 max_edge �
   const maxEdge = screen.getByLabelText('最长边')
   await userEvent.clear(maxEdge)
   await userEvent.type(maxEdge, '2048')
+  const jq = screen.getByLabelText('JPEG 重编码质量')
+  await userEvent.clear(jq)
+  await userEvent.type(jq, '82')
   await userEvent.click(screen.getByRole('button', { name: '保存设置' }))
   await waitFor(() => expect(putBody).toBeTruthy())
   const processing = (putBody as {
     processing: {
       text_watermark: { enabled: boolean; text: string }
       max_edge: number
+      jpeg_quality: number
     }
   }).processing
   expect(processing.text_watermark.enabled).toBe(true)
   expect(processing.text_watermark.text).toBe('白栗图床')
   expect(processing.max_edge).toBe(2048)
   expect(typeof processing.max_edge).toBe('number')
+  expect(processing.jpeg_quality).toBe(82)
 })
 
 it('Tab 切换:只展示当前分区,表单状态跨 Tab 保留', async () => {

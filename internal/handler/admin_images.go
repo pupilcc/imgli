@@ -66,8 +66,8 @@ func (h *AdminHandlers) Images(w http.ResponseWriter, r *http.Request) {
 	OK(w, map[string]any{"items": items, "total": total, "page": page, "limit": limit})
 }
 
-// ImagesBatch POST /api/v1/admin/images/batch {keys, action: trash|purge} → {results}。
-// 上限 100；逐项处理部分成功。trash=软删（游客无回收站时升格 purge）；purge=彻底删除。
+// ImagesBatch POST /api/v1/admin/images/batch {keys, action: trash|purge|restore} → {results}。
+// 上限 100；逐项处理部分成功。trash=软删（游客无回收站时升格 purge）；purge=彻底删除；restore=从回收站恢复。
 func (h *AdminHandlers) ImagesBatch(w http.ResponseWriter, r *http.Request) {
 	var req struct {
 		Keys   []string `json:"keys"`
@@ -77,8 +77,8 @@ func (h *AdminHandlers) ImagesBatch(w http.ResponseWriter, r *http.Request) {
 		Fail(w, http.StatusBadRequest, CodeInvalidRequest, "请求体无效")
 		return
 	}
-	if req.Action != "trash" && req.Action != "purge" {
-		Fail(w, http.StatusBadRequest, CodeInvalidRequest, "action 仅支持 trash|purge")
+	if req.Action != "trash" && req.Action != "purge" && req.Action != "restore" {
+		Fail(w, http.StatusBadRequest, CodeInvalidRequest, "action 仅支持 trash|purge|restore")
 		return
 	}
 	if len(req.Keys) == 0 {
@@ -103,6 +103,21 @@ func (h *AdminHandlers) ImagesBatch(w http.ResponseWriter, r *http.Request) {
 		key = strings.TrimSpace(key)
 		if key == "" {
 			out = append(out, item{Key: key, OK: false, Error: "empty key"})
+			continue
+		}
+		if req.Action == "restore" {
+			img, err := h.D.Adm.AdminRestore(key)
+			if err != nil {
+				msg := "not found"
+				if !errors.Is(err, adminsvc.ErrImageNotFound) {
+					msg = "error"
+				}
+				out = append(out, item{Key: key, OK: false, Error: msg})
+				continue
+			}
+			h.D.Adm.Audit(&actor.ID, "admin", "image_admin_restore",
+				map[string]any{"key": key, "owner_id": img.UserID, "batch": true}, ClientIP(r))
+			out = append(out, item{Key: key, OK: true})
 			continue
 		}
 		permanent := req.Action == "purge"
@@ -151,6 +166,24 @@ func (h *AdminHandlers) ImagesBatch(w http.ResponseWriter, r *http.Request) {
 		out = append(out, item{Key: key, OK: true, Permanent: false})
 	}
 	OK(w, map[string]any{"results": out})
+}
+
+// RestoreImage POST /api/v1/admin/images/{key}/restore
+// 从回收站恢复（清 deleted_at）；未软删/不存在 → 404。
+func (h *AdminHandlers) RestoreImage(w http.ResponseWriter, r *http.Request) {
+	key := chi.URLParam(r, "key")
+	actor := PrincipalFrom(r).User
+	img, err := h.D.Adm.AdminRestore(key)
+	switch {
+	case err == nil:
+		h.D.Adm.Audit(&actor.ID, "admin", "image_admin_restore",
+			map[string]any{"key": key, "owner_id": img.UserID}, ClientIP(r))
+		OK(w, map[string]any{"key": key, "restored": true})
+	case errors.Is(err, adminsvc.ErrImageNotFound):
+		Fail(w, http.StatusNotFound, CodeNotFound, "图片不存在或未在回收站")
+	default:
+		Fail(w, http.StatusInternalServerError, CodeInternal, "服务器内部错误")
+	}
 }
 
 // DeleteImage DELETE /api/v1/admin/images/{key}[?permanent=1]

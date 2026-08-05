@@ -5,6 +5,7 @@ import {
   useAdminPolicies,
   useDeleteAdminImage,
   usePurgeAdminImage,
+  useRestoreAdminImage,
   useSetImageWhitelist,
 } from '../../../api/adminHooks'
 import type { AdminImageItem } from '../../../api/types'
@@ -60,17 +61,20 @@ export function ImagesAdminPage() {
   const wl = useSetImageWhitelist()
   const delM = useDeleteAdminImage()
   const purgeM = usePurgeAdminImage()
+  const restoreM = useRestoreAdminImage()
   const batchM = useAdminImagesBatch()
   const [detail, setDetail] = useState<AdminImageItem | null>(null)
   const [selected, setSelected] = useState<Set<string>>(() => new Set())
   const [trashArmed, setTrashArmed] = useState(false)
   const [purgeArmed, setPurgeArmed] = useState(false)
+  const [restoreArmed, setRestoreArmed] = useState(false)
 
   // 筛选/翻页时清空选择，避免跨页误删
   useEffect(() => {
     setSelected(new Set())
     setTrashArmed(false)
     setPurgeArmed(false)
+    setRestoreArmed(false)
   }, [user, status, policy, deleted, page])
 
   useEffect(() => {
@@ -83,6 +87,11 @@ export function ImagesAdminPage() {
     const timer = setTimeout(() => setPurgeArmed(false), 2500)
     return () => clearTimeout(timer)
   }, [purgeArmed])
+  useEffect(() => {
+    if (!restoreArmed) return
+    const timer = setTimeout(() => setRestoreArmed(false), 2500)
+    return () => clearTimeout(timer)
+  }, [restoreArmed])
 
   const onSoftDelete = (it: AdminImageItem) => {
     if (it.in_trash || it.user_id == null) {
@@ -105,16 +114,25 @@ export function ImagesAdminPage() {
     })
   }
 
+  const onRestore = (it: AdminImageItem) => {
+    restoreM.mutate(it.key, {
+      onSuccess: () => pushToast(t('adminA.toastRestored')),
+    })
+  }
+
   const selectPage = (items: AdminImageItem[]) => {
     setSelected(new Set(items.map((i) => i.key)))
   }
 
-  const runBatch = (action: 'trash' | 'purge') => {
+  const runBatch = (action: 'trash' | 'purge' | 'restore') => {
     const keys = [...selected]
     if (keys.length === 0) return
     setTrashArmed(false)
     setPurgeArmed(false)
+    setRestoreArmed(false)
     const CHUNK = 100
+    const verb =
+      action === 'purge' ? t('adminA.verbPurge') : action === 'restore' ? t('adminA.verbRestore') : t('adminA.verbTrash')
     ;(async () => {
       let ok = 0
       let failed = 0
@@ -129,7 +147,7 @@ export function ImagesAdminPage() {
         }
         pushToast(
           failed === 0
-            ? t('adminA.batchImagesDone', { ok, action: action === 'purge' ? t('adminA.verbPurge') : t('adminA.verbTrash') })
+            ? t('adminA.batchImagesDone', { ok, action: verb })
             : t('adminA.batchImagesPartial', { ok, failed }),
         )
         setSelected(new Set())
@@ -139,11 +157,16 @@ export function ImagesAdminPage() {
     })()
   }
 
-  const busy = delM.isPending || purgeM.isPending || batchM.isPending || wl.isPending
+  const busy =
+    delM.isPending || purgeM.isPending || restoreM.isPending || batchM.isPending || wl.isPending
   const items = images.data?.items ?? []
   const canSoftBatch = selected.size > 0 && [...selected].some((k) => {
     const it = items.find((i) => i.key === k)
     return it && !it.in_trash && it.user_id != null
+  })
+  const canRestoreBatch = selected.size > 0 && [...selected].some((k) => {
+    const it = items.find((i) => i.key === k)
+    return it && it.in_trash
   })
 
   const badgeBase =
@@ -290,6 +313,18 @@ export function ImagesAdminPage() {
                               ×
                             </ArmedButton>
                           )}
+                          {it.in_trash && (
+                            <ArmedButton
+                              title={t('adminA.restoreFromTrash')}
+                              armedTitle={t('adminA.confirmRestore')}
+                              className={cn(quickBtn, 'text-xs')}
+                              armedClassName={quickArmed}
+                              armedChildren={t('adminA.confirmShort')}
+                              onConfirm={() => onRestore(it)}
+                            >
+                              ↺
+                            </ArmedButton>
+                          )}
                           <ArmedButton
                             title={t('adminA.purgePermanent')}
                             armedTitle={t('adminA.confirmPurge')}
@@ -353,11 +388,29 @@ export function ImagesAdminPage() {
                 if (trashArmed) runBatch('trash')
                 else {
                   setPurgeArmed(false)
+                  setRestoreArmed(false)
                   setTrashArmed(true)
                 }
               }}
             >
               {trashArmed ? t('adminA.confirmMoveToTrash') : t('adminA.batchMoveToTrash')}
+            </button>
+          )}
+          {canRestoreBatch && (
+            <button
+              type="button"
+              className={cn(batchAct, restoreArmed && 'bg-[rgba(255,255,255,0.22)]')}
+              disabled={busy}
+              onClick={() => {
+                if (restoreArmed) runBatch('restore')
+                else {
+                  setTrashArmed(false)
+                  setPurgeArmed(false)
+                  setRestoreArmed(true)
+                }
+              }}
+            >
+              {restoreArmed ? t('adminA.confirmRestore') : t('adminA.batchRestore')}
             </button>
           )}
           <button
@@ -368,6 +421,7 @@ export function ImagesAdminPage() {
               if (purgeArmed) runBatch('purge')
               else {
                 setTrashArmed(false)
+                setRestoreArmed(false)
                 setPurgeArmed(true)
               }
             }}

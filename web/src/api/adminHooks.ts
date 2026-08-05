@@ -75,6 +75,12 @@ export interface SystemHealth {
     request_host: string
     forwarded_proto?: string
     forwarded_for_set?: boolean
+    /** pure-go | vips */
+    imaging_backend?: string
+    /** original WebP encode (vips builds) */
+    webp_encode?: boolean
+    /** thumbnail file extension: jpg | webp */
+    thumb_ext?: string
   }
 }
 
@@ -338,6 +344,19 @@ export function usePurgeAdminImage() {
   })
 }
 
+/** 管理端从回收站恢复。 */
+export function useRestoreAdminImage() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: (key: string) => post<{ key: string; restored: boolean }>(`/admin/images/${key}/restore`),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: queryKeys.admin.imagesRoot })
+      qc.invalidateQueries({ queryKey: queryKeys.admin.reviewCount })
+    },
+    onError: toastApiError,
+  })
+}
+
 export interface AdminImagesBatchResult {
   key: string
   ok: boolean
@@ -347,11 +366,11 @@ export interface AdminImagesBatchResult {
   object_retained?: boolean
 }
 
-/** 管理端批量：trash=软删（游客升格 purge），purge=彻底删除。 */
+/** 管理端批量：trash=软删（游客升格 purge），purge=彻底删除，restore=恢复。 */
 export function useAdminImagesBatch() {
   const qc = useQueryClient()
   return useMutation({
-    mutationFn: ({ keys, action }: { keys: string[]; action: 'trash' | 'purge' }) =>
+    mutationFn: ({ keys, action }: { keys: string[]; action: 'trash' | 'purge' | 'restore' }) =>
       post<{ results: AdminImagesBatchResult[] }>('/admin/images/batch', { keys, action }),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: queryKeys.admin.imagesRoot })
