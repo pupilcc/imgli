@@ -10,6 +10,28 @@ separate version in `go.mod` or `web/package.json`.
 
 ## [Unreleased]
 
+## [0.9.4] - 2026-08-05
+
+Theme: **Admin trash restore · users table density · processing WebP · Docker vips**.
+
+### Added
+
+- **Admin trash restore:** `POST /api/v1/admin/images/{key}/restore`; batch `action: restore`; list hover, detail, and batch bar restore controls (audit `image_admin_restore`).
+- **Image processing — JPEG quality:** `processing.jpeg_quality` (0 → default 90; else 1–100) for re-encode on strip/scale/watermark (keep path).
+- **Image processing — original WebP:** `output_format` (`keep`|`webp`), `webp_quality` (0 → 80), `webp_skip_if_larger` (default on). Single-decode / final-encode pipeline; GIF/WebP inputs unchanged. Enabling WebP requires a build with libvips encode.
+- **Processing capabilities:** settings expose `processing_capabilities.webp_encode`; System health exposes `imaging_backend`, `webp_encode`, `thumb_ext`.
+- **Docker default libvips:** release `Dockerfile` builds with `-tags vips` and ships runtime `vips` (WebP thumbnails + optional original→WebP).
+
+### Changed
+
+- **Admin users table:** denser layout — merged usage column (storage + bandwidth), expandable row for image count / registered / last seen; sort select for date fields; lower min table width.
+- **Admin sticky headers:** PageHeader solid isolation + shadow; main `scroll-pt`; settings tabs sticky polish (title stays pinned).
+- **Docs / install pins:** README, ROADMAP, Goreleaser notes clarify pure-Go GitHub archives vs Docker+vips; compose examples note vips image.
+
+### Fixed
+
+- Admin images trash scope previously only offered permanent delete; restore path is now available end-to-end.
+
 ## [0.9.3] - 2026-08-04
 
 Theme: **Admin users ops · full Tailwind UI**.
@@ -357,7 +379,8 @@ Theme: **Workflow & Trust** — CLI/integrations, share landing, privacy
 - Bilingual UI (中文/English), PWA, dark mode, text watermark, admin audit logs.
 - Docker Compose quick start and GitHub Actions CI (Go matrix, web, e2e smoke).
 
-[Unreleased]: https://github.com/yixian-huang/imgli/compare/v0.9.3...HEAD
+[Unreleased]: https://github.com/yixian-huang/imgli/compare/v0.9.4...HEAD
+[0.9.4]: https://github.com/yixian-huang/imgli/compare/v0.9.3...v0.9.4
 [0.9.3]: https://github.com/yixian-huang/imgli/compare/v0.9.2...v0.9.3
 [0.9.2]: https://github.com/yixian-huang/imgli/compare/v0.9.1...v0.9.2
 [0.9.1]: https://github.com/yixian-huang/imgli/compare/v0.9.0...v0.9.1

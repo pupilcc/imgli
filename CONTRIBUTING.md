@@ -37,9 +37,10 @@ make test-web    # vitest
 ```
 
 Go ≥ 1.26 and Node ≥ 24 are expected (see `.github/workflows/ci.yml`, which is
-the source of truth). The default build is pure Go (CGO-free, SQLite included);
-`make build-vips` enables libvips-backed WebP thumbnails if you have vips dev
-headers installed.
+the source of truth). **Local/CI default** is pure Go (CGO-free, SQLite
+included). **Production Docker images** build with `-tags vips` and ship
+libvips (see `Dockerfile`). Use `make build-vips` locally if you have vips dev
+headers; `make docker-build` matches the release image.
 
 ## Documentation
 

@@ -459,6 +459,18 @@ export interface ProcessingSettings {
   max_edge: number
   /** default true when omitted (privacy) */
   strip_exif?: boolean | null
+  /** 0 = default 90; else 1–100. Applies when JPEG is re-encoded (keep path). */
+  jpeg_quality?: number
+  /** keep (default) | webp — jpeg/png only; gif/webp inputs unchanged */
+  output_format?: 'keep' | 'webp' | string
+  /** 0 = default 80; else 1–100 */
+  webp_quality?: number
+  /** default true: if webp ≥ baseline, keep jpeg/png */
+  webp_skip_if_larger?: boolean | null
+}
+
+export interface ProcessingCapabilities {
+  webp_encode: boolean
 }
 
 /** zh/en operator copy; API may still send a legacy plain string. */
@@ -506,6 +518,8 @@ export interface AdminSettings {
   smtp: AdminSMTP
   hotlink: HotlinkSettings
   processing: ProcessingSettings
+  /** Build capabilities (e.g. vips webp encode). Not a stored setting. */
+  processing_capabilities?: ProcessingCapabilities
   announcement?: SiteAnnouncement
   footer?: SiteFooter
   html_inject?: HTMLInject

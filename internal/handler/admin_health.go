@@ -5,6 +5,7 @@ import (
 	"strings"
 
 	"github.com/yixian-huang/imgli/internal/doctor"
+	"github.com/yixian-huang/imgli/internal/imaging"
 	appver "github.com/yixian-huang/imgli/internal/version"
 )
 
@@ -52,6 +53,10 @@ func (h *AdminHandlers) GetSystemHealth(w http.ResponseWriter, r *http.Request) 
 			"request_host":      r.Host,
 			"forwarded_proto":   fwdProto,
 			"forwarded_for_set": fwdFor != "",
+			// 图像后端：Docker 默认发行带 vips；纯 Go 二进制为 pure-go。
+			"imaging_backend":   imaging.Backend(),
+			"webp_encode":       imaging.WebPEncodeAvailable(),
+			"thumb_ext":         imaging.New().ThumbExt(),
 		},
 	})
 }

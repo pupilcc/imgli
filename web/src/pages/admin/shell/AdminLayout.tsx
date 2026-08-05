@@ -101,7 +101,7 @@ export function AdminLayout() {
             </aside>
           </div>
         )}
-        <main className="box-border min-h-0 min-w-0 flex-1 overflow-y-auto overscroll-contain px-9 pt-7 pb-20 max-md:px-4 max-md:pt-5 max-md:pb-16">
+        <main className="box-border min-h-0 min-w-0 flex-1 overflow-y-auto overscroll-contain scroll-pt-3 px-9 pt-7 pb-20 max-md:px-4 max-md:pt-5 max-md:pb-16">
           <Outlet />
         </main>
       </div>

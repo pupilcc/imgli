@@ -94,13 +94,15 @@ it('表格:行数据/组名/容量/流量/状态', async () => {
   renderPage()
   expect(await screen.findByText('ling')).toBeInTheDocument()
   expect(screen.getByText('ling@img.li')).toBeInTheDocument()
-  expect(screen.getByText('12')).toBeInTheDocument()
-  // 容量 / 流量 两列都是 mono 数字（可能被 period 等同节点包住，用 getAll）
+  // 容量 / 流量合并到用量列（可能被 period 等同节点包住，用 getAll）
   const gb = screen.getAllByText(/GB/)
   expect(gb.some((el) => /5(\.0)? GB/.test(el.textContent || ''))).toBe(true)
   expect(gb.some((el) => /1\.5 GB/.test(el.textContent || ''))).toBe(true)
   expect(screen.getByText('正常')).toBeInTheDocument()
   expect(screen.getByRole('link', { name: '查看图片' })).toHaveAttribute('href', '/admin/images?user=2')
+  // 次要字段在展开详情
+  await userEvent.click(screen.getByRole('button', { name: '展开详情' }))
+  expect(screen.getByText('12')).toBeInTheDocument()
 })
 
 it('调组:行内 select PATCH group_id', async () => {

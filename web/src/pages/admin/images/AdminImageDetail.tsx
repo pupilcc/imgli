@@ -1,4 +1,9 @@
-import { useDeleteAdminImage, usePurgeAdminImage, useSetImageWhitelist } from '../../../api/adminHooks'
+import {
+  useDeleteAdminImage,
+  usePurgeAdminImage,
+  useRestoreAdminImage,
+  useSetImageWhitelist,
+} from '../../../api/adminHooks'
 import type { AdminImageDeleteResult, AdminImageItem } from '../../../api/types'
 import { useT } from '../../../i18n'
 import { copyText } from '../../../lib/copy'
@@ -33,6 +38,7 @@ export function AdminImageDetail({ item, onClose }: { item: AdminImageItem | nul
   const wl = useSetImageWhitelist()
   const delM = useDeleteAdminImage()
   const purgeM = usePurgeAdminImage()
+  const restoreM = useRestoreAdminImage()
   const statusLabel = (status: string) => {
     if (status === 'normal') return t('adminA.statusNormal')
     if (status === 'pending') return t('adminA.statusPending')
@@ -41,9 +47,9 @@ export function AdminImageDetail({ item, onClose }: { item: AdminImageItem | nul
   }
   const isGuest = item?.user_id == null
   const inTrash = !!item?.in_trash
-  // 游客无回收站；已在回收站只能彻底删除
+  // 游客无回收站；已在回收站可恢复或彻底删除
   const showSoftTrash = !isGuest && !inTrash
-  const busy = delM.isPending || purgeM.isPending || wl.isPending
+  const busy = delM.isPending || purgeM.isPending || restoreM.isPending || wl.isPending
 
   return (
     <Modal open={item !== null} onClose={onClose} width={560}>
@@ -120,6 +126,22 @@ export function AdminImageDetail({ item, onClose }: { item: AdminImageItem | nul
                     })
                   }
                 />
+              )}
+              {inTrash && (
+                <Button
+                  variant="secondary"
+                  disabled={busy}
+                  onClick={() =>
+                    restoreM.mutate(item.key, {
+                      onSuccess: () => {
+                        pushToast(t('adminA.toastRestored'))
+                        onClose()
+                      },
+                    })
+                  }
+                >
+                  {t('adminA.restoreFromTrash')}
+                </Button>
               )}
               <InlineConfirm
                 label={t('adminA.purgePermanent')}

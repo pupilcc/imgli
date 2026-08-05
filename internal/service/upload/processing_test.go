@@ -4,6 +4,8 @@ import (
 	"errors"
 	"strings"
 	"testing"
+
+	"github.com/yixian-huang/imgli/internal/imaging"
 )
 
 func TestValidateProcessingDefaultOK(t *testing.T) {
@@ -22,6 +24,46 @@ func TestStripExifEnabledDefaultsTrue(t *testing.T) {
 	}
 	p.StripExif = BoolPtr(false)
 	if p.StripExifEnabled() {
+		t.Error("explicit false")
+	}
+}
+
+func TestEffectiveJPEGQuality(t *testing.T) {
+	if q := DefaultProcessing().EffectiveJPEGQuality(); q != 90 {
+		t.Errorf("default effective = %d, want 90", q)
+	}
+	p := DefaultProcessing()
+	p.JpegQuality = 75
+	if q := p.EffectiveJPEGQuality(); q != 75 {
+		t.Errorf("75 → %d", q)
+	}
+	p.JpegQuality = 0
+	if q := p.EffectiveJPEGQuality(); q != 90 {
+		t.Errorf("0 → %d want 90", q)
+	}
+}
+
+func TestEffectiveOutputAndWebP(t *testing.T) {
+	d := DefaultProcessing()
+	if d.EffectiveOutputFormat() != OutputKeep {
+		t.Errorf("default format = %q", d.EffectiveOutputFormat())
+	}
+	if d.EffectiveWebPQuality() != 80 {
+		t.Errorf("default webp q = %d", d.EffectiveWebPQuality())
+	}
+	if !d.WebPSkipIfLargerEnabled() {
+		t.Error("skip_if_larger default on")
+	}
+	d.OutputFormat = "webp"
+	if d.EffectiveOutputFormat() != OutputWebP {
+		t.Errorf("webp → %q", d.EffectiveOutputFormat())
+	}
+	d.WebPQuality = 72
+	if d.EffectiveWebPQuality() != 72 {
+		t.Errorf("72 → %d", d.EffectiveWebPQuality())
+	}
+	d.WebPSkipIfLarger = BoolPtr(false)
+	if d.WebPSkipIfLargerEnabled() {
 		t.Error("explicit false")
 	}
 }
@@ -47,6 +89,30 @@ func TestValidateProcessingMatrix(t *testing.T) {
 			p.TextWatermark.Text = strings.Repeat("字", 64)
 			return p
 		}(),
+		func() Processing {
+			p := ok
+			p.JpegQuality = 1
+			return p
+		}(),
+		func() Processing {
+			p := ok
+			p.JpegQuality = 100
+			return p
+		}(),
+		func() Processing {
+			p := ok
+			p.OutputFormat = OutputKeep
+			p.WebPQuality = 100
+			return p
+		}(),
+	}
+	if imaging.WebPEncodeAvailable() {
+		legals = append(legals, func() Processing {
+			p := ok
+			p.OutputFormat = OutputWebP
+			p.WebPQuality = 80
+			return p
+		}())
 	}
 	for i, p := range legals {
 		if err := ValidateProcessing(p); err != nil {
@@ -74,6 +140,18 @@ func TestValidateProcessingMatrix(t *testing.T) {
 		}},
 		{"max_edge 100", func(p *Processing) { p.MaxEdge = 100 }},
 		{"max_edge 20000", func(p *Processing) { p.MaxEdge = 20000 }},
+		{"jpeg_quality -1", func(p *Processing) { p.JpegQuality = -1 }},
+		{"jpeg_quality 101", func(p *Processing) { p.JpegQuality = 101 }},
+		{"output_format avif", func(p *Processing) { p.OutputFormat = "avif" }},
+		{"webp_quality 101", func(p *Processing) { p.WebPQuality = 101 }},
+		// 无 WebP 编码器的构建上开启 webp 必须失败
+		{"output_format webp without encoder", func(p *Processing) {
+			if imaging.WebPEncodeAvailable() {
+				p.OutputFormat = "avif" // vips 构建用另一非法值占位
+			} else {
+				p.OutputFormat = OutputWebP
+			}
+		}},
 	}
 	for _, tc := range bads {
 		p := DefaultProcessing()

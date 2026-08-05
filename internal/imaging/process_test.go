@@ -22,7 +22,7 @@ func TestStripMetadataRemovesJPEGExifAPP1(t *testing.T) {
 	if !bytes.Contains(withExif, []byte("Exif\x00\x00")) {
 		t.Fatal("fixture missing Exif marker")
 	}
-	out, err := StripMetadata(withExif)
+	out, err := StripMetadata(withExif, 0)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -36,7 +36,7 @@ func TestStripMetadataRemovesJPEGExifAPP1(t *testing.T) {
 
 func TestStripMetadataPNGOK(t *testing.T) {
 	src := solidPNG(t, 16, 12, color.White)
-	out, err := StripMetadata(src)
+	out, err := StripMetadata(src, 0)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -93,7 +93,7 @@ func solidJPEG(t *testing.T, w, h int, c color.Color) []byte {
 func TestScale(t *testing.T) {
 	in := encodePNG(t, 800, 200)
 
-	out, err := Scale(in, 400)
+	out, err := Scale(in, 400, 0)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -108,7 +108,7 @@ func TestScale(t *testing.T) {
 		t.Errorf("size = %d×%d, want 400×100", cfg.Width, cfg.Height)
 	}
 
-	same, err := Scale(in, 1000)
+	same, err := Scale(in, 1000, 0)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -117,7 +117,7 @@ func TestScale(t *testing.T) {
 	}
 
 	jpgIn := encodeJPEG(t, 800, 200)
-	jpgOut, err := Scale(jpgIn, 400)
+	jpgOut, err := Scale(jpgIn, 400, 0)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -138,7 +138,7 @@ func TestWatermarkImageCorner(t *testing.T) {
 	// 采 mark 内部点 (340,340)；JPEG 块边缘采样不稳定，故不用开区间端点 (390,390)
 	const brX, brY = 340, 340
 
-	out, err := WatermarkImage(base, mark, "br", 1.0, 10)
+	out, err := WatermarkImage(base, mark, "br", 1.0, 10, 0)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -160,7 +160,7 @@ func TestWatermarkImageCorner(t *testing.T) {
 	}
 	_ = b
 
-	out02, err := WatermarkImage(base, mark, "br", 0.2, 10)
+	out02, err := WatermarkImage(base, mark, "br", 0.2, 10, 0)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -173,7 +173,7 @@ func TestWatermarkImageCorner(t *testing.T) {
 		t.Errorf("opacity 0.2 时 (%d,%d) G=%d, want >180", brX, brY, g02>>8)
 	}
 
-	outTL, err := WatermarkImage(base, mark, "tl", 1.0, 10)
+	outTL, err := WatermarkImage(base, mark, "tl", 1.0, 10, 0)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -195,7 +195,7 @@ func TestWatermarkImageCorner(t *testing.T) {
 func TestWatermarkImageOversizeMark(t *testing.T) {
 	base := solidJPEG(t, 400, 400, color.White)
 	mark := solidPNG(t, 500, 500, color.RGBA{R: 255, A: 255})
-	out, err := WatermarkImage(base, mark, "br", 1.0, 0)
+	out, err := WatermarkImage(base, mark, "br", 1.0, 0, 0)
 	if err != nil {
 		t.Fatalf("超大 mark 不应报错: %v", err)
 	}
@@ -212,7 +212,7 @@ func TestWatermarkImageOversizeMark(t *testing.T) {
 
 func TestWatermarkText(t *testing.T) {
 	in := solidPNG(t, 600, 300, color.White)
-	out, err := WatermarkText(in, "白栗©2026", "bc", 0.9, 0.08)
+	out, err := WatermarkText(in, "白栗©2026", "bc", 0.9, 0.08, 0)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -281,7 +281,7 @@ func TestWatermarkTextExtremeAspectBounded(t *testing.T) {
 	if err := png.Encode(&buf, src); err != nil {
 		t.Fatal(err)
 	}
-	out, err := WatermarkText(buf.Bytes(), "白栗测试水印一段较长的文字内容", "br", 0.6, 0.2)
+	out, err := WatermarkText(buf.Bytes(), "白栗测试水印一段较长的文字内容", "br", 0.6, 0.2, 0)
 	if err != nil {
 		t.Fatalf("极端长宽比应正常返回: %v", err)
 	}
@@ -300,16 +300,16 @@ func TestProcessRejects(t *testing.T) {
 	}
 	gifBytes := gifBuf.Bytes()
 
-	if _, err := Scale(gifBytes, 100); err != ErrUnsupported {
+	if _, err := Scale(gifBytes, 100, 0); err != ErrUnsupported {
 		t.Errorf("Scale GIF: got %v, want ErrUnsupported", err)
 	}
-	if _, err := WatermarkText(gifBytes, "x", "br", 1.0, 0.1); err != ErrUnsupported {
+	if _, err := WatermarkText(gifBytes, "x", "br", 1.0, 0.1, 0); err != ErrUnsupported {
 		t.Errorf("WatermarkText GIF: got %v, want ErrUnsupported", err)
 	}
 
 	base := solidJPEG(t, 100, 100, color.White)
 	jpegMark := solidJPEG(t, 20, 20, color.RGBA{R: 255, A: 255})
-	if _, err := WatermarkImage(base, jpegMark, "br", 1.0, 0); err != ErrUnsupported {
+	if _, err := WatermarkImage(base, jpegMark, "br", 1.0, 0, 0); err != ErrUnsupported {
 		t.Errorf("非 PNG mark: got %v, want ErrUnsupported", err)
 	}
 }

@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	"github.com/yixian-huang/imgli/internal/apperr"
+	"github.com/yixian-huang/imgli/internal/imaging"
 	"github.com/yixian-huang/imgli/internal/mail"
 	"github.com/yixian-huang/imgli/internal/model"
 	"github.com/yixian-huang/imgli/internal/service/moderation"
@@ -180,9 +181,13 @@ func (s *Service) GetSettings() (map[string]any, error) {
 			"from":       smtpCfg.From,
 			"encryption": smtpCfg.Encryption,
 		},
-		"hotlink":      hotCfg,
-		"processing":   procCfg,
-		"announcement":     ann,
+		"hotlink":    hotCfg,
+		"processing": procCfg,
+		// 构建能力：前端据此禁用「转 WebP」等仅 vips 可用的选项。
+		"processing_capabilities": map[string]any{
+			"webp_encode": imaging.WebPEncodeAvailable(),
+		},
+		"announcement": ann,
 		"footer":           foot,
 		"html_inject":      htmlInj,
 		"help_url":         helpURL,

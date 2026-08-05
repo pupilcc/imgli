@@ -266,6 +266,7 @@ func (s *Server) mountAPI() {
 				ar.Post("/users/{id}/reset-password", admH.ResetPassword)
 				ar.Get("/images", admH.Images)
 				ar.Post("/images/batch", admH.ImagesBatch)
+				ar.Post("/images/{key}/restore", admH.RestoreImage)
 				ar.Delete("/images/{key}", admH.DeleteImage)
 				ar.Patch("/images/{key}", admH.UpdateImageWhitelist)
 				ar.Get("/review", admH.Review)

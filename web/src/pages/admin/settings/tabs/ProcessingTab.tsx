@@ -19,6 +19,60 @@ export function ProcessingTab({ form, set }: { form: FormState; set: FormSet }) 
         </div>
         <span className={s.hint}>{t('adminB.stripExifHint')}</span>
       </div>
+      <Input
+        label={t('adminB.jpegQuality')}
+        type="number"
+        min={0}
+        max={100}
+        value={String(form.jpegQuality)}
+        onChange={(e) => set('jpegQuality', Number(e.target.value) || 0)}
+        extra={<span className={s.hint}>{t('adminB.jpegQualityHint')}</span>}
+      />
+      <div className={s.field}>
+        <label className={s.label} htmlFor="proc-out-fmt">
+          {t('adminB.outputFormat')}
+        </label>
+        <select
+          id="proc-out-fmt"
+          className={s.select}
+          value={form.webpEncodeAvailable ? form.outputFormat : 'keep'}
+          aria-label={t('adminB.outputFormat')}
+          onChange={(e) => {
+            const v = e.target.value === 'webp' ? 'webp' : 'keep'
+            if (v === 'webp' && !form.webpEncodeAvailable) return
+            set('outputFormat', v)
+          }}
+        >
+          <option value="keep">{t('adminB.outputKeep')}</option>
+          <option value="webp" disabled={!form.webpEncodeAvailable}>
+            {t('adminB.outputWebp')}
+            {!form.webpEncodeAvailable ? ` (${t('adminB.webpEncodeUnavailable')})` : ''}
+          </option>
+        </select>
+        <span className={s.hint}>
+          {form.webpEncodeAvailable ? t('adminB.outputFormatHint') : t('adminB.outputFormatHintNoVips')}
+        </span>
+      </div>
+      <Input
+        label={t('adminB.webpQuality')}
+        type="number"
+        min={0}
+        max={100}
+        value={String(form.webpQuality)}
+        onChange={(e) => set('webpQuality', Number(e.target.value) || 0)}
+        extra={<span className={s.hint}>{t('adminB.webpQualityHint')}</span>}
+      />
+      <div className={s.field}>
+        <div className={s.sliderHead}>
+          <span className={s.label}>{t('adminB.webpSkipIfLarger')}</span>
+          <Toggle
+            aria-label={t('adminB.webpSkipIfLarger')}
+            checked={form.webpSkipIfLarger}
+            onChange={(v) => set('webpSkipIfLarger', v)}
+          />
+        </div>
+        <span className={s.hint}>{t('adminB.webpSkipIfLargerHint')}</span>
+      </div>
       <div className={s.h2Row}>
         <h3 className={s.h2}>{t('adminB.textWatermark')}</h3>
         <Toggle aria-label={t('adminB.enableTextWatermark')} checked={form.twEnabled} onChange={(v) => set('twEnabled', v)} />

@@ -219,6 +219,40 @@ func TestSetWhitelistRepositionsStatus(t *testing.T) {
 	}
 }
 
+func TestAdminRestoreBringsBack(t *testing.T) {
+	db := model.TestDB(t)
+	svc := New(db)
+	u := &model.User{Username: "alice", Email: "alice@x.li", GroupID: 1}
+	if err := db.Create(u).Error; err != nil {
+		t.Fatal(err)
+	}
+	seedImage(t, db, "rest1", &u.ID, "normal", 1)
+	if _, err := svc.AdminSoftDelete("rest1"); err != nil {
+		t.Fatal(err)
+	}
+	img, err := svc.AdminRestore("rest1")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if img.Key != "rest1" {
+		t.Errorf("key = %s, want rest1", img.Key)
+	}
+	var got model.Image
+	if err := db.Where("key = ?", "rest1").First(&got).Error; err != nil {
+		t.Fatal(err)
+	}
+	if got.DeletedAt.Valid {
+		t.Errorf("恢复后 DeletedAt 应为空")
+	}
+	// 在线图再恢复 → not found
+	if _, err := svc.AdminRestore("rest1"); !errors.Is(err, ErrImageNotFound) {
+		t.Errorf("在线再 restore err = %v, want ErrImageNotFound", err)
+	}
+	if _, err := svc.AdminRestore("nope"); !errors.Is(err, ErrImageNotFound) {
+		t.Errorf("不存在 key err = %v, want ErrImageNotFound", err)
+	}
+}
+
 // TestAdminSoftDeleteRowsAffectedGateNoFakeSuccess 直接验证 AdminSoftDelete 的软删语句
 // 对已软删行 0 行受影响：单条 `Where(...).Delete(...)` 语句天然消除了旧版
 // First→Delete 两步之间的竞态窗口（并发双删场景下输者不会再误报成功）。

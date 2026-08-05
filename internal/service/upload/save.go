@@ -71,8 +71,8 @@ func (s *Service) Save(ctx context.Context, tmpPath, filename string, u *model.U
 		return nil, ErrExtNotAllowed
 	}
 
-	// D-② 处理管线:缩放→站点文字印→用户图片印,hash 之前烧录(与秒传去重天然兼容)。
-	// 仅 jpg/jpeg/png;无处理项生效时字节完全不动。
+	// D-② 处理管线:单次解码→缩放/水印→末次编码(keep|webp),hash 之前烧录(与秒传去重兼容)。
+	// 仅 jpg/jpeg/png;gif/webp 不转;无处理项生效时字节完全不动。
 	if changed, perr := s.burn(tmpPath, meta.Ext, u); perr != nil {
 		return nil, perr
 	} else if changed {

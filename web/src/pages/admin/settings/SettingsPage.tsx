@@ -169,6 +169,10 @@ export function SettingsPage() {
           },
           max_edge: form.maxEdge,
           strip_exif: form.stripExif,
+          jpeg_quality: form.jpegQuality,
+          output_format: form.outputFormat,
+          webp_quality: form.webpQuality,
+          webp_skip_if_larger: form.webpSkipIfLarger,
         },
         announcement: {
           enabled: form.ann.enabled,

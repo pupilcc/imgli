@@ -172,6 +172,25 @@ func (s *Service) AdminSoftDelete(key string) (*model.Image, error) {
 	return &img, nil
 }
 
+// AdminRestore 管理员恢复任意已软删图片（不限属主）。
+// 单语句 + RowsAffected 门禁：找不到 / 未在回收站 → ErrImageNotFound，避免假成功。
+func (s *Service) AdminRestore(key string) (*model.Image, error) {
+	res := s.db.Unscoped().Model(&model.Image{}).
+		Where("key = ? AND deleted_at IS NOT NULL", key).
+		Update("deleted_at", nil)
+	if res.Error != nil {
+		return nil, res.Error
+	}
+	if res.RowsAffected == 0 {
+		return nil, ErrImageNotFound
+	}
+	var img model.Image
+	if err := s.db.Where("key = ?", key).First(&img).Error; err != nil {
+		return nil, err
+	}
+	return &img, nil
+}
+
 // SetWhitelist 写 is_whitelisted；on=true 且当前 status≠normal 时一并复位 status=normal（裁决 4）。
 // 写步显式 RowsAffected 门禁：First 与 Update 之间若该图被并发软删，Update 因
 // "deleted_at IS NULL" 匹配不到行而 RowsAffected==0，此时必须报 ErrImageNotFound，

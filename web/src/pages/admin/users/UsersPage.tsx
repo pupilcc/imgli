@@ -3,6 +3,7 @@ import { useAdminGroups, useAdminUsers, useResetAdminPassword, useUpdateAdminUse
 import { useSession } from '../../../api/hooks'
 import type { AdminUser } from '../../../api/types'
 import { useT } from '../../../i18n'
+import { cn } from '../../../lib/cn'
 import { copyText } from '../../../lib/copy'
 import { formatBytes, formatDate } from '../../../lib/format'
 import { useAdminSearchParam } from '../../../lib/useAdminSearchParam'
@@ -31,8 +32,8 @@ import { Pager } from '../ui/Pager'
 
 type SortKey = '' | 'bandwidth' | 'storage' | 'created' | 'last_seen'
 
-const COLS =
-  'minmax(140px,1.4fr) minmax(90px,0.9fr) minmax(48px,0.45fr) minmax(88px,0.85fr) minmax(100px,0.95fr) minmax(108px,0.9fr) minmax(108px,0.9fr) minmax(56px,0.55fr) minmax(104px,auto)'
+/** 主表：用户 · 组 · 用量(叠) · 状态 · 操作；次要字段下沉到展开行 */
+const COLS = 'minmax(168px,1.5fr) minmax(100px,0.85fr) minmax(140px,1.15fr) minmax(56px,0.45fr) minmax(104px,auto)'
 
 function sortLabel(t: (k: string) => string, sort: string): string {
   switch (sort) {
@@ -49,27 +50,50 @@ function sortLabel(t: (k: string) => string, sort: string): string {
   }
 }
 
-function UsageCell({
-  used,
-  quota,
-  suffix,
+function UsageStack({
+  storageUsed,
+  storageQuota,
+  bwUsed,
+  bwQuota,
+  bwPeriod,
+  storageLabel,
+  bandwidthLabel,
 }: {
-  used: number
-  quota: number
-  suffix?: string
+  storageUsed: number
+  storageQuota: number
+  bwUsed: number
+  bwQuota: number
+  bwPeriod?: string
+  storageLabel: string
+  bandwidthLabel: string
 }) {
-  const pct = quota > 0 ? Math.min(100, Math.round((used / quota) * 100)) : 0
+  const storagePct = storageQuota > 0 ? Math.min(100, Math.round((storageUsed / storageQuota) * 100)) : 0
+  const bwPct = bwQuota > 0 ? Math.min(100, Math.round((bwUsed / bwQuota) * 100)) : 0
   return (
-    <div className="flex w-full min-w-0 items-center justify-end gap-2">
-      {quota > 0 && (
-        <span className="inline-block h-[3px] w-9 flex-none overflow-hidden rounded-sm bg-soft" title={`${pct}%`}>
-          <span className="block h-full bg-ink" style={{ width: `${pct}%` }} />
+    <div className="flex w-full min-w-0 flex-col gap-1.5 justify-self-end text-right">
+      <div className="flex min-w-0 items-center justify-end gap-2" title={storageLabel}>
+        {storageQuota > 0 && (
+          <span className="inline-block h-[3px] w-8 flex-none overflow-hidden rounded-sm bg-soft" title={`${storagePct}%`}>
+            <span className="block h-full bg-ink" style={{ width: `${storagePct}%` }} />
+          </span>
+        )}
+        <span className="whitespace-nowrap font-mono text-xs-plus text-muted tabular-nums">
+          <span className="mr-1 text-[10px] tracking-[0.04em] text-muted opacity-80">{storageLabel}</span>
+          {formatBytes(storageUsed)}
         </span>
-      )}
-      <span className="whitespace-nowrap font-mono text-xs-plus text-muted tabular-nums">
-        {formatBytes(used)}
-        {suffix}
-      </span>
+      </div>
+      <div className="flex min-w-0 items-center justify-end gap-2" title={bandwidthLabel}>
+        {bwQuota > 0 && (
+          <span className="inline-block h-[3px] w-8 flex-none overflow-hidden rounded-sm bg-soft" title={`${bwPct}%`}>
+            <span className="block h-full bg-ink" style={{ width: `${bwPct}%` }} />
+          </span>
+        )}
+        <span className="whitespace-nowrap font-mono text-xs-plus text-muted tabular-nums">
+          <span className="mr-1 text-[10px] tracking-[0.04em] text-muted opacity-80">{bandwidthLabel}</span>
+          {formatBytes(bwUsed)}
+          {bwPeriod ? ` · ${bwPeriod}` : ''}
+        </span>
+      </div>
     </div>
   )
 }
@@ -113,6 +137,7 @@ export function UsersPage() {
   const update = useUpdateAdminUser()
   const reset = useResetAdminPassword()
   const [resetTarget, setResetTarget] = useState<AdminUser | null>(null)
+  const [expanded, setExpanded] = useState<Set<number>>(() => new Set())
 
   const groups = groupsQ.data?.items ?? []
   const groupName = (id: number) => groups.find((g) => g.id === id)?.name ?? `#${id}`
@@ -133,6 +158,15 @@ export function UsersPage() {
       else n.delete('sort')
       n.delete('page')
       return n
+    })
+  }
+
+  const toggleExpand = (id: number) => {
+    setExpanded((prev) => {
+      const next = new Set(prev)
+      if (next.has(id)) next.delete(id)
+      else next.add(id)
+      return next
     })
   }
 
@@ -164,6 +198,17 @@ export function UsersPage() {
               <option value="utm">{t('adminA.channelUtm')}</option>
               <option value="referer">{t('adminA.channelReferer')}</option>
             </AdminSelect>
+            <AdminSelect
+              value={sort}
+              onChange={(e) => setSort((e.target.value || '') as SortKey)}
+              aria-label={t('adminA.sortBy')}
+            >
+              <option value="">{t('adminA.sortId')}</option>
+              <option value="storage">{t('adminA.sortStorage')}</option>
+              <option value="bandwidth">{t('adminA.sortBandwidth')}</option>
+              <option value="created">{t('adminA.sortCreated')}</option>
+              <option value="last_seen">{t('adminA.sortLastSeen')}</option>
+            </AdminSelect>
             <a
               className="inline-flex h-[34px] items-center rounded-sm border border-border bg-surface px-3 font-mono text-xs text-ink no-underline hover:border-muted"
               href={`/api/v1/admin/export/users.csv?${new URLSearchParams({
@@ -185,131 +230,154 @@ export function UsersPage() {
             <EmptyState title={t('adminA.noMatchingUsers')} desc={t('adminA.noMatchingUsersDesc')} />
           ) : (
             <>
-              <AdminTable minWidth={980}>
+              <AdminTable minWidth={720}>
                 <AdminTableHead columns={COLS}>
                   <span className="justify-self-start">{t('adminA.colUser')}</span>
                   <span className="justify-self-start">{t('adminA.colGroup')}</span>
-                  <span className="justify-self-end">{t('adminA.colImageCount')}</span>
-                  <AdminSortTh
-                    label={t('adminA.colUsedStorage')}
-                    sortAria={t('adminA.sortAria', { col: t('adminA.colUsedStorage') })}
-                    active={sort === 'storage'}
-                    align="end"
-                    onClick={() => setSort('storage')}
-                  />
-                  <AdminSortTh
-                    label={t('adminA.colBandwidth')}
-                    sortAria={t('adminA.sortAria', { col: t('adminA.colBandwidth') })}
-                    active={sort === 'bandwidth'}
-                    align="end"
-                    onClick={() => setSort('bandwidth')}
-                  />
-                  <AdminSortTh
-                    label={t('adminA.colRegistered')}
-                    sortAria={t('adminA.sortAria', { col: t('adminA.colRegistered') })}
-                    active={sort === 'created'}
-                    onClick={() => setSort('created')}
-                  />
-                  <AdminSortTh
-                    label={t('adminA.colLastSeen')}
-                    sortAria={t('adminA.sortAria', { col: t('adminA.colLastSeen') })}
-                    active={sort === 'last_seen'}
-                    onClick={() => setSort('last_seen')}
-                  />
+                  <div className="flex w-full flex-col items-end gap-0.5 justify-self-end">
+                    <AdminSortTh
+                      label={t('adminA.usageStorageLabel')}
+                      sortAria={t('adminA.sortAria', { col: t('adminA.colUsedStorage') })}
+                      active={sort === 'storage'}
+                      align="end"
+                      onClick={() => setSort('storage')}
+                    />
+                    <AdminSortTh
+                      label={t('adminA.usageBandwidthLabel')}
+                      sortAria={t('adminA.sortAria', { col: t('adminA.colBandwidth') })}
+                      active={sort === 'bandwidth'}
+                      align="end"
+                      onClick={() => setSort('bandwidth')}
+                    />
+                  </div>
                   <span className="justify-self-start">{t('adminA.colStatus')}</span>
                   <span className="justify-self-end">{t('adminA.colActions')}</span>
                 </AdminTableHead>
                 {data.items.map((u) => {
                   const usedBw = u.bandwidth_used_month ?? 0
+                  const open = expanded.has(u.id)
                   return (
-                    <AdminTableRow key={u.id} columns={COLS}>
-                      <div className="flex min-w-0 w-full items-center gap-[9px] justify-self-start">
-                        <span className="flex h-[26px] w-[26px] flex-none items-center justify-center rounded-full border border-border bg-soft text-[11px] font-bold">
-                          {(u.nickname || u.username).slice(0, 1)}
-                        </span>
-                        <div className="flex min-w-0 flex-col gap-0.5">
-                          <span className="overflow-hidden text-ellipsis whitespace-nowrap text-[13px] font-bold">{u.username}</span>
-                          <span className="overflow-hidden text-ellipsis whitespace-nowrap font-mono text-xs-plus text-muted" title={u.email}>
-                            {u.email}
-                            {u.email_verified === false && (
-                              <span className="text-err opacity-85"> · {t('adminA.emailVerifiedNo')}</span>
+                    <div key={u.id}>
+                      <AdminTableRow columns={COLS}>
+                        <div className="flex min-w-0 w-full items-center gap-2 justify-self-start">
+                          <button
+                            type="button"
+                            className={cn(
+                              'flex h-6 w-6 flex-none cursor-pointer items-center justify-center rounded-sm border border-border bg-surface font-mono text-[11px] text-muted hover:border-muted hover:text-ink',
+                              open && 'border-ink text-ink',
                             )}
+                            aria-expanded={open}
+                            aria-label={open ? t('adminA.collapseUserDetails') : t('adminA.expandUserDetails')}
+                            onClick={() => toggleExpand(u.id)}
+                          >
+                            {open ? '▾' : '▸'}
+                          </button>
+                          <span className="flex h-[26px] w-[26px] flex-none items-center justify-center rounded-full border border-border bg-soft text-[11px] font-bold">
+                            {(u.nickname || u.username).slice(0, 1)}
                           </span>
+                          <div className="flex min-w-0 flex-col gap-0.5">
+                            <span className="overflow-hidden text-ellipsis whitespace-nowrap text-[13px] font-bold">{u.username}</span>
+                            <span
+                              className="overflow-hidden text-ellipsis whitespace-nowrap font-mono text-xs-plus text-muted"
+                              title={u.email}
+                            >
+                              {u.email}
+                              {u.email_verified === false && (
+                                <span className="text-err opacity-85"> · {t('adminA.emailVerifiedNo')}</span>
+                              )}
+                            </span>
+                          </div>
                         </div>
-                      </div>
-                      <select
-                        className="h-[26px] w-full max-w-full justify-self-start rounded-sm border border-border bg-surface px-1.5 font-mono text-xs-plus text-ink"
-                        value={u.group_id}
-                        aria-label={t('adminA.userGroupAria', { username: u.username })}
-                        onChange={(e) => update.mutate({ id: u.id, body: { group_id: Number(e.target.value) } })}
-                      >
-                        {groups.map((g) => (
-                          <option key={g.id} value={g.id}>
-                            {g.name}
-                          </option>
-                        ))}
-                        {groups.length === 0 && <option value={u.group_id}>{groupName(u.group_id)}</option>}
-                      </select>
-                      <span className="justify-self-end font-mono text-[11px] tabular-nums">{u.image_count}</span>
-                      <div className="w-full justify-self-end">
-                        <UsageCell used={u.used_storage} quota={groupQuota(u.group_id)} />
-                      </div>
-                      <div className="w-full justify-self-end">
-                        <UsageCell
-                          used={usedBw}
-                          quota={groupBwQuota(u.group_id)}
-                          suffix={u.bandwidth_period ? ` · ${u.bandwidth_period}` : undefined}
+                        <select
+                          className="h-[26px] w-full max-w-full justify-self-start rounded-sm border border-border bg-surface px-1.5 font-mono text-xs-plus text-ink"
+                          value={u.group_id}
+                          aria-label={t('adminA.userGroupAria', { username: u.username })}
+                          onChange={(e) => update.mutate({ id: u.id, body: { group_id: Number(e.target.value) } })}
+                        >
+                          {groups.map((g) => (
+                            <option key={g.id} value={g.id}>
+                              {g.name}
+                            </option>
+                          ))}
+                          {groups.length === 0 && <option value={u.group_id}>{groupName(u.group_id)}</option>}
+                        </select>
+                        <UsageStack
+                          storageUsed={u.used_storage}
+                          storageQuota={groupQuota(u.group_id)}
+                          bwUsed={usedBw}
+                          bwQuota={groupBwQuota(u.group_id)}
+                          bwPeriod={u.bandwidth_period}
+                          storageLabel={t('adminA.usageStorageLabel')}
+                          bandwidthLabel={t('adminA.usageBandwidthLabel')}
                         />
-                      </div>
-                      <span className="justify-self-start whitespace-nowrap font-mono text-xs-plus text-muted tabular-nums">
-                        {formatDate(u.created_at)}
-                      </span>
-                      <span className="justify-self-start whitespace-nowrap font-mono text-xs-plus text-muted tabular-nums">
-                        {u.last_seen_at ? formatDate(u.last_seen_at) : t('adminA.neverSeen')}
-                      </span>
-                      <StatusPill ok={u.status === 'active'}>
-                        {u.status === 'active' ? t('adminA.statusActive') : t('adminA.statusBanned')}
-                      </StatusPill>
-                      <div className="flex w-full items-center justify-end gap-1 justify-self-end">
-                        {u.status === 'active' ? (
+                        <StatusPill ok={u.status === 'active'}>
+                          {u.status === 'active' ? t('adminA.statusActive') : t('adminA.statusBanned')}
+                        </StatusPill>
+                        <div className="flex w-full items-center justify-end gap-1 justify-self-end">
+                          {u.status === 'active' ? (
+                            <ArmedButton
+                              className={iconActionClass}
+                              armedClassName={iconActionArmedClass}
+                              title={t('adminA.ban')}
+                              armedTitle={t('adminA.confirmBan')}
+                              armedChildren={t('adminA.confirmBan')}
+                              disabled={me?.id === u.id}
+                              onConfirm={() => update.mutate({ id: u.id, body: { status: 'banned' } })}
+                            >
+                              <span aria-hidden>⊘</span>
+                            </ArmedButton>
+                          ) : (
+                            <ArmedButton
+                              className={iconActionClass}
+                              armedClassName={iconActionArmedOkClass}
+                              title={t('adminA.unban')}
+                              armedTitle={t('adminA.confirmUnban')}
+                              armedChildren={t('adminA.confirmUnban')}
+                              onConfirm={() => update.mutate({ id: u.id, body: { status: 'active' } })}
+                            >
+                              <span aria-hidden>○</span>
+                            </ArmedButton>
+                          )}
                           <ArmedButton
                             className={iconActionClass}
                             armedClassName={iconActionArmedClass}
-                            title={t('adminA.ban')}
-                            armedTitle={t('adminA.confirmBan')}
-                            armedChildren={t('adminA.confirmBan')}
-                            disabled={me?.id === u.id}
-                            onConfirm={() => update.mutate({ id: u.id, body: { status: 'banned' } })}
+                            title={t('adminA.resetPassword')}
+                            armedTitle={t('adminA.confirmResetIcon')}
+                            armedChildren={t('adminA.confirmResetIcon')}
+                            onConfirm={() => setResetTarget(u)}
                           >
-                            <span aria-hidden>⊘</span>
+                            <span aria-hidden>⌁</span>
                           </ArmedButton>
-                        ) : (
-                          <ArmedButton
-                            className={iconActionClass}
-                            armedClassName={iconActionArmedOkClass}
-                            title={t('adminA.unban')}
-                            armedTitle={t('adminA.confirmUnban')}
-                            armedChildren={t('adminA.confirmUnban')}
-                            onConfirm={() => update.mutate({ id: u.id, body: { status: 'active' } })}
-                          >
-                            <span aria-hidden>○</span>
-                          </ArmedButton>
-                        )}
-                        <ArmedButton
-                          className={iconActionClass}
-                          armedClassName={iconActionArmedClass}
-                          title={t('adminA.resetPassword')}
-                          armedTitle={t('adminA.confirmResetIcon')}
-                          armedChildren={t('adminA.confirmResetIcon')}
-                          onConfirm={() => setResetTarget(u)}
-                        >
-                          <span aria-hidden>⌁</span>
-                        </ArmedButton>
-                        <IconLink to={`/admin/images?user=${u.id}`} title={t('adminA.viewImages')}>
-                          <span aria-hidden>▦</span>
-                        </IconLink>
-                      </div>
-                    </AdminTableRow>
+                          <IconLink to={`/admin/images?user=${u.id}`} title={t('adminA.viewImages')}>
+                            <span aria-hidden>▦</span>
+                          </IconLink>
+                        </div>
+                      </AdminTableRow>
+                      {open && (
+                        <div className="grid grid-cols-1 gap-2 border-b border-border bg-soft/60 px-4 py-2.5 sm:grid-cols-3">
+                          <div className="flex min-w-0 flex-col gap-0.5">
+                            <span className="font-mono text-2xs tracking-[0.08em] text-muted uppercase">
+                              {t('adminA.colImageCount')}
+                            </span>
+                            <span className="font-mono text-xs-plus tabular-nums text-ink">{u.image_count}</span>
+                          </div>
+                          <div className="flex min-w-0 flex-col gap-0.5">
+                            <span className="font-mono text-2xs tracking-[0.08em] text-muted uppercase">
+                              {t('adminA.colRegistered')}
+                            </span>
+                            <span className="font-mono text-xs-plus tabular-nums text-ink">{formatDate(u.created_at)}</span>
+                          </div>
+                          <div className="flex min-w-0 flex-col gap-0.5">
+                            <span className="font-mono text-2xs tracking-[0.08em] text-muted uppercase">
+                              {t('adminA.colLastSeen')}
+                            </span>
+                            <span className="font-mono text-xs-plus tabular-nums text-ink">
+                              {u.last_seen_at ? formatDate(u.last_seen_at) : t('adminA.neverSeen')}
+                            </span>
+                          </div>
+                        </div>
+                      )}
+                    </div>
                   )
                 })}
               </AdminTable>
