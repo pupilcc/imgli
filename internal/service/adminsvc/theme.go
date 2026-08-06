@@ -16,10 +16,15 @@ var (
 	ErrThemeBgImageURLInvalid = apperr.New("theme_bg_image_url 须为空或 http(s) URL / 站内路径")
 	// ErrThemeBgDimInvalid theme_bg_dim 须在 0–1。
 	ErrThemeBgDimInvalid = apperr.New("theme_bg_dim 须在 0–1")
+	// ErrThemeGlassInvalid theme_glass 须在 0–1。
+	ErrThemeGlassInvalid = apperr.New("theme_glass 须在 0–1")
 )
 
 // DefaultThemeBgDim is the scrim strength when background image is set (readable text).
 const DefaultThemeBgDim = 0.72
+
+// DefaultThemeGlass is panel opacity (0–1) when background image is set.
+const DefaultThemeGlass = 0.78
 
 var themeAccentRe = regexp.MustCompile(`^#([0-9a-fA-F]{3}|[0-9a-fA-F]{6})$`)
 
@@ -64,6 +69,14 @@ func NormalizeThemeBgDim(v float64) float64 {
 func ValidateThemeBgDim(v float64) error {
 	if v != v || v < 0 || v > 1 {
 		return ErrThemeBgDimInvalid
+	}
+	return nil
+}
+
+// ValidateThemeGlass requires 0 <= v <= 1 (panel frosted opacity with bg image).
+func ValidateThemeGlass(v float64) error {
+	if v != v || v < 0 || v > 1 {
+		return ErrThemeGlassInvalid
 	}
 	return nil
 }

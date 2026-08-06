@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { contrastOnAccent, normalizeAccent, normalizeBgDim } from './siteTheme'
+import { contrastOnAccent, normalizeAccent, normalizeBgDim, normalizeGlass } from './siteTheme'
 
 describe('siteTheme', () => {
   it('normalizes accent hex', () => {
@@ -20,5 +20,12 @@ describe('siteTheme', () => {
     expect(normalizeBgDim(0.5)).toBe(0.5)
     expect(normalizeBgDim(-1)).toBe(0)
     expect(normalizeBgDim(2)).toBe(1)
+  })
+
+  it('clamps glass opacity', () => {
+    expect(normalizeGlass(undefined)).toBe(0.78)
+    expect(normalizeGlass(0.5)).toBe(0.5)
+    expect(normalizeGlass(-1)).toBe(0)
+    expect(normalizeGlass(2)).toBe(1)
   })
 })

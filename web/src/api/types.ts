@@ -539,6 +539,8 @@ export interface AdminSettings {
   theme_bg_image_url?: string
   /** Scrim strength over background image, 0–1 (default 0.72) */
   theme_bg_dim?: number
+  /** Panel frosted opacity with background image, 0–1 (default 0.78) */
+  theme_glass?: number
 }
 
 export interface GuestLimits {
@@ -580,6 +582,7 @@ export interface PublicConfig {
   theme_accent?: string
   theme_bg_image_url?: string
   theme_bg_dim?: number
+  theme_glass?: number
 }
 
 export interface DiscoverAuthor {

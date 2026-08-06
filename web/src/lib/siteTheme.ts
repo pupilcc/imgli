@@ -4,6 +4,8 @@ export type SiteThemeConfig = {
   theme_accent?: string | null
   theme_bg_image_url?: string | null
   theme_bg_dim?: number | null
+  /** Panel frosted opacity 0–1 when background image is set (default 0.78). */
+  theme_glass?: number | null
 }
 
 const ACCENT_RE = /^#([0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/
@@ -36,6 +38,13 @@ export function normalizeBgDim(raw: number | null | undefined): number {
   return raw
 }
 
+export function normalizeGlass(raw: number | null | undefined): number {
+  if (typeof raw !== 'number' || Number.isNaN(raw)) return 0.78
+  if (raw < 0) return 0
+  if (raw > 1) return 1
+  return raw
+}
+
 function cssUrl(url: string): string {
   // Escape ) and quotes for CSS url("…")
   const safe = url.replace(/\\/g, '\\\\').replace(/"/g, '\\"').replace(/\)/g, '\\)')
@@ -62,9 +71,11 @@ export function applySiteTheme(cfg: SiteThemeConfig | null | undefined): void {
     body.dataset.bgImage = '1'
     body.style.setProperty('--bg-image', cssUrl(bgURL))
     body.style.setProperty('--bg-dim', String(normalizeBgDim(cfg?.theme_bg_dim)))
+    body.style.setProperty('--glass', String(normalizeGlass(cfg?.theme_glass)))
   } else {
     delete body.dataset.bgImage
     body.style.removeProperty('--bg-image')
     body.style.removeProperty('--bg-dim')
+    body.style.removeProperty('--glass')
   }
 }

@@ -53,6 +53,18 @@ func TestValidateThemeBgDim(t *testing.T) {
 	}
 }
 
+func TestValidateThemeGlass(t *testing.T) {
+	if err := ValidateThemeGlass(0.78); err != nil {
+		t.Fatal(err)
+	}
+	if err := ValidateThemeGlass(0); err != nil {
+		t.Fatal(err)
+	}
+	if err := ValidateThemeGlass(1.2); err == nil {
+		t.Error(">1 glass should fail")
+	}
+}
+
 func TestContrastOnAccent(t *testing.T) {
 	if got := ContrastOnAccent("#000000"); got != "#ffffff" {
 		t.Errorf("dark accent text = %q", got)

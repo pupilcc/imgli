@@ -10,13 +10,23 @@ separate version in `go.mod` or `web/package.json`.
 
 ## [Unreleased]
 
+## [0.9.5] - 2026-08-06
+
+Theme: **Dark-mode token fix · site appearance (accent, background, glass)**.
+
 ### Fixed
 
 - **Dark mode after Tailwind migration:** semantic colors use `@theme inline` so `body[data-theme=dark]` flips `text-ink` / `bg-surface` / buttons at runtime (was frozen to light values on `:root`).
+- **Page title padding:** `PageHeader` keeps internal `px`/`py` without widening the strip past content (layout contract + unit test).
 
 ### Added
 
-- **Site appearance (L2):** admin **Appearance** tab — `theme_accent` (#RGB/#RRGGBB → primary buttons), `theme_bg_image_url` (full-page background), `theme_bg_dim` (0–1 scrim). Exposed on public `GET /api/v1/config`; applied client-side via CSS variables.
+- **Site appearance (L2):** admin **Appearance** tab — `theme_accent` (#RGB/#RRGGBB → primary buttons), `theme_bg_image_url` (full-page background), `theme_bg_dim` (0–1 scrim), `theme_glass` (0–1 frosted panel opacity). Exposed on public `GET /api/v1/config`; applied via CSS variables on `body`.
+
+### Changed
+
+- **With background image:** frosted glass panels (`backdrop-filter`), muted text contrast boost, borders fade with `theme_glass` (softer when opacity is low).
+- **Admin UI:** unify panel radii to `rounded-sm`; admin title strip bleeds under chrome with matching gutters; app main gutters slightly wider (`px-8`).
 
 ## [0.9.4] - 2026-08-05
 

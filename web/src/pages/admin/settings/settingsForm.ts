@@ -112,6 +112,7 @@ export interface FormState {
   themeAccent: string
   themeBgImageUrl: string
   themeBgDim: number
+  themeGlass: number
 }
 
 export type FormSet = <K extends keyof FormState>(k: K, v: FormState[K]) => void
@@ -211,5 +212,9 @@ export function formOf(s: AdminSettings): FormState {
       typeof s.theme_bg_dim === 'number' && s.theme_bg_dim >= 0 && s.theme_bg_dim <= 1
         ? s.theme_bg_dim
         : 0.72,
+    themeGlass:
+      typeof s.theme_glass === 'number' && s.theme_glass >= 0 && s.theme_glass <= 1
+        ? s.theme_glass
+        : 0.78,
   }
 }

@@ -43,7 +43,7 @@ export function GuestLayout() {
           </Link>
         </div>
       </header>
-      <main className="box-border w-full flex-[1_0_auto] px-6 pb-12">
+      <main className="box-border w-full flex-[1_0_auto] px-8 pb-12 max-md:px-5">
         <Outlet />
       </main>
       <SiteFooter

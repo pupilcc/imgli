@@ -30,9 +30,9 @@ const panelHeadClass = 'mb-4 flex items-baseline justify-between font-mono text-
 const eventEmptyClass = 'text-sm-plus text-muted'
 const sectionLabelClass = 'my-1 mb-2.5 font-mono text-2xs uppercase tracking-[0.12em] text-muted'
 const winBtnClass =
-  'cursor-pointer rounded-[2px] border border-border bg-transparent px-1.5 py-0.5 font-mono text-2xs text-muted'
+  'cursor-pointer rounded-sm border border-border bg-transparent px-1.5 py-0.5 font-mono text-2xs text-muted'
 const winActiveClass =
-  'cursor-pointer rounded-[2px] border border-ink bg-transparent px-1.5 py-0.5 font-mono text-2xs font-bold text-ink'
+  'cursor-pointer rounded-sm border border-ink bg-transparent px-1.5 py-0.5 font-mono text-2xs font-bold text-ink'
 const refTableClass =
   'w-full border-collapse text-sm-plus [&_th]:border-b [&_th]:border-border [&_th]:py-2 [&_th]:text-left [&_th]:font-mono [&_th]:text-2xs [&_th]:font-medium [&_th]:tracking-[0.08em] [&_th]:text-muted [&_td]:border-b [&_td]:border-border [&_td]:py-2 [&_td]:text-left [&_tr:last-child_td]:border-b-0'
 const refCountClass = 'w-16 text-right font-mono tabular-nums'
@@ -95,7 +95,7 @@ export function DashboardPage() {
   return (
     <div>
       <PageHeader kicker="DASHBOARD" title={t('adminA.dashTitle')} />
-      <div className="mb-4 flex flex-wrap items-center gap-x-4 gap-y-2.5 rounded-lg border border-border bg-soft px-4 py-3">
+      <div className="mb-4 flex flex-wrap items-center gap-x-4 gap-y-2.5 rounded-sm border border-border bg-soft px-4 py-3">
         <span className="text-[0.85rem] text-muted">{t('adminA.runningVersion')}</span>
         <code className="text-[0.95rem] font-semibold">{verQ.data?.current ?? '…'}</code>
         <Button variant="secondary" disabled={checkUpdate.isPending} onClick={onCheckUpdate}>
@@ -303,7 +303,7 @@ export function DashboardPage() {
                         <td>
                           {r.host}
                           {r.suspect ? (
-                            <span className="ml-1.5 rounded-[2px] border border-warn px-1 font-mono text-[9px] tracking-[0.06em] text-warn">
+                            <span className="ml-1.5 rounded-sm border border-warn px-1 font-mono text-[9px] tracking-[0.06em] text-warn">
                               {t('adminA.suspect')}
                             </span>
                           ) : null}

@@ -33,12 +33,12 @@ function purgeToast(
 }
 
 const quickBtn =
-  'flex h-6 w-6 cursor-pointer items-center justify-center rounded-[2px] border-0 bg-surface text-[11px] text-ink hover:bg-soft'
+  'flex h-6 w-6 cursor-pointer items-center justify-center rounded-sm border-0 bg-surface text-[11px] text-ink hover:bg-soft'
 const quickArmed = 'w-auto min-w-6 bg-err px-1.5 text-2xs font-semibold text-white'
 const batchAct =
   'cursor-pointer whitespace-nowrap rounded-sm border-0 bg-[rgba(128,128,128,0.22)] px-3 py-[7px] text-xs font-semibold text-btn-text hover:enabled:bg-[rgba(128,128,128,0.38)] disabled:cursor-not-allowed disabled:opacity-55'
 const toolBtn =
-  'cursor-pointer rounded-[2px] border border-border bg-surface px-2.5 py-1 font-mono text-[11px] text-ink hover:border-muted'
+  'cursor-pointer rounded-sm border border-border bg-surface px-2.5 py-1 font-mono text-[11px] text-ink hover:border-muted'
 
 export function ImagesAdminPage() {
   const { t } = useT()
@@ -170,7 +170,7 @@ export function ImagesAdminPage() {
   })
 
   const badgeBase =
-    'rounded-[2px] border border-warn bg-surface px-1.5 py-px font-mono text-[9px] tracking-[0.08em] text-warn'
+    'rounded-sm border border-warn bg-surface px-1.5 py-px font-mono text-[9px] tracking-[0.08em] text-warn'
 
   return (
     <div>
@@ -180,7 +180,7 @@ export function ImagesAdminPage() {
         extra={
           <AdminFilters>
             {user && (
-              <span className="inline-flex items-center gap-1.5 rounded-[2px] border border-border bg-soft px-2 py-1 font-mono text-xs-plus">
+              <span className="inline-flex items-center gap-1.5 rounded-sm border border-border bg-soft px-2 py-1 font-mono text-xs-plus">
                 {t('adminA.userFilterChip', { user })}
                 <button
                   type="button"
@@ -260,7 +260,7 @@ export function ImagesAdminPage() {
                       <div className="relative aspect-square bg-soft">
                         <img className="block h-full w-full object-cover" src={it.links.thumbnail_url} alt={it.name} loading="lazy" />
                         <label
-                          className="absolute top-2 left-2 z-[2] flex h-[22px] w-[22px] cursor-pointer items-center justify-center rounded-[2px] bg-black/35"
+                          className="absolute top-2 left-2 z-[2] flex h-[22px] w-[22px] cursor-pointer items-center justify-center rounded-sm bg-black/35"
                           onClick={(e) => e.stopPropagation()}
                           title={t('adminA.selectImage')}
                         >
@@ -283,7 +283,7 @@ export function ImagesAdminPage() {
                           {it.status === 'pending' && <span className={badgeBase}>{t('adminA.statusPending')}</span>}
                           {it.status === 'rejected' && <span className={cn(badgeBase, 'border-err text-err')}>{t('adminA.statusRejected')}</span>}
                           {it.is_whitelisted && (
-                            <span className="rounded-[2px] border border-btn bg-btn px-1.5 py-px font-mono text-[9px] tracking-[0.08em] text-btn-text">
+                            <span className="rounded-sm border border-btn bg-btn px-1.5 py-px font-mono text-[9px] tracking-[0.08em] text-btn-text">
                               WL
                             </span>
                           )}

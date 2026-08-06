@@ -126,7 +126,7 @@ func (s *Service) GetSettings() (map[string]any, error) {
 	}
 	var helpURL, upgradeURL, shareBrand, faviconURL, sourceURL, ossCredit string
 	var themeAccent, themeBgImageURL string
-	var themeBgDim float64
+	var themeBgDim, themeGlass float64
 	var regNotice LocaleString
 	var aboutEnabled, welcomeEmail bool
 	var aboutBody LocaleString
@@ -145,6 +145,8 @@ func (s *Service) GetSettings() (map[string]any, error) {
 	_ = st.Get(model.SettingThemeBgImageURL, &themeBgImageURL)
 	themeBgDim = DefaultThemeBgDim
 	_ = st.Get(model.SettingThemeBgDim, &themeBgDim)
+	themeGlass = DefaultThemeGlass
+	_ = st.Get(model.SettingThemeGlass, &themeGlass)
 	helpURL = NormalizeOptionalURL(helpURL)
 	upgradeURL = NormalizeOptionalURL(upgradeURL)
 	faviconURL = NormalizeOptionalURL(faviconURL)
@@ -153,6 +155,9 @@ func (s *Service) GetSettings() (map[string]any, error) {
 	themeBgImageURL = NormalizeOptionalURL(themeBgImageURL)
 	if err := ValidateThemeBgDim(themeBgDim); err != nil {
 		themeBgDim = DefaultThemeBgDim
+	}
+	if err := ValidateThemeGlass(themeGlass); err != nil {
+		themeGlass = DefaultThemeGlass
 	}
 	regNotice = regNotice.Normalize()
 	aboutBody = aboutBody.Normalize()
@@ -215,6 +220,7 @@ func (s *Service) GetSettings() (map[string]any, error) {
 		"theme_accent":        themeAccent,
 		"theme_bg_image_url":  themeBgImageURL,
 		"theme_bg_dim":        themeBgDim,
+		"theme_glass":         themeGlass,
 	}, nil
 }
 
@@ -534,6 +540,16 @@ func (s *Service) PutSettings(patch map[string]json.RawMessage) error {
 				return err
 			}
 			writes = append(writes, settingWrite{model.SettingThemeBgDim, d})
+
+		case model.SettingThemeGlass:
+			var g float64
+			if err := json.Unmarshal(raw, &g); err != nil {
+				return ErrThemeGlassInvalid
+			}
+			if err := ValidateThemeGlass(g); err != nil {
+				return err
+			}
+			writes = append(writes, settingWrite{model.SettingThemeGlass, g})
 
 		default:
 			return ErrUnknownSetting

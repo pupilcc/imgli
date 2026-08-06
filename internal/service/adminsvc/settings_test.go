@@ -133,11 +133,15 @@ func TestPutSettingsThemeAppearance(t *testing.T) {
 	if m["theme_bg_dim"] != DefaultThemeBgDim {
 		t.Errorf("theme_bg_dim default = %v, want %v", m["theme_bg_dim"], DefaultThemeBgDim)
 	}
+	if m["theme_glass"] != DefaultThemeGlass {
+		t.Errorf("theme_glass default = %v, want %v", m["theme_glass"], DefaultThemeGlass)
+	}
 
 	if err := svc.PutSettings(map[string]json.RawMessage{
 		"theme_accent":        rawJSON(t, "#3B82F6"),
 		"theme_bg_image_url":  rawJSON(t, "https://cdn.example.com/bg.jpg"),
 		"theme_bg_dim":        rawJSON(t, 0.5),
+		"theme_glass":         rawJSON(t, 0.6),
 	}); err != nil {
 		t.Fatal(err)
 	}
@@ -150,6 +154,9 @@ func TestPutSettingsThemeAppearance(t *testing.T) {
 	}
 	if m["theme_bg_dim"] != 0.5 {
 		t.Errorf("theme_bg_dim = %v, want 0.5", m["theme_bg_dim"])
+	}
+	if m["theme_glass"] != 0.6 {
+		t.Errorf("theme_glass = %v, want 0.6", m["theme_glass"])
 	}
 
 	// clear accent + expand short hex
@@ -166,6 +173,9 @@ func TestPutSettingsThemeAppearance(t *testing.T) {
 	}
 	if err := svc.PutSettings(map[string]json.RawMessage{"theme_bg_dim": rawJSON(t, 1.5)}); err == nil {
 		t.Error("dim > 1 should fail")
+	}
+	if err := svc.PutSettings(map[string]json.RawMessage{"theme_glass": rawJSON(t, -0.1)}); err == nil {
+		t.Error("glass < 0 should fail")
 	}
 	if err := svc.PutSettings(map[string]json.RawMessage{"theme_bg_image_url": rawJSON(t, "javascript:alert(1)")}); err == nil {
 		t.Error("bad bg url should fail")

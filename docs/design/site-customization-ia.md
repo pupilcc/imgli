@@ -80,6 +80,7 @@ L1 验收口径：改文案后上传页/登录页/注册页/SEO 可见，不破�
 | 强调色 | `theme_accent` | 外观 | 合法 hex → `--btn` / `--btnText`（0.9.5） |
 | 站点背景图 | `theme_bg_image_url` | 外观 | 可选 URL；整站 cover + 遮罩（0.9.5） |
 | 背景遮罩 | `theme_bg_dim` | 外观 | 0–1，默认 0.72（0.9.5） |
+| 面板不透明度 | `theme_glass` | 外观 | 0–1，默认 0.78；有背景图时毛玻璃 + 边框随透明度变淡（0.9.5） |
 | 默认色彩模式 | `theme_default` | 外观 | light \| dark \| system |
 | PWA 短名 | 派生自 `site_name` 或 `pwa_short_name` | 外观 | manifest `short_name` |
 | PWA theme_color | `pwa_theme_color` | 外观 | 可与 accent 同源 |

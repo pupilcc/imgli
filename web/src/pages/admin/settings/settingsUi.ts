@@ -4,7 +4,7 @@ export const s = {
   tabs: 'sticky top-0 z-[5] isolate mx-[-2px] mt-0 mb-0 flex flex-wrap gap-x-[18px] gap-y-1 border-b border-border bg-bg pt-1 shadow-[0_8px_14px_-12px_rgba(0,0,0,0.22)]',
   tab: 'cursor-pointer whitespace-nowrap border-0 bg-transparent px-0.5 pb-[11px] text-[13px] font-semibold text-muted hover:text-ink',
   tabActive: 'text-ink shadow-[inset_0_-2px_0_var(--text)]',
-  section: 'flex flex-col gap-3.5 rounded-lg border border-border bg-surface p-5',
+  section: 'flex flex-col gap-3.5 rounded-sm border border-border bg-surface p-5',
   h2: 'm-0 text-[15px] font-semibold',
   h2Row: 'flex items-center justify-between',
   field: 'flex flex-col gap-1.5',

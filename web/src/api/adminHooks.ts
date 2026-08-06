@@ -592,6 +592,7 @@ export interface SettingsBody {
   theme_accent?: string
   theme_bg_image_url?: string
   theme_bg_dim?: number
+  theme_glass?: number
 }
 
 export function useUpdateSettings() {

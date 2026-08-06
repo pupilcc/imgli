@@ -82,6 +82,7 @@ export function App() {
     config.data?.theme_accent,
     config.data?.theme_bg_image_url,
     config.data?.theme_bg_dim,
+    config.data?.theme_glass,
   ])
   useEffect(() => {
     setOnUnauthorized(() => {

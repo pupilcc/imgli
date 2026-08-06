@@ -38,7 +38,7 @@ export function SharePage() {
   }
 
   return (
-    <div className="min-h-dvh bg-bg text-ink">
+    <div className="min-h-dvh text-ink">
       <header className="flex items-center justify-between border-b border-border bg-surface px-5 py-3">
         <Link to="/" className="flex items-center text-inherit no-underline" aria-label={siteName}>
           <BrandLockup word={cfg.data?.site_name} />

@@ -8,7 +8,7 @@ export function AppearanceTab({ form, set }: { form: FormState; set: FormSet }) 
   const { t } = useT()
   const accent = normalizeAccent(form.themeAccent)
   const previewBtn = accent || 'var(--btn)'
-  const previewText = accent ? contrastOnAccent(accent) : 'var(--btn-text)'
+  const previewText = accent ? contrastOnAccent(accent) : 'var(--btnText)'
 
   return (
     <section className={s.section}>
@@ -88,6 +88,25 @@ export function AppearanceTab({ form, set }: { form: FormState; set: FormSet }) 
           aria-label={t('adminB.themeBgDim')}
         />
         <span className={s.hint}>{t('adminB.themeBgDimHint')}</span>
+      </div>
+
+      <div className={s.field}>
+        <div className={s.sliderHead}>
+          <span className={s.label}>{t('adminB.themeGlass')}</span>
+          <span className="font-mono text-xs text-muted tabular-nums">{form.themeGlass.toFixed(2)}</span>
+        </div>
+        <input
+          type="range"
+          min={0}
+          max={1}
+          step={0.01}
+          value={form.themeGlass}
+          disabled={!form.themeBgImageUrl.trim()}
+          onChange={(e) => set('themeGlass', Number(e.target.value))}
+          className="w-full accent-[var(--btn)]"
+          aria-label={t('adminB.themeGlass')}
+        />
+        <span className={s.hint}>{t('adminB.themeGlassHint')}</span>
       </div>
     </section>
   )

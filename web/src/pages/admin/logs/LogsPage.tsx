@@ -79,7 +79,7 @@ export function LogsPage() {
             <EmptyState title={t('adminB.noMatchingLogs')} desc={t('adminB.noMatchingLogsDesc')} />
           ) : (
             <>
-              <AdminTable className="mt-2 overflow-hidden rounded-lg" minWidth={560}>
+              <AdminTable className="mt-2 overflow-hidden rounded-sm" minWidth={560}>
                 <div
                   className="grid items-center gap-3 border-b border-border bg-soft px-3.5 py-2.5 text-xs text-muted"
                   style={{ gridTemplateColumns: COLS }}

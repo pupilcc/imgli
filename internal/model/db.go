@@ -44,6 +44,7 @@ const (
 	SettingThemeAccent     = "theme_accent"       // 空 | #RRGGBB；驱动主按钮/强调
 	SettingThemeBgImageURL = "theme_bg_image_url" // 空 | http(s)/站内路径
 	SettingThemeBgDim      = "theme_bg_dim"       // 0–1 遮罩强度，默认 0.72
+	SettingThemeGlass      = "theme_glass"        // 0–1 面板毛玻璃不透明度，默认 0.78
 )
 
 // settingModerationDefaultJSON 是 moderation.DefaultConfig() 的 JSON 字面量，手写在此
@@ -264,6 +265,7 @@ func Seed(db *gorm.DB) error {
 			SettingThemeAccent:     `""`,
 			SettingThemeBgImageURL: `""`,
 			SettingThemeBgDim:      `0.72`,
+			SettingThemeGlass:      `0.78`,
 		} {
 			if err := tx.Where("key = ?", k).
 				FirstOrCreate(&Setting{Key: k, Value: v}).Error; err != nil {

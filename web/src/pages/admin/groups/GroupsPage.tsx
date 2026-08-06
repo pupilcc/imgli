@@ -172,7 +172,7 @@ function FormSection({
 }) {
   return (
     <details
-      className="group overflow-hidden rounded-lg border border-border bg-bg"
+      className="group overflow-hidden rounded-sm border border-border bg-bg"
       open={open}
     >
       <summary
@@ -200,9 +200,9 @@ function ExtInput({ exts, onChange }: { exts: string[]; onChange(v: string[]): v
   }
   return (
     <AdminField label={<label htmlFor={inputId}>{t('adminA.allowedExts')}</label>}>
-      <div className="flex flex-wrap gap-1.5 rounded-lg border border-border p-1.5">
+      <div className="flex flex-wrap gap-1.5 rounded-sm border border-border p-1.5">
         {exts.map((e) => (
-          <span key={e} className="inline-flex items-center gap-1 rounded-xl bg-soft px-2 py-0.5 text-[13px]">
+          <span key={e} className="inline-flex items-center gap-1 rounded-sm bg-soft px-2 py-0.5 text-[13px]">
             {e}
             <button
               type="button"
@@ -345,7 +345,7 @@ export function GroupsPage() {
                   key={g.id}
                   type="button"
                   className={cn(
-                    'flex cursor-pointer flex-col items-stretch gap-1.5 rounded-lg border border-border bg-surface px-3 py-2.5 text-left',
+                    'flex cursor-pointer flex-col items-stretch gap-1.5 rounded-sm border border-border bg-surface px-3 py-2.5 text-left',
                     sel === g.id && 'border-ink',
                   )}
                   onClick={() => selectGroup(g)}
@@ -376,7 +376,7 @@ export function GroupsPage() {
                 </button>
               ))}
             </div>
-            <div className="rounded-[10px] border border-border bg-surface p-5">
+            <div className="rounded-sm border border-border bg-surface p-5">
               {sel === null ? (
                 <EmptyState title={t('adminA.selectOrCreate')} desc={t('adminA.selectOrCreateDesc')} />
               ) : (

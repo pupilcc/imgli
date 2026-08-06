@@ -160,6 +160,9 @@ export default {
   themeBgImageHint: '可选 http(s) 或站内路径；建议较大横图。留空不使用背景。',
   themeBgDim: '背景遮罩',
   themeBgDimHint: '0 = 完全透出图片，1 = 完全被主题底色盖住。推荐 0.6–0.85 以保证文字可读。',
+  themeGlass: '面板不透明度',
+  themeGlassHint:
+    '有背景图时卡片/标题栏/顶栏的毛玻璃浓度。0 = 几乎全透明，1 = 接近实色。推荐 0.65–0.88。调低时边框会一并变淡（约 ≤0.65 时接近无边框），与底图更融。',
   siteName: '站点名称',
   siteNameHint:
     '用于浏览器标题、顶栏字标、页脚署名、邮件与分享页站名。鲤鱼标图形与产品锁标样式在默认名时保留；Community 不提供完整 Logo 白标替换。',
