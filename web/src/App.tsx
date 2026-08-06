@@ -28,6 +28,7 @@ import { NotFoundPage } from './shell/NotFoundPage'
 import { RequireAuth } from './shell/RequireAuth'
 import { RequireAdmin } from './shell/RequireAdmin'
 import { RequireAuthOrGuest } from './shell/RequireAuthOrGuest'
+import { applySiteTheme } from './lib/siteTheme'
 import { InstallPrompt } from './ui/InstallPrompt'
 import { AnnouncementBar, HtmlInject } from './ui/SiteSlots'
 import { Skeleton } from './ui/Skeleton'
@@ -75,6 +76,13 @@ export function App() {
       document.querySelectorAll(sel).forEach((n) => n.remove())
     }
   }, [config.data?.favicon_url])
+  useEffect(() => {
+    applySiteTheme(config.data ?? null)
+  }, [
+    config.data?.theme_accent,
+    config.data?.theme_bg_image_url,
+    config.data?.theme_bg_dim,
+  ])
   useEffect(() => {
     setOnUnauthorized(() => {
       if (window.location.pathname === '/login') return

@@ -8,13 +8,30 @@ export type FormFooterGroup = { title: FormLocale; links: FormFooterLink[] }
 
 export type ModProvider = 'webhook' | 'aliyun' | 'tencent' | 'openai' | 'nsfwjs'
 
-export type SettingsTab = 'basic' | 'slots' | 'moderation' | 'ocr' | 'smtp' | 'hotlink' | 'processing'
+export type SettingsTab =
+  | 'basic'
+  | 'appearance'
+  | 'slots'
+  | 'moderation'
+  | 'ocr'
+  | 'smtp'
+  | 'hotlink'
+  | 'processing'
 
 export const SETTINGS_TABS: {
   key: SettingsTab
-  labelKey: 'basic' | 'slotsTab' | 'moderation' | 'ocrSection' | 'smtpSection' | 'hotlink' | 'processing'
+  labelKey:
+    | 'basic'
+    | 'appearance'
+    | 'slotsTab'
+    | 'moderation'
+    | 'ocrSection'
+    | 'smtpSection'
+    | 'hotlink'
+    | 'processing'
 }[] = [
   { key: 'basic', labelKey: 'basic' },
+  { key: 'appearance', labelKey: 'appearance' },
   { key: 'slots', labelKey: 'slotsTab' },
   { key: 'moderation', labelKey: 'moderation' },
   { key: 'ocr', labelKey: 'ocrSection' },
@@ -92,6 +109,9 @@ export interface FormState {
   aboutEnabled: boolean
   aboutBody: FormLocale
   welcomeEmail: boolean
+  themeAccent: string
+  themeBgImageUrl: string
+  themeBgDim: number
 }
 
 export type FormSet = <K extends keyof FormState>(k: K, v: FormState[K]) => void
@@ -185,5 +205,11 @@ export function formOf(s: AdminSettings): FormState {
     aboutEnabled: !!s.about_enabled,
     aboutBody: toLocaleMap(s.about_body),
     welcomeEmail: s.welcome_email !== false,
+    themeAccent: s.theme_accent ?? '',
+    themeBgImageUrl: s.theme_bg_image_url ?? '',
+    themeBgDim:
+      typeof s.theme_bg_dim === 'number' && s.theme_bg_dim >= 0 && s.theme_bg_dim <= 1
+        ? s.theme_bg_dim
+        : 0.72,
   }
 }

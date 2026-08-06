@@ -533,6 +533,12 @@ export interface AdminSettings {
   about_enabled?: boolean
   about_body?: string | { zh?: string; en?: string }
   welcome_email?: boolean
+  /** Brand accent (#RRGGBB); empty = product default btn colors */
+  theme_accent?: string
+  /** Optional full-page background image URL */
+  theme_bg_image_url?: string
+  /** Scrim strength over background image, 0–1 (default 0.72) */
+  theme_bg_dim?: number
 }
 
 export interface GuestLimits {
@@ -571,6 +577,9 @@ export interface PublicConfig {
   oss_credit?: 'on' | 'off'
   about_enabled?: boolean
   about_body?: string | { zh?: string; en?: string }
+  theme_accent?: string
+  theme_bg_image_url?: string
+  theme_bg_dim?: number
 }
 
 export interface DiscoverAuthor {

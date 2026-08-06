@@ -589,6 +589,9 @@ export interface SettingsBody {
   about_enabled?: boolean
   about_body?: AdminSettings['about_body']
   welcome_email?: boolean
+  theme_accent?: string
+  theme_bg_image_url?: string
+  theme_bg_dim?: number
 }
 
 export function useUpdateSettings() {

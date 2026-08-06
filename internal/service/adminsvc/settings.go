@@ -50,6 +50,7 @@ var (
 	ErrSMTPInvalid = apperr.New("smtp 配置无效:port 需 1-65535、encryption 需 none|starttls|ssl、from 需为邮箱或留空")
 	// ErrHotlinkDomainInvalid 防盗链域名不合法（空/空白/scheme/路径/非法通配）。
 	ErrHotlinkDomainInvalid = apperr.New("防盗链域名不合法")
+	// theme_accent / theme_bg_* 错误见 theme.go（ErrThemeAccentInvalid 等）。
 )
 
 // maskAPIKey 打码 api_key：非空时返回 "****"+尾4字符（长度<=4 时全打码为 "****"），
@@ -124,6 +125,8 @@ func (s *Service) GetSettings() (map[string]any, error) {
 		return nil, err
 	}
 	var helpURL, upgradeURL, shareBrand, faviconURL, sourceURL, ossCredit string
+	var themeAccent, themeBgImageURL string
+	var themeBgDim float64
 	var regNotice LocaleString
 	var aboutEnabled, welcomeEmail bool
 	var aboutBody LocaleString
@@ -138,10 +141,19 @@ func (s *Service) GetSettings() (map[string]any, error) {
 	_ = st.Get(model.SettingAboutBody, &aboutBody)
 	welcomeEmail = true
 	_ = st.Get(model.SettingWelcomeEmail, &welcomeEmail)
+	_ = st.Get(model.SettingThemeAccent, &themeAccent)
+	_ = st.Get(model.SettingThemeBgImageURL, &themeBgImageURL)
+	themeBgDim = DefaultThemeBgDim
+	_ = st.Get(model.SettingThemeBgDim, &themeBgDim)
 	helpURL = NormalizeOptionalURL(helpURL)
 	upgradeURL = NormalizeOptionalURL(upgradeURL)
 	faviconURL = NormalizeOptionalURL(faviconURL)
 	sourceURL = NormalizeOptionalURL(sourceURL)
+	themeAccent = NormalizeThemeAccent(themeAccent)
+	themeBgImageURL = NormalizeOptionalURL(themeBgImageURL)
+	if err := ValidateThemeBgDim(themeBgDim); err != nil {
+		themeBgDim = DefaultThemeBgDim
+	}
 	regNotice = regNotice.Normalize()
 	aboutBody = aboutBody.Normalize()
 	shareBrand = NormalizeShareBranding(shareBrand)
@@ -200,6 +212,9 @@ func (s *Service) GetSettings() (map[string]any, error) {
 		"about_enabled":    aboutEnabled,
 		"about_body":       aboutBody,
 		"welcome_email":    welcomeEmail,
+		"theme_accent":        themeAccent,
+		"theme_bg_image_url":  themeBgImageURL,
+		"theme_bg_dim":        themeBgDim,
 	}, nil
 }
 
@@ -488,6 +503,37 @@ func (s *Service) PutSettings(patch map[string]json.RawMessage) error {
 				return ErrWelcomeEmailInvalid
 			}
 			writes = append(writes, settingWrite{model.SettingWelcomeEmail, enabled})
+
+		case model.SettingThemeAccent:
+			var a string
+			if err := json.Unmarshal(raw, &a); err != nil {
+				return ErrThemeAccentInvalid
+			}
+			if err := ValidateThemeAccent(a); err != nil {
+				return err
+			}
+			writes = append(writes, settingWrite{model.SettingThemeAccent, NormalizeThemeAccent(a)})
+
+		case model.SettingThemeBgImageURL:
+			var u string
+			if err := json.Unmarshal(raw, &u); err != nil {
+				return ErrThemeBgImageURLInvalid
+			}
+			u = NormalizeOptionalURL(u)
+			if err := ValidateOptionalURL(u); err != nil {
+				return ErrThemeBgImageURLInvalid
+			}
+			writes = append(writes, settingWrite{model.SettingThemeBgImageURL, u})
+
+		case model.SettingThemeBgDim:
+			var d float64
+			if err := json.Unmarshal(raw, &d); err != nil {
+				return ErrThemeBgDimInvalid
+			}
+			if err := ValidateThemeBgDim(d); err != nil {
+				return err
+			}
+			writes = append(writes, settingWrite{model.SettingThemeBgDim, d})
 
 		default:
 			return ErrUnknownSetting

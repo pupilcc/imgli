@@ -10,6 +10,14 @@ separate version in `go.mod` or `web/package.json`.
 
 ## [Unreleased]
 
+### Fixed
+
+- **Dark mode after Tailwind migration:** semantic colors use `@theme inline` so `body[data-theme=dark]` flips `text-ink` / `bg-surface` / buttons at runtime (was frozen to light values on `:root`).
+
+### Added
+
+- **Site appearance (L2):** admin **Appearance** tab — `theme_accent` (#RGB/#RRGGBB → primary buttons), `theme_bg_image_url` (full-page background), `theme_bg_dim` (0–1 scrim). Exposed on public `GET /api/v1/config`; applied client-side via CSS variables.
+
 ## [0.9.4] - 2026-08-05
 
 Theme: **Admin trash restore · users table density · processing WebP · Docker vips**.

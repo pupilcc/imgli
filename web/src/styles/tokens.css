@@ -73,9 +73,22 @@ body[data-theme='dark'] {
     margin: 0;
     font-family: var(--font-sans);
     font-size: 13px;
-    background: var(--bg);
+    background-color: var(--bg);
     color: var(--text);
-    transition: background 0.25s, color 0.25s;
+    transition: background-color 0.25s, color 0.25s;
+  }
+  /* Operator site background (theme_bg_image_url): scrim uses --bg so light/dark stay readable */
+  body[data-bg-image='1'] {
+    background-image:
+      linear-gradient(
+        color-mix(in srgb, var(--bg) calc(var(--bg-dim, 0.72) * 100%), transparent),
+        color-mix(in srgb, var(--bg) calc(var(--bg-dim, 0.72) * 100%), transparent)
+      ),
+      var(--bg-image);
+    background-size: cover;
+    background-position: center;
+    background-attachment: fixed;
+    background-repeat: no-repeat;
   }
   a {
     color: var(--text);
