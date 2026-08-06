@@ -18,7 +18,8 @@ Theme: **Self-host robustness — SQLite / Docker bind mounts / low-RAM**.
 
 - **SQLite OOM / low-RAM:** default connection sets `mmap_size=0`, modest `cache_size`, `temp_store=FILE`; runtime pragmas also applied when a custom DSN omits them.
 - **SQLite open failures:** probe `data_dir` writability with Docker uid-1000 permission hints; WAL open failure falls back to `journal_mode=DELETE`.
-- **Docker bind mounts:** entrypoint runs as root only to `chown` data dir / SQLite files to `imgli` (1000), then `su-exec` drops privileges (fixes root-owned host paths).
+- **Docker bind mounts:**
+- **e2e:smoke:** `guest.spec` bootstraps first admin when run as the first smoke file (before `admin`/`main` register `boss`). entrypoint runs as root only to `chown` data dir / SQLite files to `imgli` (1000), then `su-exec` drops privileges (fixes root-owned host paths).
 
 ### Changed
 
