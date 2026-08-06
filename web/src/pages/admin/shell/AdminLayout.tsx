@@ -61,7 +61,7 @@ export function AdminLayout() {
   )
 
   return (
-    <div className="flex h-dvh flex-col overflow-hidden bg-bg">
+    <div className="flex h-dvh flex-col overflow-hidden bg-transparent">
       <header className="z-20 flex h-14 flex-none items-center gap-4 border-b border-border bg-surface px-8 max-md:px-4">
         <button
           type="button"
@@ -88,20 +88,34 @@ export function AdminLayout() {
         </div>
       </header>
       <div className="mx-auto box-border flex min-h-0 w-full max-w-[1320px] flex-1 overflow-hidden">
-        <aside className="box-border h-full w-[196px] flex-none overflow-y-auto overscroll-contain border-r border-border bg-bg px-4 py-7 max-md:hidden">
+        <aside className="box-border h-full w-[196px] flex-none overflow-y-auto overscroll-contain border-r border-border bg-surface px-4 py-7 max-md:hidden">
           {nav}
         </aside>
         {drawer && (
           <div className="fixed inset-x-0 top-14 bottom-0 z-20 bg-black/35" onClick={() => setDrawer(false)}>
             <aside
-              className="box-border h-full w-[220px] overflow-y-auto border-r border-border bg-bg px-4 py-7"
+              className="box-border h-full w-[220px] overflow-y-auto border-r border-border bg-surface px-4 py-7"
               onClick={(e) => e.stopPropagation()}
             >
               {nav}
             </aside>
           </div>
         )}
-        <main className="box-border min-h-0 min-w-0 flex-1 overflow-y-auto overscroll-contain scroll-pt-3 px-9 pt-7 pb-20 max-md:px-4 max-md:pt-5 max-md:pb-16">
+        {/*
+          Admin title strip: bleed to main column edges (-mx), text inset matches
+          body (px-9). Override default PageHeader top-14 → top-0 (scrollport is
+          main, not the viewport under app nav).
+        */}
+        <main
+          className={[
+            'box-border min-h-0 min-w-0 flex-1 overflow-y-auto overscroll-contain scroll-pt-3 px-9 pb-20',
+            'max-md:px-4 max-md:pb-16',
+            '[&_.page-header]:top-0',
+            '[&_.page-header]:-mx-9 [&_.page-header]:px-9',
+            'max-md:[&_.page-header]:-mx-4 max-md:[&_.page-header]:px-4',
+            '[&_.page-header]:mb-6 [&_.page-header]:py-6',
+          ].join(' ')}
+        >
           <Outlet />
         </main>
       </div>

@@ -149,6 +149,20 @@ export default {
   // Settings
   settingsTitle: '系统设置',
   basic: '基本',
+  appearance: '外观',
+  appearanceHint:
+    '轻视觉定制：强调色作用于主按钮等 CTA；背景图为整站页面底层（带遮罩保证可读）。不改产品鲤鱼标与字标构型。',
+  themeAccent: '强调色',
+  themeAccentHint: '可选 #RGB / #RRGGBB；留空则使用产品默认（浅色黑钮 / 暗色白钮）。',
+  themeAccentPreview: '按钮预览',
+  themeAccentClear: '恢复默认',
+  themeBgImage: '站点背景图',
+  themeBgImageHint: '可选 http(s) 或站内路径；建议较大横图。留空不使用背景。',
+  themeBgDim: '背景遮罩',
+  themeBgDimHint: '0 = 完全透出图片，1 = 完全被主题底色盖住。推荐 0.6–0.85 以保证文字可读。',
+  themeGlass: '面板不透明度',
+  themeGlassHint:
+    '有背景图时卡片/标题栏/顶栏的毛玻璃浓度。0 = 几乎全透明，1 = 接近实色。推荐 0.65–0.88。调低时边框会一并变淡（约 ≤0.65 时接近无边框），与底图更融。',
   siteName: '站点名称',
   siteNameHint:
     '用于浏览器标题、顶栏字标、页脚署名、邮件与分享页站名。鲤鱼标图形与产品锁标样式在默认名时保留；Community 不提供完整 Logo 白标替换。',

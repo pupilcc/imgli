@@ -2,9 +2,15 @@
 
 /*
  * Design tokens → Tailwind v4 @theme.
- * body[data-theme=dark] still flips CSS variables for runtime theme toggle.
+ *
+ * Colors MUST use `@theme inline`: utilities emit `var(--text)` etc. directly.
+ * Plain `@theme { --color-ink: var(--text) }` resolves once on :root to the light
+ * value, so body[data-theme=dark] flipping --text never reaches text-ink/bg-surface.
+ * See: https://tailwindcss.com/docs/theme#referencing-other-variables
+ *
+ * Static tokens stay in regular @theme (radii, type scale, fonts).
  */
-@theme {
+@theme inline {
   --color-bg: var(--bg);
   --color-surface: var(--surface);
   --color-soft: var(--soft);
@@ -16,7 +22,9 @@
   --color-ok: var(--ok);
   --color-warn: var(--warn);
   --color-err: var(--err);
+}
 
+@theme {
   --font-sans: 'Manrope', system-ui, 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', sans-serif;
   --font-mono: ui-monospace, Menlo, monospace;
 
@@ -33,26 +41,40 @@
 }
 
 :root {
-  --bg: #fafafa;
-  --surface: #ffffff;
-  --soft: #f1f1ef;
-  --border: #e7e7e4;
+  /* Solid bases — used for scrim and for mixing translucent panels */
+  --bg-solid: #fafafa;
+  --surface-solid: #ffffff;
+  --soft-solid: #f1f1ef;
+  --bg: var(--bg-solid);
+  --surface: var(--surface-solid);
+  --soft: var(--soft-solid);
+  --border-solid: #e7e7e4;
+  --border: var(--border-solid);
   --text: #17171a;
-  --muted: #77777f;
+  /* ~5.8:1 on white / surface — was #77777f (~4.3:1, weak on soft panels) */
+  --muted: #5c5c66;
+  --muted-solid: #5c5c66;
   --btn: #17171a;
   --btnText: #ffffff;
   --ok: #1a9b5c;
   --warn: #b07d00;
   --err: #c0392b;
+  --nav-h: 3.5rem; /* h-14 */
 }
 
 body[data-theme='dark'] {
-  --bg: #0f0f11;
-  --surface: #19191d;
-  --soft: #232328;
-  --border: #2a2a30;
+  --bg-solid: #0f0f11;
+  --surface-solid: #19191d;
+  --soft-solid: #232328;
+  --bg: var(--bg-solid);
+  --surface: var(--surface-solid);
+  --soft: var(--soft-solid);
+  --border-solid: #2a2a30;
+  --border: var(--border-solid);
   --text: #f4f4f5;
-  --muted: #8e8e97;
+  /* ~6:1 on surface #19191d — was #8e8e97 */
+  --muted: #a8a8b4;
+  --muted-solid: #a8a8b4;
   --btn: #f4f4f5;
   --btnText: #17171a;
   --ok: #3ecf8e;
@@ -60,14 +82,69 @@ body[data-theme='dark'] {
   --err: #e06555;
 }
 
+/*
+ * With a site background image: frosted glass panels so UI and photo cohere.
+ * --glass (0–1, default 0.78) is operator-tunable via theme_glass / applySiteTheme.
+ * Keep --bg-solid for the page scrim; only elevate surface/soft/bg tokens.
+ * Muted leans toward ink so secondary copy stays readable on photo + frosted glass.
+ *
+ * Borders fade with glass (continuous, not a hard cut):
+ *   glass 1.0 → nearly solid border
+ *   glass ~0.78 (default) → slightly soft
+ *   glass ≤0.65 → clearly soft / almost edge-less (best with heavy photo bleed)
+ * Floor ~10% so structure never fully vanishes.
+ */
+body[data-bg-image='1'] {
+  --glass: 0.78;
+  --surface: color-mix(in srgb, var(--surface-solid) calc(var(--glass) * 100%), transparent);
+  --soft: color-mix(in srgb, var(--soft-solid) calc(var(--glass) * 92%), transparent);
+  --bg: color-mix(in srgb, var(--bg-solid) calc(var(--glass) * 105%), transparent);
+  --muted: color-mix(in srgb, var(--text) 62%, var(--muted-solid));
+  /* border alpha ≈ 10% + glass×90%  (glass 0.65 → ~69%, 0.45 → ~50%, 0.25 → ~32%) */
+  --border: color-mix(
+    in srgb,
+    var(--border-solid) calc(10% + var(--glass) * 90%),
+    transparent
+  );
+}
+
 @layer base {
   body {
     margin: 0;
     font-family: var(--font-sans);
     font-size: 13px;
-    background: var(--bg);
+    background-color: var(--bg-solid);
     color: var(--text);
-    transition: background 0.25s, color 0.25s;
+    transition: background-color 0.25s, color 0.25s;
+  }
+  /* Operator site background: scrim uses solid bg so light/dark stay readable */
+  body[data-bg-image='1'] {
+    background-image:
+      linear-gradient(
+        color-mix(in srgb, var(--bg-solid) calc(var(--bg-dim, 0.72) * 100%), transparent),
+        color-mix(in srgb, var(--bg-solid) calc(var(--bg-dim, 0.72) * 100%), transparent)
+      ),
+      var(--bg-image);
+    background-size: cover;
+    background-position: center;
+    background-attachment: fixed;
+    background-repeat: no-repeat;
+  }
+  /* Frosted chrome + cards when photo bg is on */
+  @supports ((-webkit-backdrop-filter: blur(1px)) or (backdrop-filter: blur(1px))) {
+    body[data-bg-image='1'] header,
+    body[data-bg-image='1'] footer,
+    body[data-bg-image='1'] .page-header,
+    body[data-bg-image='1'] aside {
+      -webkit-backdrop-filter: blur(14px) saturate(1.25);
+      backdrop-filter: blur(14px) saturate(1.25);
+    }
+    body[data-bg-image='1'] .bg-surface,
+    body[data-bg-image='1'] .bg-soft,
+    body[data-bg-image='1'] .bg-bg {
+      -webkit-backdrop-filter: blur(10px) saturate(1.15);
+      backdrop-filter: blur(10px) saturate(1.15);
+    }
   }
   a {
     color: var(--text);

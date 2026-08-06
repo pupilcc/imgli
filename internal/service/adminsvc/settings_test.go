@@ -116,6 +116,79 @@ func TestPutSettingsSiteName(t *testing.T) {
 	}
 }
 
+func TestPutSettingsThemeAppearance(t *testing.T) {
+	svc := New(model.TestDB(t))
+
+	// defaults
+	m, err := svc.GetSettings()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if m["theme_accent"] != "" {
+		t.Errorf("theme_accent default = %v, want empty", m["theme_accent"])
+	}
+	if m["theme_bg_image_url"] != "" {
+		t.Errorf("theme_bg_image_url default = %v, want empty", m["theme_bg_image_url"])
+	}
+	if m["theme_bg_dim"] != DefaultThemeBgDim {
+		t.Errorf("theme_bg_dim default = %v, want %v", m["theme_bg_dim"], DefaultThemeBgDim)
+	}
+	if m["theme_glass"] != DefaultThemeGlass {
+		t.Errorf("theme_glass default = %v, want %v", m["theme_glass"], DefaultThemeGlass)
+	}
+
+	if err := svc.PutSettings(map[string]json.RawMessage{
+		"theme_accent":        rawJSON(t, "#3B82F6"),
+		"theme_bg_image_url":  rawJSON(t, "https://cdn.example.com/bg.jpg"),
+		"theme_bg_dim":        rawJSON(t, 0.5),
+		"theme_glass":         rawJSON(t, 0.6),
+	}); err != nil {
+		t.Fatal(err)
+	}
+	m, _ = svc.GetSettings()
+	if m["theme_accent"] != "#3b82f6" {
+		t.Errorf("theme_accent = %v, want #3b82f6", m["theme_accent"])
+	}
+	if m["theme_bg_image_url"] != "https://cdn.example.com/bg.jpg" {
+		t.Errorf("theme_bg_image_url = %v", m["theme_bg_image_url"])
+	}
+	if m["theme_bg_dim"] != 0.5 {
+		t.Errorf("theme_bg_dim = %v, want 0.5", m["theme_bg_dim"])
+	}
+	if m["theme_glass"] != 0.6 {
+		t.Errorf("theme_glass = %v, want 0.6", m["theme_glass"])
+	}
+
+	// clear accent + expand short hex
+	if err := svc.PutSettings(map[string]json.RawMessage{"theme_accent": rawJSON(t, "#abc")}); err != nil {
+		t.Fatal(err)
+	}
+	m, _ = svc.GetSettings()
+	if m["theme_accent"] != "#aabbcc" {
+		t.Errorf("short hex expand = %v, want #aabbcc", m["theme_accent"])
+	}
+
+	if err := svc.PutSettings(map[string]json.RawMessage{"theme_accent": rawJSON(t, "not-a-color")}); err == nil {
+		t.Error("invalid accent should fail")
+	}
+	if err := svc.PutSettings(map[string]json.RawMessage{"theme_bg_dim": rawJSON(t, 1.5)}); err == nil {
+		t.Error("dim > 1 should fail")
+	}
+	if err := svc.PutSettings(map[string]json.RawMessage{"theme_glass": rawJSON(t, -0.1)}); err == nil {
+		t.Error("glass < 0 should fail")
+	}
+	if err := svc.PutSettings(map[string]json.RawMessage{"theme_bg_image_url": rawJSON(t, "javascript:alert(1)")}); err == nil {
+		t.Error("bad bg url should fail")
+	}
+	// empty clears
+	if err := svc.PutSettings(map[string]json.RawMessage{
+		"theme_accent":       rawJSON(t, ""),
+		"theme_bg_image_url": rawJSON(t, ""),
+	}); err != nil {
+		t.Fatal(err)
+	}
+}
+
 func TestPutSettingsRegistrationMode(t *testing.T) {
 	svc := New(model.TestDB(t))
 

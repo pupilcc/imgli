@@ -16,7 +16,7 @@ export function AppLayout() {
       {quota.data && (
         <QuotaAlertBar used={quota.data.used} total={quota.data.total} upgradeUrl={config?.upgrade_url} />
       )}
-      <main className="box-border w-full flex-[1_0_auto] px-6 pb-12 max-md:pb-[100px]">
+      <main className="box-border w-full flex-[1_0_auto] px-8 pb-12 max-md:px-5 max-md:pb-[100px]">
         <Outlet />
       </main>
       <SiteFooter

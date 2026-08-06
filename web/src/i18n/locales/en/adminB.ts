@@ -150,6 +150,20 @@ export default {
   // Settings
   settingsTitle: 'System settings',
   basic: 'General',
+  appearance: 'Appearance',
+  appearanceHint:
+    'Light branding: accent drives primary buttons; background is a full-page layer with a scrim for readability. Carp mark and lockup structure stay fixed.',
+  themeAccent: 'Accent color',
+  themeAccentHint: 'Optional #RGB / #RRGGBB; leave empty for product defaults (dark button in light mode, light button in dark mode).',
+  themeAccentPreview: 'Button preview',
+  themeAccentClear: 'Reset default',
+  themeBgImage: 'Site background image',
+  themeBgImageHint: 'Optional http(s) or site-relative URL; wide images work best. Empty disables the background.',
+  themeBgDim: 'Background scrim',
+  themeBgDimHint: '0 = full image, 1 = fully covered by page background. Prefer 0.6–0.85 for readable text.',
+  themeGlass: 'Panel opacity',
+  themeGlassHint:
+    'Frosted strength of cards, page header, and chrome when a background image is set. 0 = nearly clear, 1 = almost solid. Prefer 0.65–0.88. Borders fade with opacity (around ≤0.65 they nearly disappear) so panels blend into the photo.',
   siteName: 'Site name',
   siteNameHint:
     'Used for the tab title, nav wordmark, footer, mail, and share branding. The carp mark stays; full logo white-label is not offered in Community.',

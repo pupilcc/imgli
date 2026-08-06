@@ -94,6 +94,8 @@ func (h *ConfigHandler) Config(w http.ResponseWriter, r *http.Request) {
 	}
 
 	var helpURL, upgradeURL, shareBrand, faviconURL, sourceURL, ossCredit string
+	var themeAccent, themeBgImageURL string
+	var themeBgDim, themeGlass float64
 	var regNotice, aboutBody adminsvc.LocaleString
 	var aboutEnabled bool
 	if err := st.Get(model.SettingHelpURL, &helpURL); err != nil && !errors.Is(err, settings.ErrNotFound) {
@@ -132,10 +134,36 @@ func (h *ConfigHandler) Config(w http.ResponseWriter, r *http.Request) {
 		Fail(w, http.StatusInternalServerError, CodeInternal, "服务器内部错误")
 		return
 	}
+	if err := st.Get(model.SettingThemeAccent, &themeAccent); err != nil && !errors.Is(err, settings.ErrNotFound) {
+		Fail(w, http.StatusInternalServerError, CodeInternal, "服务器内部错误")
+		return
+	}
+	if err := st.Get(model.SettingThemeBgImageURL, &themeBgImageURL); err != nil && !errors.Is(err, settings.ErrNotFound) {
+		Fail(w, http.StatusInternalServerError, CodeInternal, "服务器内部错误")
+		return
+	}
+	themeBgDim = adminsvc.DefaultThemeBgDim
+	if err := st.Get(model.SettingThemeBgDim, &themeBgDim); err != nil && !errors.Is(err, settings.ErrNotFound) {
+		Fail(w, http.StatusInternalServerError, CodeInternal, "服务器内部错误")
+		return
+	}
+	if err := adminsvc.ValidateThemeBgDim(themeBgDim); err != nil {
+		themeBgDim = adminsvc.DefaultThemeBgDim
+	}
+	themeGlass = adminsvc.DefaultThemeGlass
+	if err := st.Get(model.SettingThemeGlass, &themeGlass); err != nil && !errors.Is(err, settings.ErrNotFound) {
+		Fail(w, http.StatusInternalServerError, CodeInternal, "服务器内部错误")
+		return
+	}
+	if err := adminsvc.ValidateThemeGlass(themeGlass); err != nil {
+		themeGlass = adminsvc.DefaultThemeGlass
+	}
 	helpURL = adminsvc.NormalizeOptionalURL(helpURL)
 	upgradeURL = adminsvc.NormalizeOptionalURL(upgradeURL)
 	faviconURL = adminsvc.NormalizeOptionalURL(faviconURL)
 	sourceURL = adminsvc.NormalizeOptionalURL(sourceURL)
+	themeAccent = adminsvc.NormalizeThemeAccent(themeAccent)
+	themeBgImageURL = adminsvc.NormalizeOptionalURL(themeBgImageURL)
 	regNotice = regNotice.Normalize()
 	aboutBody = aboutBody.Normalize()
 	shareBrand = adminsvc.NormalizeShareBranding(shareBrand)
@@ -167,5 +195,9 @@ func (h *ConfigHandler) Config(w http.ResponseWriter, r *http.Request) {
 		"oss_credit":           ossCredit,
 		"about_enabled":        aboutEnabled,
 		"about_body":           aboutBody,
+		"theme_accent":         themeAccent,
+		"theme_bg_image_url":   themeBgImageURL,
+		"theme_bg_dim":         themeBgDim,
+		"theme_glass":          themeGlass,
 	})
 }

@@ -40,6 +40,11 @@ const (
 	SettingAboutEnabled    = "about_enabled"     // 是否启用 /about
 	SettingAboutBody       = "about_body"        // 关于页正文 locale map {zh,en}
 	SettingWelcomeEmail    = "welcome_email"     // bool；SMTP 已配时注册欢迎信，默认 true
+	// v0.9.5 轻视觉：强调色 + 可选站点背景图
+	SettingThemeAccent     = "theme_accent"       // 空 | #RRGGBB；驱动主按钮/强调
+	SettingThemeBgImageURL = "theme_bg_image_url" // 空 | http(s)/站内路径
+	SettingThemeBgDim      = "theme_bg_dim"       // 0–1 遮罩强度，默认 0.72
+	SettingThemeGlass      = "theme_glass"        // 0–1 面板毛玻璃不透明度，默认 0.78
 )
 
 // settingModerationDefaultJSON 是 moderation.DefaultConfig() 的 JSON 字面量，手写在此
@@ -257,6 +262,10 @@ func Seed(db *gorm.DB) error {
 			SettingAboutEnabled:  `false`,
 			SettingAboutBody:     `{"zh":"","en":""}`,
 			SettingWelcomeEmail:  `true`,
+			SettingThemeAccent:     `""`,
+			SettingThemeBgImageURL: `""`,
+			SettingThemeBgDim:      `0.72`,
+			SettingThemeGlass:      `0.78`,
 		} {
 			if err := tx.Where("key = ?", k).
 				FirstOrCreate(&Setting{Key: k, Value: v}).Error; err != nil {

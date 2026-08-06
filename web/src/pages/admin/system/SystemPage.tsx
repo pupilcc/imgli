@@ -23,7 +23,7 @@ const sectionHeadClass = 'mb-3.5 flex flex-wrap items-baseline justify-between g
 const h2Class = 'm-0 text-sm font-bold tracking-[0.02em]'
 const hintClass = 'mb-3 mt-0 text-xs leading-snug text-muted'
 const bannerCodeClass =
-  'my-2 mb-3 block overflow-x-auto whitespace-pre-wrap rounded-[2px] border border-border bg-bg px-2.5 py-2 font-mono text-xs'
+  'my-2 mb-3 block overflow-x-auto whitespace-pre-wrap rounded-sm border border-border bg-bg px-2.5 py-2 font-mono text-xs'
 const monoClass = 'font-mono text-xs'
 const rowClass = 'mb-2.5 flex flex-wrap items-center gap-2'
 const levelBaseClass = 'font-mono text-[11px] font-bold uppercase tracking-[0.06em]'

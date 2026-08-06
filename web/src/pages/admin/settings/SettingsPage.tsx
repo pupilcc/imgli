@@ -4,6 +4,7 @@ import { useAdminSettings, useTestModeration, useTestSMTP, useUpdateSettings } f
 import type { SiteAnnouncement } from '../../../api/types'
 import { useT } from '../../../i18n'
 import { errorText } from '../../../i18n/errorText'
+import { applySiteTheme } from '../../../lib/siteTheme'
 import { PageHeader } from '../../../shell/PageHeader'
 import { useGlobal } from '../../../store'
 import { Button } from '../../../ui/Button'
@@ -18,6 +19,7 @@ import {
   type SettingsTab,
 } from './settingsForm'
 import { s } from './settingsUi'
+import { AppearanceTab } from './tabs/AppearanceTab'
 import { BasicTab } from './tabs/BasicTab'
 import { HotlinkTab } from './tabs/HotlinkTab'
 import { ModerationTab } from './tabs/ModerationTab'
@@ -224,10 +226,15 @@ export function SettingsPage() {
           en: form.aboutBody.en.trim(),
         },
         welcome_email: form.welcomeEmail,
+        theme_accent: form.themeAccent.trim(),
+        theme_bg_image_url: form.themeBgImageUrl.trim(),
+        theme_bg_dim: form.themeBgDim,
+        theme_glass: form.themeGlass,
       },
       {
         onSuccess: (data) => {
           setForm(formOf(data))
+          applySiteTheme(data)
           useGlobal.getState().pushToast(t('common.saved'))
         },
       },
@@ -280,6 +287,7 @@ export function SettingsPage() {
             </nav>
 
             {tab === 'basic' && <BasicTab form={f} set={set} />}
+            {tab === 'appearance' && <AppearanceTab form={f} set={set} />}
             {tab === 'slots' && (
               <SlotsTab
                 form={f}

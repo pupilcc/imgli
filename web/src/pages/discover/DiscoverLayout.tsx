@@ -51,7 +51,7 @@ export function DiscoverLayout() {
           )}
         </div>
       </header>
-      <main className="box-border mx-auto w-full max-w-[1100px] px-6 pt-6 pb-20 max-md:px-4 max-md:pt-4 max-md:pb-16">
+      <main className="box-border mx-auto w-full max-w-[1100px] px-8 pt-6 pb-20 max-md:px-5 max-md:pt-4 max-md:pb-16">
         <Outlet />
       </main>
     </>

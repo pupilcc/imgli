@@ -283,7 +283,7 @@ function PolicyCapsPanel({
   return (
     <div
       className={cn(
-        'flex flex-col gap-2 rounded-lg border border-border bg-soft px-3.5 py-3',
+        'flex flex-col gap-2 rounded-sm border border-border bg-soft px-3.5 py-3',
         caps.tier === 'compat' && 'border-err/45',
       )}
       data-tier={caps.tier}
@@ -462,7 +462,7 @@ export function PoliciesPage() {
       <AdminQueryGate query={policiesQ}>
         {() => (
           <>
-          <div className="mb-5 rounded-[10px] border border-border bg-soft px-[1.1rem] py-4">
+          <div className="mb-5 rounded-sm border border-border bg-soft px-[1.1rem] py-4">
             <div className="mb-1.5 font-semibold">{t('adminB.migrateTitle')}</div>
             <p className={hintClass}>{t('adminB.migrateDesc')}</p>
             <div className="my-3 grid grid-cols-[repeat(auto-fit,minmax(12rem,1fr))] gap-3">
@@ -546,7 +546,7 @@ export function PoliciesPage() {
                   key={p.id}
                   type="button"
                   className={cn(
-                    'flex cursor-pointer items-center gap-2 rounded-lg border border-border bg-surface px-3 py-2.5 text-left',
+                    'flex cursor-pointer items-center gap-2 rounded-sm border border-border bg-surface px-3 py-2.5 text-left',
                     sel === p.id && 'border-ink',
                   )}
                   onClick={() => selectPolicy(p)}
@@ -563,7 +563,7 @@ export function PoliciesPage() {
                 </button>
               ))}
             </div>
-            <div className="rounded-[10px] border border-border bg-surface p-5">
+            <div className="rounded-sm border border-border bg-surface p-5">
               {sel === null ? (
                 <EmptyState title={t('adminB.selectOrCreatePolicy')} desc={t('adminB.selectOrCreatePolicyDesc')} />
               ) : (
@@ -603,7 +603,7 @@ export function PoliciesPage() {
                         }}
                       />
                     ) : (
-                      <div className="driver rounded-lg border border-border bg-soft px-3 py-2.5 text-muted">{driverLabel}</div>
+                      <div className="driver rounded-sm border border-border bg-soft px-3 py-2.5 text-muted">{driverLabel}</div>
                     )}
                   </AdminField>
                   <PolicyCapsPanel caps={caps} warnings={warnings} />
