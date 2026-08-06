@@ -6,12 +6,25 @@ const PNG = Buffer.from(
   'base64',
 )
 
+/** 登录 boss；e2e:smoke 以 guest 为首文件时无 admin 前置，则注册为首管理员。 */
 async function loginBoss(page: import('@playwright/test').Page) {
   await page.goto('/login')
   await page.getByLabel('账号').fill('boss')
   await page.getByLabel('密码').fill('bosspass-777')
   await page.getByTestId('auth-submit').click()
-  await expect(page.getByTestId('dropzone')).toBeVisible()
+  const drop = page.getByTestId('dropzone')
+  try {
+    await expect(drop).toBeVisible({ timeout: 8_000 })
+    return
+  } catch {
+    // 用户不存在 → 注册为首管理员
+  }
+  await page.getByRole('button', { name: '注册' }).click()
+  await page.getByLabel('用户名').fill('boss')
+  await page.getByLabel('邮箱').fill('boss@img.li')
+  await page.getByLabel('密码').fill('bosspass-777')
+  await page.getByTestId('auth-submit').click()
+  await expect(drop).toBeVisible({ timeout: 8_000 })
 }
 
 async function setGuestSwitch(page: import('@playwright/test').Page, on: boolean) {
