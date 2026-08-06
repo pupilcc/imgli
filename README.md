@@ -99,6 +99,10 @@ verify upstream docs before migrating.
 - **v0.9.4** — admin trash restore; denser users table + row expand; processing
   JPEG quality / original WebP (vips); Docker ships libvips by default; System
   page imaging capabilities.
+- **v0.9.5** — dark-mode fix after Tailwind (`@theme inline`); **site appearance**:
+  accent color, full-page background, scrim + frosted glass (borders soften with
+  opacity); admin radii/layout polish. [CHANGELOG](CHANGELOG.md) ·
+  [customization IA](docs/design/site-customization-ia.md).
 - **Polish** — bilingual UI (中文/English), PWA, light/dark/**system** theme,
   text watermark (embedded CJK font subset), admin dashboard with audit logs
   and light ops analytics.
@@ -119,7 +123,7 @@ imgli serve
 Pin a version or install location:
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/yixian-huang/imgli/main/scripts/install.sh | sh -s -- v0.9.4
+curl -fsSL https://raw.githubusercontent.com/yixian-huang/imgli/main/scripts/install.sh | sh -s -- v0.9.5
 PREFIX=/usr/local/bin curl -fsSL https://raw.githubusercontent.com/yixian-huang/imgli/main/scripts/install.sh | sh
 ```
 
@@ -135,7 +139,7 @@ docker run --rm -p 8686:8686 -v imgli-data:/data \
 # → http://localhost:8686  (first registered user becomes admin)
 ```
 
-Pin a release with `ghcr.io/yixian-huang/imgli:v0.9.4` (see
+Pin a release with `ghcr.io/yixian-huang/imgli:v0.9.5` (see
 [Releases](https://github.com/yixian-huang/imgli/releases)).
 
 ### Docker Compose
@@ -156,7 +160,7 @@ Backup / restore: [`docs/backup.md`](docs/backup.md).
 
 ```bash
 make build          # needs Go ≥ 1.26 and Node ≥ 24
-./imgli version     # git tag via ldflags, e.g. v0.9.4
+./imgli version     # git tag via ldflags, e.g. v0.9.5
 ./imgli serve       # → http://localhost:8686
 ```
 

@@ -88,6 +88,9 @@
   全站样式重写 + 共享 admin chrome。
 - **v0.9.4**：管理端回收站恢复；用户表合并列+展开；图片处理 JPEG 质量 / 原图 WebP（vips）；
   Docker 默认 libvips；系统页图像能力展示。
+- **v0.9.5**：暗色模式修复（Tailwind `@theme inline`）；**站点外观**：强调色、整站背景图、
+  遮罩与毛玻璃不透明度（边框随透明度变淡）；管理台圆角/标题栏布局打磨。
+  [CHANGELOG](CHANGELOG.md) · [站点定制 IA](docs/design/site-customization-ia.md)。
 - **细节**:中英双语界面、PWA、浅色/深色/**跟随系统**主题、文字水印(内嵌中文字体子集)、
   带审计日志与轻量运营统计的管理后台。
 
@@ -108,7 +111,7 @@ imgli serve
 固定版本或安装路径：
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/yixian-huang/imgli/main/scripts/install.sh | sh -s -- v0.9.4
+curl -fsSL https://raw.githubusercontent.com/yixian-huang/imgli/main/scripts/install.sh | sh -s -- v0.9.5
 PREFIX=/usr/local/bin curl -fsSL https://raw.githubusercontent.com/yixian-huang/imgli/main/scripts/install.sh | sh
 ```
 
@@ -124,7 +127,7 @@ docker run --rm -p 8686:8686 -v imgli-data:/data \
 # → http://localhost:8686（第一个注册用户即管理员）
 ```
 
-固定版本用 `ghcr.io/yixian-huang/imgli:v0.9.4`（见
+固定版本用 `ghcr.io/yixian-huang/imgli:v0.9.5`（见
 [Releases](https://github.com/yixian-huang/imgli/releases)）。
 
 ### Docker Compose
@@ -145,7 +148,7 @@ TLS 反代片段：[`deploy/Caddyfile.example`](deploy/Caddyfile.example)、
 
 ```bash
 make build          # 需要 Go ≥ 1.26、Node ≥ 24
-./imgli version     # ldflags 注入的 git tag，如 v0.9.4
+./imgli version     # ldflags 注入的 git tag，如 v0.9.5
 ./imgli serve       # → http://localhost:8686
 ```
 

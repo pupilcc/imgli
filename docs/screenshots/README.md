@@ -1,7 +1,7 @@
 # Screenshots
 
-Product UI captures for README demos. Regenerated from a local `imgli serve`
-instance (demo seed user + sample upload). Not marketing mockups.
+Product UI captures for README demos. Regenerated for **v0.9.5** from a local
+`imgli serve` instance (admin session + sample uploads). Not marketing mockups.
 
 | File | Scene |
 |------|--------|
@@ -9,12 +9,7 @@ instance (demo seed user + sample upload). Not marketing mockups.
 | `02-library.png` | Image library |
 | `03-share.png` | Public share landing `/s/{key}` |
 | `04-api-tokens.png` | Settings → API tokens + client snippets |
-| `05-admin.png` | Admin dashboard (review queue entry in nav) |
+| `05-admin.png` | Admin dashboard |
 | `06-image-detail.png` | Image detail modal |
 
-To refresh (dev):
-
-```bash
-# serve on :8765 with a fresh data dir, register, upload a sample, then:
-node --input-type=module scripts/capture-readme-screenshots.mjs  # if added later
-```
+Last refresh: 2026-08-06 (v0.9.5 appearance / dark-mode UI).
