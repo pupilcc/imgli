@@ -85,23 +85,30 @@ migrations in the changelog when operators must act.
 
 ### Maintainer release checklist
 
-1. `main` is clean and CI is green.
+Full playbook (tag gate scripts, job order, baili deploy, public smoke):
+**[docs/ops-release.md](docs/ops-release.md)**.
+
+Short form:
+
+1. PR → CI green (e2e-smoke on PR; full e2e on `main`); merge.
 2. Move `[Unreleased]` notes in `CHANGELOG.md` into a dated `## [X.Y.Z]` section;
    refresh the compare links at the bottom; leave an empty `[Unreleased]`.
-3. Commit on `main`, then tag and push:
+3. `./scripts/pre-tag-check.sh vX.Y.Z` (CHANGELOG section + clean tree + main CI).
+4. Tag and push:
 
    ```bash
    git tag -a vX.Y.Z -m "vX.Y.Z"
-   git push origin main --tags
+   git push origin vX.Y.Z
    ```
 
-4. GitHub Actions [release](.github/workflows/release.yml) will:
-   - build multi-platform binaries with GoReleaser and publish a GitHub Release;
-   - build/push multi-arch images to `ghcr.io/yixian-huang/imgli` with tags
+5. GitHub Actions [release](.github/workflows/release.yml):
+   - **goreleaser** — multi-platform binaries → GitHub Release (production path);
+   - **docker-amd64** / **docker-multi** — `ghcr.io/yixian-huang/imgli` tags
      `vX.Y.Z`, `X.Y.Z`, `X.Y`, and `latest` (not for pre-releases containing `-`).
+     Binary deploy need not wait for multi-arch docker.
 
-5. Smoke-check: download a release asset or pull the image and run
-   `imgli version` — it should print `vX.Y.Z`.
+6. Smoke: `./scripts/ops-smoke-public.sh https://…` or Actions `smoke-prod`;
+   `imgli version` on a release asset should print `vX.Y.Z`.
 
 Local dry-run (requires [GoReleaser](https://goreleaser.com/) installed):
 

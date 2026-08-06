@@ -91,6 +91,8 @@
 - **v0.9.5**：暗色模式修复（Tailwind `@theme inline`）；**站点外观**：强调色、整站背景图、
   遮罩与毛玻璃不透明度（边框随透明度变淡）；管理台圆角/标题栏布局打磨。
   [CHANGELOG](CHANGELOG.md) · [站点定制 IA](docs/design/site-customization-ia.md)。
+- **v0.9.6**：自托管健壮性——SQLite 低内存/绑定挂载 OOM 缓解、Docker entrypoint 修正
+  绑定卷属主、libvips 默认并发上限。
 - **细节**:中英双语界面、PWA、浅色/深色/**跟随系统**主题、文字水印(内嵌中文字体子集)、
   带审计日志与轻量运营统计的管理后台。
 
@@ -111,7 +113,7 @@ imgli serve
 固定版本或安装路径：
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/yixian-huang/imgli/main/scripts/install.sh | sh -s -- v0.9.5
+curl -fsSL https://raw.githubusercontent.com/yixian-huang/imgli/main/scripts/install.sh | sh -s -- v0.9.6
 PREFIX=/usr/local/bin curl -fsSL https://raw.githubusercontent.com/yixian-huang/imgli/main/scripts/install.sh | sh
 ```
 
@@ -127,7 +129,7 @@ docker run --rm -p 8686:8686 -v imgli-data:/data \
 # → http://localhost:8686（第一个注册用户即管理员）
 ```
 
-固定版本用 `ghcr.io/yixian-huang/imgli:v0.9.5`（见
+固定版本用 `ghcr.io/yixian-huang/imgli:v0.9.6`（见
 [Releases](https://github.com/yixian-huang/imgli/releases)）。
 
 ### Docker Compose
@@ -148,7 +150,7 @@ TLS 反代片段：[`deploy/Caddyfile.example`](deploy/Caddyfile.example)、
 
 ```bash
 make build          # 需要 Go ≥ 1.26、Node ≥ 24
-./imgli version     # ldflags 注入的 git tag，如 v0.9.5
+./imgli version     # ldflags 注入的 git tag，如 v0.9.6
 ./imgli serve       # → http://localhost:8686
 ```
 
@@ -160,15 +162,16 @@ make build          # 需要 Go ≥ 1.26、Node ≥ 24
 优先级:默认值 → YAML(`imgli serve -config imgli.yaml`,
 见 [`deploy/imgli.example.yaml`](deploy/imgli.example.yaml))→ 环境变量:
 
-| 环境变量 | 默认 | 含义 |
-|---|---|---|
-| `IMGLI_LISTEN` | `:8686` | 监听地址 |
-| `IMGLI_BASE_URL` | `http://localhost:8686` | 公网访问源（生成外链/邮件、`Secure` Cookie、浏览器写请求的 CSRF Origin 白名单）；须与浏览器地址一致 |
-| `IMGLI_DATA_DIR` | `./data` | 本地存储与 SQLite 目录 |
-| `IMGLI_DATABASE_DRIVER` | `sqlite` | `sqlite` \| `postgres` |
-| `IMGLI_DATABASE_DSN` | `<data_dir>/imgli.db` | postgres 时的 DSN |
-| `IMGLI_TRUST_PROXY` | `false` | 信任 `X-Forwarded-For`(仅在可信反代后开) |
-| `IMGLI_FETCH_ALLOW` | *(空)* | URL 抓取上传额外放行的 host/CIDR |
+| 环境变量 | 是否必需 | 默认 | 含义 |
+|---|---|---|---|
+| `IMGLI_BASE_URL` | **公网部署必需** | `http://localhost:8686` | 浏览器访问源（`https://你的域名`）；外链/邮件/Cookie/CSRF。本机试玩可保持默认 |
+| `IMGLI_TRUST_PROXY` | **有反代时必需 true** | `false` | 信任 `X-Forwarded-For`（仅可信反代后） |
+| `IMGLI_LISTEN` | 可选 | `:8686` | 监听地址 |
+| `IMGLI_DATA_DIR` | 可选 | `./data` | 本地存储与默认 SQLite 目录（镜像内常为 `/data`） |
+| `IMGLI_DATABASE_DRIVER` | 可选 | `sqlite` | `sqlite` \| `postgres` |
+| `IMGLI_DATABASE_DSN` | **Postgres 时必需** | SQLite 自动路径 | Postgres DSN；SQLite 请留空 |
+| `IMGLI_FETCH_ALLOW` | 可选 | *(空)* | URL 抓取上传额外放行的 host/CIDR |
+| `IMGLI_RATE_LIMIT_MULT` | 可选 | `1` | 限速倍率；生产保持 1 |
 
 ### 反代后无法注册/登录（「跨站请求被拒绝」）
 
@@ -251,14 +254,17 @@ cd web && npm run e2e   # Playwright,会先构建二进制
 - 存储矩阵：[S3](docs/s3-compatibility.md) · [WebDAV](docs/webdav-compatibility.md) · [FTP 双轨](docs/storage-ftp.md)
 - **跨策略搬迁**：[docs/storage-migrate.md](docs/storage-migrate.md)（CLI + Admin 任务）
 - **用户组生命周期（v0.9）**：[docs/user-groups-lifecycle.md](docs/user-groups-lifecycle.md)（有效期/次数上限、保留与强制存活、存量钳制）
-- **v0.9.2 验收 / 站点定制 IA**：[验收用例](docs/superpowers/plans/2026-08-04-v0.9.2-acceptance.md) · [IA 草案](docs/design/site-customization-ia.md)
+- **站点定制（L0 / L2 外观）**：[docs/design/site-customization-ia.md](docs/design/site-customization-ia.md)（站名、强调色、背景图、毛玻璃；v0.9.5）
+- **v0.9.2 验收**：[docs/superpowers/plans/2026-08-04-v0.9.2-acceptance.md](docs/superpowers/plans/2026-08-04-v0.9.2-acceptance.md)
 - **清理与 CDN 边界**：[docs/ops-cleanup-cdn-boundary.md](docs/ops-cleanup-cdn-boundary.md)
+- **发版 / CI / 部署**：[docs/ops-release.md](docs/ops-release.md)（tag 门禁、脚本、冒烟）
 - **生产部署检查清单**：[docs/ops-deploy-checklist.md](docs/ops-deploy-checklist.md)
 - **反代 / CSRF**：[docs/security-hardening.md](docs/security-hardening.md#faq-reverse-proxy-loginregister-cross-site-rejected)（v0.7+ 亦可在后台「系统 / 运维」自检）
 - **OIDC 运维排错**：[docs/oidc-operator.md](docs/oidc-operator.md)
 - 集成：[docs/integrations/README.md](docs/integrations/README.md) · CLI `imgli upload -verbose`
 - 迁入 imgli：`imgli import-dir`（本地目录 → 上传 API）
 - 机审抽检路径：[docs/moderation-spot-check.md](docs/moderation-spot-check.md)
+- 文档 SSOT 地图：[docs/documentation-ssot.md](docs/documentation-ssot.md)
 - 公开 Roadmap 镜像：[ROADMAP.md](ROADMAP.md)（执行面 = GitHub Issues）
 - 产品文档：[docs.imgli.com](https://docs.imgli.com) · 产品站 / 演示：[imgli.com](https://imgli.com) · [img.li](https://img.li)
 - 截图：[docs/screenshots/](docs/screenshots/)

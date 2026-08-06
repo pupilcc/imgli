@@ -28,7 +28,12 @@ services:
       # IMGLI_DATABASE_DRIVER: postgres
       # IMGLI_DATABASE_DSN: "host=db user=imgli password=change-me dbname=imgli port=5432 sslmode=disable"
     volumes:
+      # Prefer a named volume for SQLite + local objects (default path /data/imgli.db).
       - imgli-data:/data
+      # Bind mount alternative (local disk only — not NFS/CIFS):
+      # - /var/lib/imgli:/data
+      # If you hit SQLite "out of memory" on low-RAM ARM with bind mounts, prefer
+      # the named volume, or switch to Postgres. Optional: VIPS_CONCURRENCY=1.
     # Proxy on same host: publish only loopback
     ports:
       - "127.0.0.1:8686:8686"

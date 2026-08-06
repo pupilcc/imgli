@@ -4,9 +4,9 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"strings"
 	"time"
 
-	"github.com/glebarez/sqlite"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 	"gorm.io/gorm/logger"
@@ -73,7 +73,7 @@ const settingFooterDefaultJSON = `{"groups":[]}`
 const settingRegisterNoticeDefaultJSON = `{"zh":"","en":""}`
 const settingHTMLInjectDefaultJSON = `{"head":"","body_end":""}`
 
-// Open 按配置打开数据库。sqlite 未配置 DSN 时落到 DataDir/imgli.db 并开 WAL。
+// Open 按配置打开数据库。sqlite 未配置 DSN 时落到 DataDir/imgli.db 并开 WAL（不可用时回退 DELETE）。
 func Open(cfg *config.Config) (*gorm.DB, error) {
 	gc := &gorm.Config{
 		Logger: logger.New(log.New(os.Stderr, "", log.LstdFlags), logger.Config{
@@ -87,37 +87,18 @@ func Open(cfg *config.Config) (*gorm.DB, error) {
 		// 有条件地创建。
 		DisableForeignKeyConstraintWhenMigrating: true,
 	}
-	var db *gorm.DB
-	var err error
-	switch cfg.Database.Driver {
-	case "sqlite":
-		dsn := cfg.Database.DSN
-		if dsn == "" {
-			if err := os.MkdirAll(cfg.DataDir, 0o755); err != nil {
-				return nil, err
-			}
-			dsn = cfg.SQLiteDefaultDSN() + "?_pragma=journal_mode(WAL)&_pragma=busy_timeout(5000)&_pragma=foreign_keys(1)"
-		}
-		db, err = gorm.Open(sqlite.Open(dsn), gc)
+	switch strings.ToLower(strings.TrimSpace(cfg.Database.Driver)) {
+	case "sqlite", "":
+		return openSQLite(cfg, gc)
 	case "postgres":
-		db, err = gorm.Open(postgres.Open(cfg.Database.DSN), gc)
+		db, err := gorm.Open(postgres.Open(cfg.Database.DSN), gc)
+		if err != nil {
+			return nil, err
+		}
+		return db, nil
 	default:
 		return nil, fmt.Errorf("未知数据库驱动 %q（支持 sqlite|postgres）", cfg.Database.Driver)
 	}
-	if err != nil {
-		return nil, err
-	}
-	if cfg.Database.Driver == "sqlite" {
-		// SQLite 单写者：单连接池消除 shared-cache 锁竞争（database is locked）
-		if sqlDB, e := db.DB(); e == nil {
-			sqlDB.SetMaxOpenConns(1)
-		}
-		// 兜底：自定义 DSN 未带 _pragma=foreign_keys 时，单连接池上显式开启。
-		if err := db.Exec("PRAGMA foreign_keys = ON").Error; err != nil {
-			return nil, err
-		}
-	}
-	return db, nil
 }
 
 // Migrate 增量迁移全部模型并确保版本行存在。

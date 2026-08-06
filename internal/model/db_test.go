@@ -1,6 +1,9 @@
 package model
 
 import (
+	"os"
+	"path/filepath"
+	"strings"
 	"testing"
 
 	"github.com/yixian-huang/imgli/internal/config"
@@ -63,6 +66,41 @@ func TestSQLiteForeignKeysPragmaOn(t *testing.T) {
 	}
 	if fk != 1 {
 		t.Fatalf("foreign_keys pragma = %d, want 1", fk)
+	}
+	// 默认关闭 mmap，降低绑定挂载/低内存环境 OOM。
+	var mmap int64
+	if err := db.Raw("PRAGMA mmap_size").Scan(&mmap).Error; err != nil {
+		t.Fatal(err)
+	}
+	if mmap != 0 {
+		t.Fatalf("mmap_size = %d, want 0", mmap)
+	}
+}
+
+func TestSQLiteFileDSNContainsDefaults(t *testing.T) {
+	dsn := SQLiteFileDSN("/data")
+	if !strings.Contains(dsn, "/data/imgli.db?") {
+		t.Fatalf("path: %s", dsn)
+	}
+	for _, frag := range []string{"journal_mode(WAL)", "busy_timeout(5000)", "foreign_keys(1)", "mmap_size(0)", "cache_size(-8000)", "temp_store(FILE)"} {
+		if !strings.Contains(dsn, frag) {
+			t.Errorf("missing %s in %s", frag, dsn)
+		}
+	}
+}
+
+func TestEnsureDataDirWritable(t *testing.T) {
+	dir := t.TempDir()
+	if err := ensureDataDirWritable(dir); err != nil {
+		t.Fatal(err)
+	}
+	// not a directory
+	f := filepath.Join(dir, "file")
+	if err := os.WriteFile(f, []byte("x"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	if err := ensureDataDirWritable(f); err == nil {
+		t.Fatal("expected error for file path")
 	}
 }
 

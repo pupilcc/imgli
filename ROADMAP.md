@@ -3,7 +3,25 @@
 > **Planning SSOT is internal** (`imgli/roadmap` in the project knowledge base).  
 > This file is a **public, de-sensitized mirror** for contributors. Prefer GitHub Issues + Milestones for execution.
 
-## Latest shipped — v0.9.4 · Admin restore · processing WebP · Docker vips
+## Latest shipped — v0.9.6 · Self-host robustness (SQLite / Docker / low-RAM)
+
+Release: https://github.com/yixian-huang/imgli/releases/tag/v0.9.6
+
+Safer SQLite defaults (`mmap_size=0`, cache, temp_store, WAL→DELETE fallback);
+Docker entrypoint fixes bind-mount ownership (uid 1000); libvips concurrency cap.
+See [CHANGELOG](CHANGELOG.md#096---2026-08-06).
+
+## Previous — v0.9.5 · Dark-mode tokens · site appearance
+
+Release: https://github.com/yixian-huang/imgli/releases/tag/v0.9.5
+
+Dark-mode colors after Tailwind (`@theme inline`); admin **Appearance** tab —
+accent, full-page background, scrim, frosted glass; layout/radius polish.
+Post-tag ops: release scripts + CI split (see [ops-release](docs/ops-release.md)).
+See [CHANGELOG](CHANGELOG.md#095---2026-08-06) and
+[site customization IA](docs/design/site-customization-ia.md).
+
+## Previous — v0.9.4 · Admin restore · processing WebP · Docker vips
 
 Release: https://github.com/yixian-huang/imgli/releases/tag/v0.9.4
 

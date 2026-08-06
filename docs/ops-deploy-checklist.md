@@ -108,10 +108,26 @@ curl -sfS https://img.li/healthz
 
 验收清单：[`superpowers/plans/2026-08-04-v0.9.2-acceptance.md`](superpowers/plans/2026-08-04-v0.9.2-acceptance.md)。
 
+## 升级到 v0.9.3–v0.9.4（UI · 回收站恢复 · WebP）
+
+1. 滚动部署即可。v0.9.3 为 Tailwind 全站样式；部署后务必做 **SPA 冒烟**（本页「部署后」表），避免旧前端缓存白屏。
+2. **v0.9.4 回收站恢复**：后台图片列表/详情/批量支持 restore；无需数据迁移。
+3. **原图 WebP**：Docker 镜像默认带 libvips；纯 Go GitHub 二进制无 vips 时 `processing_capabilities.webp_encode` 为 false，后台勿强开 WebP。
+4. 系统页可读出 `imaging_backend` / `webp_encode`。
+
+## 升级到 v0.9.5（暗色 · 站点外观）
+
+1. 滚动部署新二进制/镜像（settings 缺省键在启动 Seed 写入：`theme_bg_dim=0.72`、`theme_glass=0.78`，accent/背景 URL 默认为空）。
+2. 后台 **系统设置 → 外观**：可配强调色、整站背景图、遮罩、面板不透明度；公开 `GET /api/v1/config` 下发同名键。
+3. 暗色模式依赖前端 `@theme inline` 语义色——请确认部署的是 **本版本前端 bundle**（hash 变化）。
+4. 字段与边界见 [`design/site-customization-ia.md`](design/site-customization-ia.md)。
+
 ## 相关运维文档
 
+- 发版全流程 / CI：[`ops-release.md`](ops-release.md)
 - 存储搬迁：[`storage-migrate.md`](storage-migrate.md)
 - 清理 vs CDN：[`ops-cleanup-cdn-boundary.md`](ops-cleanup-cdn-boundary.md)
 - 用户组生命周期 / 有效期策略：[`user-groups-lifecycle.md`](user-groups-lifecycle.md)
+- 站点定制 / 外观：[`design/site-customization-ia.md`](design/site-customization-ia.md)
 - OIDC 排错：[`oidc-operator.md`](oidc-operator.md)
 - 统计/CDN 计量：`deploy/ops/admin-stats-metering.md`

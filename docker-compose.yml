@@ -2,7 +2,7 @@ services:
   imgli:
     # 从源码构建时走 Dockerfile（默认 -tags vips + 运行时 libvips）。
     # 生产可改为预构建镜像并固定 tag:
-    # image: ghcr.io/yixian-huang/imgli:v0.1.0
+    # image: ghcr.io/yixian-huang/imgli:v0.9.6
     build: .
     ports:
       - "8686:8686"
@@ -10,13 +10,23 @@ services:
       # 浏览器实际访问的公网源；外链/邮件、Secure Cookie、CSRF Origin 白名单均依赖它。
       # 反代到域名时务必改为 https://你的域名，否则登录注册可能 403「跨站请求被拒绝」。
       IMGLI_BASE_URL: http://localhost:8686
+      IMGLI_DATA_DIR: /data
       # 反代(nginx/caddy/1Panel)后面部署时打开:
       # IMGLI_TRUST_PROXY: "true"
       # 用 Postgres 替代默认 SQLite 时:
       # IMGLI_DATABASE_DRIVER: postgres
       # IMGLI_DATABASE_DSN: host=db user=imgli password=imgli dbname=imgli port=5432 sslmode=disable
+      # 低内存 ARM / 小机器上传处理时可限制 libvips 并发（可选）:
+      # VIPS_CONCURRENCY: "1"
     volumes:
+      # 推荐：Docker 命名卷（权限与性能最省心，默认 SQLite 落在卷内 /data/imgli.db）。
       - imgli-data:/data
+      # 若改成绑定挂载（方便在宿主机直接看文件），请用本地磁盘绝对路径，例如:
+      # - /var/lib/imgli:/data
+      # 注意:
+      # - 勿用 NFS/CIFS/网络盘放 SQLite（锁与稳定性差）。
+      # - 目录须可写；首次启动前可 mkdir -p 并 chown 到容器运行用户。
+      # - 仍 OOM 时优先换回命名卷，或改用 Postgres；上传大图时也可设 VIPS_CONCURRENCY=1。
     restart: unless-stopped
 
 volumes:

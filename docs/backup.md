@@ -10,6 +10,12 @@ Self-host operators should back up **database metadata** and **object storage**
 |-----------|-----------------|
 | SQLite DB | `{data_dir}/imgli.db` (Docker volume often `/data/imgli.db`) |
 | Local objects | `{data_dir}/uploads` (and thumbs if separate under same tree) |
+
+**Docker storage note:** prefer a **named volume** for `/data` when using the
+default SQLite driver. Bind mounts on local disks usually work; avoid network
+filesystems (NFS/CIFS) for the SQLite file. On low-memory ARM hosts, bind mounts
+plus image processing (libvips) can surface as process OOM — try named volume
+first, set `VIPS_CONCURRENCY=1`, or use Postgres for the database.
 | Avatars / watermarks | under `{data_dir}` if used |
 | Postgres | full logical dump (`pg_dump`) when `IMGLI_DATABASE_DRIVER=postgres` |
 | Remote S3/WebDAV | provider-side lifecycle / cross-region copy (app does not snapshot remote buckets) |

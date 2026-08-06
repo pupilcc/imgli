@@ -77,6 +77,13 @@ func ensureVips() error {
 			vipsInitErr = ErrUnsupported
 		}
 		C.free(unsafe.Pointer(name))
+		if vipsInitErr != nil {
+			return
+		}
+		// 低默认并发 + 有界缓存，减轻 Docker/ARM 上大图转码 OOM。
+		C.vips_concurrency_set(C.int(VipsConcurrency()))
+		C.vips_cache_set_max(64)
+		C.vips_cache_set_max_mem(64 * 1024 * 1024) // 64MiB
 	})
 	return vipsInitErr
 }

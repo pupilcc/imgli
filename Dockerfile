@@ -25,15 +25,21 @@ RUN CGO_ENABLED=1 go build -tags vips \
 
 FROM alpine:3.20
 # 运行时需要 libvips 动态库（与构建期 vips-dev 对应）
-RUN apk add --no-cache ca-certificates tzdata vips \
+# su-exec：entrypoint 以 root 修正绑定挂载属主后降权到 imgli(1000)
+RUN apk add --no-cache ca-certificates tzdata vips su-exec \
 	&& adduser -D -u 1000 imgli \
-	&& mkdir -p /data && chown imgli /data
+	&& mkdir -p /data && chown imgli:imgli /data
 COPY --from=build /imgli /usr/local/bin/imgli
-USER imgli
+COPY docker-entrypoint.sh /usr/local/bin/docker-entrypoint.sh
+RUN chmod +x /usr/local/bin/docker-entrypoint.sh
+# entrypoint 以 root 启动以便 chown 绑定挂载；进程主体仍为 imgli
+USER root
 ENV IMGLI_LISTEN=:8686 IMGLI_DATA_DIR=/data
+# 限制 libvips 默认并发（可被运行时 VIPS_CONCURRENCY 覆盖；应用内也会 cap）
+ENV VIPS_CONCURRENCY=2
 VOLUME /data
 EXPOSE 8686
 HEALTHCHECK --interval=30s --timeout=3s --start-period=5s \
 	CMD wget -qO- http://127.0.0.1:8686/healthz || exit 1
-ENTRYPOINT ["imgli"]
+ENTRYPOINT ["docker-entrypoint.sh"]
 CMD ["serve"]

@@ -177,7 +177,11 @@ func checkDataDir(cfg *config.Config, r *Report) {
 	// write probe
 	probe := filepath.Join(abs, ".imgli-doctor-write")
 	if err := os.WriteFile(probe, []byte("ok"), 0o600); err != nil {
-		r.add("data_dir", Fail, fmt.Sprintf("%s 不可写: %v", abs, err))
+		hint := ""
+		if os.IsPermission(err) || strings.Contains(strings.ToLower(err.Error()), "permission") {
+			hint = "；Docker 官方镜像以 uid 1000 运行，绑定挂载请 chown 1000:1000 该目录，或使用命名卷 / 镜像 entrypoint 修正属主"
+		}
+		r.add("data_dir", Fail, fmt.Sprintf("%s 不可写: %v%s", abs, err, hint))
 		return
 	}
 	_ = os.Remove(probe)
@@ -305,6 +309,18 @@ func checkDatabase(db *gorm.DB, cfg *config.Config, r *Report) {
 	r.add("database", OK, fmt.Sprintf("driver=%s 连通", driver))
 	if driver == "sqlite" {
 		r.add("database_dsn", OK, fmt.Sprintf("sqlite file ≈ %s", dsn))
+		var mmap int64
+		if err := db.Raw("PRAGMA mmap_size").Scan(&mmap).Error; err == nil {
+			if mmap != 0 {
+				r.add("sqlite_mmap", Warn, fmt.Sprintf("mmap_size=%d（非 0 时低内存/绑定挂载更易 OOM；默认连接会强制 0）", mmap))
+			} else {
+				r.add("sqlite_mmap", OK, "mmap_size=0")
+			}
+		}
+		var journal string
+		if err := db.Raw("PRAGMA journal_mode").Scan(&journal).Error; err == nil {
+			r.add("sqlite_journal", OK, fmt.Sprintf("journal_mode=%s", journal))
+		}
 	}
 }
 

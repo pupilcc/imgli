@@ -103,6 +103,8 @@ verify upstream docs before migrating.
   accent color, full-page background, scrim + frosted glass (borders soften with
   opacity); admin radii/layout polish. [CHANGELOG](CHANGELOG.md) ·
   [customization IA](docs/design/site-customization-ia.md).
+- **v0.9.6** — self-host robustness: SQLite low-RAM/bind-mount OOM mitigations,
+  Docker entrypoint ownership fix, libvips concurrency cap.
 - **Polish** — bilingual UI (中文/English), PWA, light/dark/**system** theme,
   text watermark (embedded CJK font subset), admin dashboard with audit logs
   and light ops analytics.
@@ -123,7 +125,7 @@ imgli serve
 Pin a version or install location:
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/yixian-huang/imgli/main/scripts/install.sh | sh -s -- v0.9.5
+curl -fsSL https://raw.githubusercontent.com/yixian-huang/imgli/main/scripts/install.sh | sh -s -- v0.9.6
 PREFIX=/usr/local/bin curl -fsSL https://raw.githubusercontent.com/yixian-huang/imgli/main/scripts/install.sh | sh
 ```
 
@@ -139,7 +141,7 @@ docker run --rm -p 8686:8686 -v imgli-data:/data \
 # → http://localhost:8686  (first registered user becomes admin)
 ```
 
-Pin a release with `ghcr.io/yixian-huang/imgli:v0.9.5` (see
+Pin a release with `ghcr.io/yixian-huang/imgli:v0.9.6` (see
 [Releases](https://github.com/yixian-huang/imgli/releases)).
 
 ### Docker Compose
@@ -160,7 +162,7 @@ Backup / restore: [`docs/backup.md`](docs/backup.md).
 
 ```bash
 make build          # needs Go ≥ 1.26 and Node ≥ 24
-./imgli version     # git tag via ldflags, e.g. v0.9.5
+./imgli version     # git tag via ldflags, e.g. v0.9.6
 ./imgli serve       # → http://localhost:8686
 ```
 
@@ -172,15 +174,16 @@ mode, groups, storage policies, SMTP, moderation) lives in the admin panel.
 Precedence: defaults → YAML file (`imgli serve -config imgli.yaml`, see
 [`deploy/imgli.example.yaml`](deploy/imgli.example.yaml)) → environment:
 
-| Env | Default | Meaning |
-|---|---|---|
-| `IMGLI_LISTEN` | `:8686` | Listen address |
-| `IMGLI_BASE_URL` | `http://localhost:8686` | Public origin (generated links/emails, `Secure` cookies, CSRF Origin allowlist for browser cookie auth); must match the browser URL |
-| `IMGLI_DATA_DIR` | `./data` | Local storage + SQLite directory |
-| `IMGLI_DATABASE_DRIVER` | `sqlite` | `sqlite` \| `postgres` |
-| `IMGLI_DATABASE_DSN` | `<data_dir>/imgli.db` | DSN when using postgres |
-| `IMGLI_TRUST_PROXY` | `false` | Trust `X-Forwarded-For` (behind a trusted reverse proxy only) |
-| `IMGLI_FETCH_ALLOW` | *(empty)* | Extra hosts/CIDRs allowed for URL-fetch upload |
+| Env | Required? | Default | Meaning |
+|---|---|---|---|
+| `IMGLI_BASE_URL` | **Yes on public deploy** | `http://localhost:8686` | Exact browser origin (`https://your.domain`) for links, cookies, CSRF; leave default for local tryout |
+| `IMGLI_TRUST_PROXY` | **Yes behind reverse proxy** | `false` | Trust `X-Forwarded-For` only when a trusted proxy sits in front |
+| `IMGLI_LISTEN` | Optional | `:8686` | Listen address |
+| `IMGLI_DATA_DIR` | Optional | `./data` | Local storage + default SQLite file dir (Docker image usually `/data` + volume) |
+| `IMGLI_DATABASE_DRIVER` | Optional | `sqlite` | `sqlite` \| `postgres` |
+| `IMGLI_DATABASE_DSN` | **Required for Postgres** | auto SQLite path | Postgres DSN; leave empty for default SQLite under `data_dir` |
+| `IMGLI_FETCH_ALLOW` | Optional | *(empty)* | Extra hosts/CIDRs for URL-fetch upload (default denies private nets) |
+| `IMGLI_RATE_LIMIT_MULT` | Optional | `1` | Rate-limit multiplier; keep `1` in production |
 
 ### Reverse proxy: login/register rejected as cross-site
 
@@ -264,14 +267,17 @@ Changelog: [CHANGELOG.md](CHANGELOG.md). Security: [SECURITY.md](SECURITY.md) ·
 - Storage matrices: [S3](docs/s3-compatibility.md) · [WebDAV](docs/webdav-compatibility.md) · [FTP dual-track](docs/storage-ftp.md)
 - **Storage migrate (ops):** [docs/storage-migrate.md](docs/storage-migrate.md) — CLI + Admin job
 - **User-group lifecycle (v0.9):** [docs/user-groups-lifecycle.md](docs/user-groups-lifecycle.md) — expiry/max-views, retention, force age, stock clamp
-- **v0.9.2 acceptance / site customization IA:** [acceptance](docs/superpowers/plans/2026-08-04-v0.9.2-acceptance.md) · [IA draft](docs/design/site-customization-ia.md)
+- **Site customization (L0 / L2 appearance):** [docs/design/site-customization-ia.md](docs/design/site-customization-ia.md) — `site_name`, accent, background, glass (v0.9.5)
+- **v0.9.2 acceptance:** [docs/superpowers/plans/2026-08-04-v0.9.2-acceptance.md](docs/superpowers/plans/2026-08-04-v0.9.2-acceptance.md)
 - **Cleanup vs CDN:** [docs/ops-cleanup-cdn-boundary.md](docs/ops-cleanup-cdn-boundary.md) — cleanup kinds + CDN boundary
-- **Deploy checklist:** [docs/ops-deploy-checklist.md](docs/ops-deploy-checklist.md)
+- **Release / CI / deploy:** [docs/ops-release.md](docs/ops-release.md) — tag gate, scripts, smoke
+- **Deploy checklist (SPA outage guard):** [docs/ops-deploy-checklist.md](docs/ops-deploy-checklist.md)
 - **Reverse proxy / CSRF:** [docs/security-hardening.md](docs/security-hardening.md#faq-reverse-proxy-loginregister-cross-site-rejected) (admin System/Ops health in v0.7+)
 - **OIDC troubleshooting:** [docs/oidc-operator.md](docs/oidc-operator.md)
 - Integrations: [docs/integrations/README.md](docs/integrations/README.md) · CLI `imgli upload -verbose`
 - Migration into imgli: `imgli import-dir` (folder → upload API)
 - Moderation operator path: [docs/moderation-spot-check.md](docs/moderation-spot-check.md)
+- Docs SSOT map: [docs/documentation-ssot.md](docs/documentation-ssot.md)
 - Public roadmap mirror: [ROADMAP.md](ROADMAP.md) (execution = GitHub Issues)
 - Product docs: [docs.imgli.com](https://docs.imgli.com) · site / demo: [imgli.com](https://imgli.com) · [img.li](https://img.li)
 - Screenshots: [docs/screenshots/](docs/screenshots/)

@@ -10,10 +10,21 @@ separate version in `go.mod` or `web/package.json`.
 
 ## [Unreleased]
 
+## [0.9.6] - 2026-08-06
+
+Theme: **Self-host robustness — SQLite / Docker bind mounts / low-RAM**.
+
+### Fixed
+
+- **SQLite OOM / low-RAM:** default connection sets `mmap_size=0`, modest `cache_size`, `temp_store=FILE`; runtime pragmas also applied when a custom DSN omits them.
+- **SQLite open failures:** probe `data_dir` writability with Docker uid-1000 permission hints; WAL open failure falls back to `journal_mode=DELETE`.
+- **Docker bind mounts:** entrypoint runs as root only to `chown` data dir / SQLite files to `imgli` (1000), then `su-exec` drops privileges (fixes root-owned host paths).
+
 ### Changed
 
-- **CI/CD:** concurrency cancel on CI; e2e split (`e2e:smoke` on PR, full e2e on main); release workflow splits goreleaser / docker-amd64 / docker-multi with job summaries; `make web-ci` avoids double npm install in GoReleaser.
-- **Ops scripts:** `pre-tag-check.sh`, `ops-deploy-baili.sh`, `ops-smoke-public.sh`, `docs/ops-release.md`, Actions `smoke-prod` workflow.
+- **libvips:** default concurrency capped at 2 (override with `VIPS_CONCURRENCY`); process cache bounded (~64 entries / 64MiB). Image `VIPS_CONCURRENCY=2` in Dockerfile.
+- **Compose / docs:** named volume vs bind mount notes; product config docs clarify required env vars.
+- **CI/CD (main):** concurrency cancel; e2e split; release job split; ops scripts (`pre-tag-check`, `ops-deploy-baili`, `ops-smoke-public`).
 
 ## [0.9.5] - 2026-08-06
 
@@ -402,7 +413,9 @@ Theme: **Workflow & Trust** — CLI/integrations, share landing, privacy
 - Bilingual UI (中文/English), PWA, dark mode, text watermark, admin audit logs.
 - Docker Compose quick start and GitHub Actions CI (Go matrix, web, e2e smoke).
 
-[Unreleased]: https://github.com/yixian-huang/imgli/compare/v0.9.4...HEAD
+[Unreleased]: https://github.com/yixian-huang/imgli/compare/v0.9.6...HEAD
+[0.9.6]: https://github.com/yixian-huang/imgli/compare/v0.9.5...v0.9.6
+[0.9.5]: https://github.com/yixian-huang/imgli/compare/v0.9.4...v0.9.5
 [0.9.4]: https://github.com/yixian-huang/imgli/compare/v0.9.3...v0.9.4
 [0.9.3]: https://github.com/yixian-huang/imgli/compare/v0.9.2...v0.9.3
 [0.9.2]: https://github.com/yixian-huang/imgli/compare/v0.9.1...v0.9.2

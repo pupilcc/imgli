@@ -20,22 +20,29 @@ GitHub and the product knowledge base.
 5. **Never** put full internal roadmap or VIP secrets into `docs-imgli/`.
 6. **WebDAV / S3 / FTP matrices** live in **repo** (`docs/webdav-compatibility.md`, `docs/s3-compatibility.md`, `docs/storage-ftp.md`); product site pages stay short and link out.
 
-## Map (storage / lifecycle examples)
+## Map
 
 | Topic | Repo SSOT | Product docs (`docs-imgli`) |
 |-------|-----------|-------------------------------|
+| **Latest product version** | git tag + `CHANGELOG.md` + `ROADMAP.md` | version pins / release notes |
 | S3 vendors | `docs/s3-compatibility.md` | `docs-imgli/s3` (summary) |
 | WebDAV vendors | `docs/webdav-compatibility.md` | `docs-imgli/storage-cdn` + link (or `docs-imgli/webdav`) |
 | FTP dual track | `docs/storage-ftp.md` | `docs-imgli/ftp` |
 | Caps design | `docs/design/storage-caps-draft.md` | user-facing Caps described on storage pages only |
 | **User-group lifecycle (v0.9)** | `docs/user-groups-lifecycle.md` | short how-to + link (no dual full copy) |
+| **Site customization (L0 / L2)** | `docs/design/site-customization-ia.md` | Appearance + site name how-to + link |
 | **v0.9.2 acceptance** | `docs/superpowers/plans/2026-08-04-v0.9.2-acceptance.md` | optional release notes pointer |
-| **Site customization IA** | `docs/design/site-customization-ia.md` | settings surface roadmap (L0–L2) |
+| **Release / CI / prod deploy** | `docs/ops-release.md` | not public play-by-play |
+| **Deploy / SPA outage guard** | `docs/ops-deploy-checklist.md` | ops FAQ blurb |
 | **Cleanup vs CDN** | `docs/ops-cleanup-cdn-boundary.md` | ops FAQ blurb + link |
-| Production VIP deploy | *(not in public repo detail)* | internal `imgli/ops-*` only |
+| Security / reverse proxy | `docs/security-hardening.md` | hardening summary |
+| Integrations (ShareX / uPic / PicGo) | `docs/integrations/`, `docs/picgo.md` | client setup pages |
+| Production VIP deploy details | *(not in public repo detail)* | internal `imgli/ops-*` only |
 
 ## Agent / human checklist
 
 - [ ] New feature → code + repo docs in one PR  
 - [ ] Ship tag → hub `last_release` / production note + `docs-imgli` version pins  
 - [ ] No second full matrix in KB  
+- [ ] After appearance / theme keys change → update `site-customization-ia.md` + README feature bullets  
+- [ ] After release process change → update `ops-release.md` + `CONTRIBUTING.md` pointer  
