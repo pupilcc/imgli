@@ -61,6 +61,43 @@ jobs:
             echo '```'
           } >> "$GITHUB_STEP_SUMMARY"
 
+  # Prove GitHub Release binary boots (same path as install.sh / production baili).
+  smoke-binary:
+    runs-on: ubuntu-latest
+    needs: [goreleaser]
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Download Linux amd64 release binary
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          tag="${{ github.ref_name }}"
+          asset="imgli_${tag#v}_Linux_x86_64.tar.gz"
+          gh release download "$tag" --pattern "$asset" --dir /tmp/imgli-rel
+          tar -xzf "/tmp/imgli-rel/$asset" -C /tmp/imgli-rel
+          # archive layout: imgli binary at top or nested
+          bin="$(find /tmp/imgli-rel -type f -name imgli | head -1)"
+          test -n "$bin"
+          chmod +x "$bin"
+          echo "BIN=$bin" >> "$GITHUB_ENV"
+          "$bin" version
+
+      - name: Install-path smoke (binary)
+        run: |
+          chmod +x scripts/ops-smoke-install.sh
+          ./scripts/ops-smoke-install.sh binary "$BIN"
+
+      - name: Smoke binary summary
+        if: success()
+        run: |
+          {
+            echo "## Binary install smoke PASS"
+            echo ""
+            echo "Downloaded Release asset, ran serve, register + upload + GET object."
+          } >> "$GITHUB_STEP_SUMMARY"
+
   # --- Fast Docker path: amd64 first so `docker pull :tag` works sooner ---
   docker-amd64:
     runs-on: ubuntu-latest
@@ -107,6 +144,35 @@ jobs:
             echo '```'
             echo ""
             echo "Multi-arch (arm64+amd64) continues in job **docker-multi**."
+            echo "Install smoke runs in job **smoke-docker** (named volume + bind mount)."
+          } >> "$GITHUB_STEP_SUMMARY"
+
+  # Prove the published amd64 image actually boots and serves a full user journey
+  # (healthz + SPA + register + upload + GET /i/...). Named volume + bind mount.
+  smoke-docker:
+    runs-on: ubuntu-latest
+    needs: [docker-amd64]
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Install-path smoke (Docker)
+        run: |
+          chmod +x scripts/ops-smoke-install.sh
+          ./scripts/ops-smoke-install.sh docker "ghcr.io/${{ github.repository }}:${{ github.ref_name }}"
+
+      - name: Smoke docker summary
+        if: success()
+        run: |
+          {
+            echo "## Docker install smoke PASS"
+            echo ""
+            echo "Named volume + bind-mount: healthz, SPA, first-user register, upload, object GET."
           } >> "$GITHUB_STEP_SUMMARY"
 
   # --- Full multi-arch (overwrites tag manifests when done) ---

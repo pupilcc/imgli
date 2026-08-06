@@ -10,6 +10,10 @@ separate version in `go.mod` or `web/package.json`.
 
 ## [Unreleased]
 
+### Added
+
+- **Release install smoke:** `scripts/ops-smoke-install.sh` plus release jobs `smoke-binary` / `smoke-docker` — pull published Release binary or Docker image, start fresh, check SPA/healthz, register first user, upload, GET object; Docker covers named volume and bind mount.
+
 ## [0.9.6] - 2026-08-06
 
 Theme: **Self-host robustness — SQLite / Docker bind mounts / low-RAM**.
