@@ -3,6 +3,10 @@ on:
   push: { branches: [main] }
   pull_request:
 
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   go:
     runs-on: ubuntu-latest
@@ -62,7 +66,8 @@ jobs:
           curl -sf http://127.0.0.1:8686/healthz
           curl -sf http://127.0.0.1:8686/ | grep -q 'id="root"'
 
-  e2e:
+  # Fast path on every PR / push — catches login shell + core flows.
+  e2e-smoke:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v5
@@ -72,8 +77,29 @@ jobs:
         with: { node-version: 24, cache: npm, cache-dependency-path: web/package-lock.json }
       - name: build binary
         run: make build
-      - name: e2e
+      - name: e2e smoke
         working-directory: web
         run: |
+          npm ci
+          npx playwright install --with-deps chromium
+          npm run e2e:smoke
+
+  # Full suite on main only (PRs stay fast; run full e2e locally or after merge).
+  e2e:
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    needs: [e2e-smoke]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-go@v6
+        with: { go-version-file: go.mod, cache: true }
+      - uses: actions/setup-node@v5
+        with: { node-version: 24, cache: npm, cache-dependency-path: web/package-lock.json }
+      - name: build binary
+        run: make build
+      - name: e2e full
+        working-directory: web
+        run: |
+          npm ci
           npx playwright install --with-deps chromium
           npm run e2e

@@ -1,0 +1,29 @@
+name: smoke-prod
+
+# Public SPA smoke against a live base URL (default img.li).
+# Run after production deploy; does not deploy.
+on:
+  workflow_dispatch:
+    inputs:
+      base_url:
+        description: Public site origin (no trailing slash)
+        required: true
+        default: https://img.li
+  # Optional: re-check production after docs-only merges are not required;
+  # keep manual to avoid noisy failures when intentionally offline.
+
+concurrency:
+  group: smoke-prod-${{ github.event.inputs.base_url || 'https://img.li' }}
+  cancel-in-progress: true
+
+jobs:
+  smoke:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - name: Public smoke
+        env:
+          BASE_URL: ${{ github.event.inputs.base_url || 'https://img.li' }}
+        run: |
+          chmod +x scripts/ops-smoke-public.sh
+          ./scripts/ops-smoke-public.sh "$BASE_URL"

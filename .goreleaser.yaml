@@ -5,8 +5,9 @@ project_name: imgli
 
 before:
   hooks:
-    # Frontend is go:embed'd; CI installs Node + npm ci before this runs.
-    - make web
+    # Frontend is go:embed'd. release.yml runs npm ci first; use web-ci to avoid a second install.
+    # Local `goreleaser release --snapshot` should run `npm ci` (or `make web`) once beforehand.
+    - make web-ci
 
 builds:
   - id: imgli

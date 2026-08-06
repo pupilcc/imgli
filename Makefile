@@ -1,9 +1,14 @@
-.PHONY: build build-go build-vips web test test-web test-vips font-subset run release-snapshot docker-build
+.PHONY: build build-go build-vips web web-ci test test-web test-vips font-subset run release-snapshot docker-build pre-tag smoke-public
 
 VERSION ?= $(shell git describe --tags --always --dirty 2>/dev/null || echo dev)
 
+# Local: install deps then build embeddable frontend.
 web:
 	cd web && npm install --no-fund --no-audit && npm run build
+
+# CI / GoReleaser: deps already installed via npm ci — only build.
+web-ci:
+	cd web && npm run build
 
 # 本地默认：纯 Go（CGO 关、无系统 libvips；CI 同）。发行 Docker 镜像默认带 vips（见 Dockerfile）。
 build-go:
@@ -13,7 +18,16 @@ build-go:
 build-vips: web
 	CGO_ENABLED=1 go build -tags vips -ldflags "-X github.com/yixian-huang/imgli/internal/version.Version=$(VERSION)-vips" -o imgli ./cmd/imgli
 
+# Prefer web-ci when node_modules already present (CI).
 build: web build-go
+
+pre-tag:
+	@test -n "$(TAG)" || (echo "usage: make pre-tag TAG=v0.9.6" >&2; exit 2)
+	./scripts/pre-tag-check.sh $(TAG)
+
+smoke-public:
+	./scripts/ops-smoke-public.sh $(or $(BASE_URL),https://img.li)
+
 
 # 与生产一致的发行镜像（含 libvips）。
 docker-build:

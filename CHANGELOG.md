@@ -10,6 +10,11 @@ separate version in `go.mod` or `web/package.json`.
 
 ## [Unreleased]
 
+### Changed
+
+- **CI/CD:** concurrency cancel on CI; e2e split (`e2e:smoke` on PR, full e2e on main); release workflow splits goreleaser / docker-amd64 / docker-multi with job summaries; `make web-ci` avoids double npm install in GoReleaser.
+- **Ops scripts:** `pre-tag-check.sh`, `ops-deploy-baili.sh`, `ops-smoke-public.sh`, `docs/ops-release.md`, Actions `smoke-prod` workflow.
+
 ## [0.9.5] - 2026-08-06
 
 Theme: **Dark-mode token fix · site appearance (accent, background, glass)**.

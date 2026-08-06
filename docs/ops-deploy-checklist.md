@@ -32,7 +32,10 @@
 | 资源 | HTML 内 `index-*.js` 与 `curl -I` 该 URL | 200 |
 
 ```bash
-# 快速公网冒烟（部署机/本机均可）
+# 推荐：仓库脚本（本机 / CI smoke-prod / 部署机均可）
+./scripts/ops-smoke-public.sh https://img.li
+
+# 或逐步手敲
 curl -sfS -o /dev/null -w "root:%{http_code}\n" https://img.li/
 curl -sfS -o /dev/null -w "healthz:%{http_code}\n" https://img.li/healthz/
 JS=$(curl -sfS https://img.li/ | sed -n 's/.*src="\(\/assets\/index-[^"]*\.js\)".*/\1/p' | head -1)
@@ -51,6 +54,7 @@ print('ok')
 "
 ```
 
+发版全流程（tag 门禁、Release 时序、baili 升级）见 **[docs/ops-release.md](ops-release.md)**。
 ## 契约变更护栏
 
 - **公开 JSON 字段改类型**（string → object 等）= **破坏性变更**：前端与 e2e **同 PR** 合入，禁止只发后端。
