@@ -2,9 +2,15 @@
 
 /*
  * Design tokens → Tailwind v4 @theme.
- * body[data-theme=dark] still flips CSS variables for runtime theme toggle.
+ *
+ * Colors MUST use `@theme inline`: utilities emit `var(--text)` etc. directly.
+ * Plain `@theme { --color-ink: var(--text) }` resolves once on :root to the light
+ * value, so body[data-theme=dark] flipping --text never reaches text-ink/bg-surface.
+ * See: https://tailwindcss.com/docs/theme#referencing-other-variables
+ *
+ * Static tokens stay in regular @theme (radii, type scale, fonts).
  */
-@theme {
+@theme inline {
   --color-bg: var(--bg);
   --color-surface: var(--surface);
   --color-soft: var(--soft);
@@ -16,7 +22,9 @@
   --color-ok: var(--ok);
   --color-warn: var(--warn);
   --color-err: var(--err);
+}
 
+@theme {
   --font-sans: 'Manrope', system-ui, 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', sans-serif;
   --font-mono: ui-monospace, Menlo, monospace;
 
