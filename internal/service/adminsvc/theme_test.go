@@ -35,6 +35,21 @@ func TestValidateThemeAccent(t *testing.T) {
 	}
 }
 
+func TestThemeBgColor(t *testing.T) {
+	if got := NormalizeThemeBgColor("#ABC"); got != "#aabbcc" {
+		t.Errorf("NormalizeThemeBgColor = %q", got)
+	}
+	if err := ValidateThemeBgColor(""); err != nil {
+		t.Fatal(err)
+	}
+	if err := ValidateThemeBgColor("#112233"); err != nil {
+		t.Fatal(err)
+	}
+	if err := ValidateThemeBgColor("nope"); err == nil {
+		t.Error("invalid bg color should fail")
+	}
+}
+
 func TestValidateThemeBgDim(t *testing.T) {
 	if err := ValidateThemeBgDim(0); err != nil {
 		t.Fatal(err)

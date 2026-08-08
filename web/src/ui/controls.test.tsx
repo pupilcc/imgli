@@ -42,8 +42,13 @@ it('Segmented 高亮当前值并回调', async () => {
       onChange={onChange}
     />,
   )
-  expect(screen.getByRole('button', { name: '登录' })).toHaveAttribute('aria-pressed', 'true')
-  await userEvent.click(screen.getByRole('button', { name: '注册' }))
+  const login = screen.getByRole('button', { name: '登录' })
+  expect(login).toHaveAttribute('aria-pressed', 'true')
+  // 选中态必须直接写 CSS 变量色，避免工具类冲突导致「未 hover 看不见字」
+  expect(login).toHaveStyle({ backgroundColor: 'var(--btn)', color: 'var(--btnText)' })
+  const reg = screen.getByRole('button', { name: '注册' })
+  expect(reg).not.toHaveStyle({ color: 'var(--btnText)' })
+  await userEvent.click(reg)
   expect(onChange).toHaveBeenCalledWith('reg')
 })
 

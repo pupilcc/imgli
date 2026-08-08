@@ -227,6 +227,7 @@ export function SettingsPage() {
         },
         welcome_email: form.welcomeEmail,
         theme_accent: form.themeAccent.trim(),
+        theme_bg_color: form.themeBgColor.trim(),
         theme_bg_image_url: form.themeBgImageUrl.trim(),
         theme_bg_dim: form.themeBgDim,
         theme_glass: form.themeGlass,

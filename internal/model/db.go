@@ -42,6 +42,7 @@ const (
 	SettingWelcomeEmail    = "welcome_email"     // bool；SMTP 已配时注册欢迎信，默认 true
 	// v0.9.5 轻视觉：强调色 + 可选站点背景图
 	SettingThemeAccent     = "theme_accent"       // 空 | #RRGGBB；驱动主按钮/强调
+	SettingThemeBgColor    = "theme_bg_color"     // 空 | #RGB/#RRGGBB；整站纯色底（可与背景图叠加）
 	SettingThemeBgImageURL = "theme_bg_image_url" // 空 | http(s)/站内路径
 	SettingThemeBgDim      = "theme_bg_dim"       // 0–1 遮罩强度，默认 0.72
 	SettingThemeGlass      = "theme_glass"        // 0–1 面板毛玻璃不透明度，默认 0.78
@@ -244,6 +245,7 @@ func Seed(db *gorm.DB) error {
 			SettingAboutBody:     `{"zh":"","en":""}`,
 			SettingWelcomeEmail:  `true`,
 			SettingThemeAccent:     `""`,
+			SettingThemeBgColor:    `""`,
 			SettingThemeBgImageURL: `""`,
 			SettingThemeBgDim:      `0.72`,
 			SettingThemeGlass:      `0.78`,

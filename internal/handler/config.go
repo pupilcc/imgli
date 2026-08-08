@@ -94,7 +94,7 @@ func (h *ConfigHandler) Config(w http.ResponseWriter, r *http.Request) {
 	}
 
 	var helpURL, upgradeURL, shareBrand, faviconURL, sourceURL, ossCredit string
-	var themeAccent, themeBgImageURL string
+	var themeAccent, themeBgColor, themeBgImageURL string
 	var themeBgDim, themeGlass float64
 	var regNotice, aboutBody adminsvc.LocaleString
 	var aboutEnabled bool
@@ -138,6 +138,10 @@ func (h *ConfigHandler) Config(w http.ResponseWriter, r *http.Request) {
 		Fail(w, http.StatusInternalServerError, CodeInternal, "服务器内部错误")
 		return
 	}
+	if err := st.Get(model.SettingThemeBgColor, &themeBgColor); err != nil && !errors.Is(err, settings.ErrNotFound) {
+		Fail(w, http.StatusInternalServerError, CodeInternal, "服务器内部错误")
+		return
+	}
 	if err := st.Get(model.SettingThemeBgImageURL, &themeBgImageURL); err != nil && !errors.Is(err, settings.ErrNotFound) {
 		Fail(w, http.StatusInternalServerError, CodeInternal, "服务器内部错误")
 		return
@@ -163,6 +167,7 @@ func (h *ConfigHandler) Config(w http.ResponseWriter, r *http.Request) {
 	faviconURL = adminsvc.NormalizeOptionalURL(faviconURL)
 	sourceURL = adminsvc.NormalizeOptionalURL(sourceURL)
 	themeAccent = adminsvc.NormalizeThemeAccent(themeAccent)
+	themeBgColor = adminsvc.NormalizeThemeBgColor(themeBgColor)
 	themeBgImageURL = adminsvc.NormalizeOptionalURL(themeBgImageURL)
 	regNotice = regNotice.Normalize()
 	aboutBody = aboutBody.Normalize()
@@ -196,6 +201,7 @@ func (h *ConfigHandler) Config(w http.ResponseWriter, r *http.Request) {
 		"about_enabled":        aboutEnabled,
 		"about_body":           aboutBody,
 		"theme_accent":         themeAccent,
+		"theme_bg_color":       themeBgColor,
 		"theme_bg_image_url":   themeBgImageURL,
 		"theme_bg_dim":         themeBgDim,
 		"theme_glass":          themeGlass,

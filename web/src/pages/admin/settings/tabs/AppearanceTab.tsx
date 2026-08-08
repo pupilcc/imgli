@@ -53,6 +53,40 @@ export function AppearanceTab({ form, set }: { form: FormState; set: FormSet }) 
 
       <div className={s.field}>
         <Input
+          label={t('adminB.themeBgColor')}
+          value={form.themeBgColor}
+          placeholder="#f0f4f8"
+          maxLength={7}
+          onChange={(e) => set('themeBgColor', e.target.value)}
+        />
+        <span className={s.hint}>{t('adminB.themeBgColorHint')}</span>
+        <div className="mt-2 flex flex-wrap items-center gap-2">
+          <input
+            type="color"
+            aria-label={t('adminB.themeBgColor')}
+            className="h-9 w-12 cursor-pointer rounded-sm border border-border bg-surface p-0.5"
+            value={normalizeAccent(form.themeBgColor) || '#fafafa'}
+            onChange={(e) => set('themeBgColor', e.target.value)}
+          />
+          <span
+            className="inline-block h-9 min-w-[4.5rem] rounded-sm border border-border"
+            style={{ background: normalizeAccent(form.themeBgColor) || 'var(--bg-solid)' }}
+            title={t('adminB.themeBgColorPreview')}
+          />
+          {form.themeBgColor.trim() && (
+            <button
+              type="button"
+              className="cursor-pointer border-0 bg-transparent text-xs font-semibold text-muted underline hover:text-ink"
+              onClick={() => set('themeBgColor', '')}
+            >
+              {t('adminB.themeBgColorClear')}
+            </button>
+          )}
+        </div>
+      </div>
+
+      <div className={s.field}>
+        <Input
           label={t('adminB.themeBgImage')}
           value={form.themeBgImageUrl}
           placeholder="https://…/bg.jpg"

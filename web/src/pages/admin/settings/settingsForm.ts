@@ -110,6 +110,7 @@ export interface FormState {
   aboutBody: FormLocale
   welcomeEmail: boolean
   themeAccent: string
+  themeBgColor: string
   themeBgImageUrl: string
   themeBgDim: number
   themeGlass: number
@@ -207,6 +208,7 @@ export function formOf(s: AdminSettings): FormState {
     aboutBody: toLocaleMap(s.about_body),
     welcomeEmail: s.welcome_email !== false,
     themeAccent: s.theme_accent ?? '',
+    themeBgColor: s.theme_bg_color ?? '',
     themeBgImageUrl: s.theme_bg_image_url ?? '',
     themeBgDim:
       typeof s.theme_bg_dim === 'number' && s.theme_bg_dim >= 0 && s.theme_bg_dim <= 1

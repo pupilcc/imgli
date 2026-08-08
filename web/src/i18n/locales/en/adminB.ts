@@ -157,6 +157,11 @@ export default {
   themeAccentHint: 'Optional #RGB / #RRGGBB; leave empty for product defaults (dark button in light mode, light button in dark mode).',
   themeAccentPreview: 'Button preview',
   themeAccentClear: 'Reset default',
+  themeBgColor: 'Page background color',
+  themeBgColorHint:
+    'Optional site wash (#RGB / #RRGGBB), applied as a soft gradient (not a flat fill). Empty keeps light/dark defaults. Can stack under a background image; the scrim uses this base color.',
+  themeBgColorPreview: 'Color preview',
+  themeBgColorClear: 'Reset background color',
   themeBgImage: 'Site background image',
   themeBgImageHint: 'Optional http(s) or site-relative URL; wide images work best. Empty disables the background.',
   themeBgDim: 'Background scrim',

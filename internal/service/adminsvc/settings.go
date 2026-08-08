@@ -125,7 +125,7 @@ func (s *Service) GetSettings() (map[string]any, error) {
 		return nil, err
 	}
 	var helpURL, upgradeURL, shareBrand, faviconURL, sourceURL, ossCredit string
-	var themeAccent, themeBgImageURL string
+	var themeAccent, themeBgColor, themeBgImageURL string
 	var themeBgDim, themeGlass float64
 	var regNotice LocaleString
 	var aboutEnabled, welcomeEmail bool
@@ -142,6 +142,7 @@ func (s *Service) GetSettings() (map[string]any, error) {
 	welcomeEmail = true
 	_ = st.Get(model.SettingWelcomeEmail, &welcomeEmail)
 	_ = st.Get(model.SettingThemeAccent, &themeAccent)
+	_ = st.Get(model.SettingThemeBgColor, &themeBgColor)
 	_ = st.Get(model.SettingThemeBgImageURL, &themeBgImageURL)
 	themeBgDim = DefaultThemeBgDim
 	_ = st.Get(model.SettingThemeBgDim, &themeBgDim)
@@ -152,6 +153,7 @@ func (s *Service) GetSettings() (map[string]any, error) {
 	faviconURL = NormalizeOptionalURL(faviconURL)
 	sourceURL = NormalizeOptionalURL(sourceURL)
 	themeAccent = NormalizeThemeAccent(themeAccent)
+	themeBgColor = NormalizeThemeBgColor(themeBgColor)
 	themeBgImageURL = NormalizeOptionalURL(themeBgImageURL)
 	if err := ValidateThemeBgDim(themeBgDim); err != nil {
 		themeBgDim = DefaultThemeBgDim
@@ -218,6 +220,7 @@ func (s *Service) GetSettings() (map[string]any, error) {
 		"about_body":       aboutBody,
 		"welcome_email":    welcomeEmail,
 		"theme_accent":        themeAccent,
+		"theme_bg_color":      themeBgColor,
 		"theme_bg_image_url":  themeBgImageURL,
 		"theme_bg_dim":        themeBgDim,
 		"theme_glass":         themeGlass,
@@ -519,6 +522,16 @@ func (s *Service) PutSettings(patch map[string]json.RawMessage) error {
 				return err
 			}
 			writes = append(writes, settingWrite{model.SettingThemeAccent, NormalizeThemeAccent(a)})
+
+		case model.SettingThemeBgColor:
+			var c string
+			if err := json.Unmarshal(raw, &c); err != nil {
+				return ErrThemeBgColorInvalid
+			}
+			if err := ValidateThemeBgColor(c); err != nil {
+				return err
+			}
+			writes = append(writes, settingWrite{model.SettingThemeBgColor, NormalizeThemeBgColor(c)})
 
 		case model.SettingThemeBgImageURL:
 			var u string

@@ -156,6 +156,11 @@ export default {
   themeAccentHint: '可选 #RGB / #RRGGBB；留空则使用产品默认（浅色黑钮 / 暗色白钮）。',
   themeAccentPreview: '按钮预览',
   themeAccentClear: '恢复默认',
+  themeBgColor: '页面底色',
+  themeBgColorHint:
+    '可选整站底色（#RGB / #RRGGBB）。会以柔和渐变铺开，避免一块纯色发硬。留空跟随浅/深主题。可与背景图叠加：图在上，遮罩基于该底色。',
+  themeBgColorPreview: '底色预览',
+  themeBgColorClear: '恢复默认底色',
   themeBgImage: '站点背景图',
   themeBgImageHint: '可选 http(s) 或站内路径；建议较大横图。留空不使用背景。',
   themeBgDim: '背景遮罩',

@@ -127,6 +127,9 @@ func TestPutSettingsThemeAppearance(t *testing.T) {
 	if m["theme_accent"] != "" {
 		t.Errorf("theme_accent default = %v, want empty", m["theme_accent"])
 	}
+	if m["theme_bg_color"] != "" {
+		t.Errorf("theme_bg_color default = %v, want empty", m["theme_bg_color"])
+	}
 	if m["theme_bg_image_url"] != "" {
 		t.Errorf("theme_bg_image_url default = %v, want empty", m["theme_bg_image_url"])
 	}
@@ -139,6 +142,7 @@ func TestPutSettingsThemeAppearance(t *testing.T) {
 
 	if err := svc.PutSettings(map[string]json.RawMessage{
 		"theme_accent":        rawJSON(t, "#3B82F6"),
+		"theme_bg_color":      rawJSON(t, "#F0F4F8"),
 		"theme_bg_image_url":  rawJSON(t, "https://cdn.example.com/bg.jpg"),
 		"theme_bg_dim":        rawJSON(t, 0.5),
 		"theme_glass":         rawJSON(t, 0.6),
@@ -148,6 +152,9 @@ func TestPutSettingsThemeAppearance(t *testing.T) {
 	m, _ = svc.GetSettings()
 	if m["theme_accent"] != "#3b82f6" {
 		t.Errorf("theme_accent = %v, want #3b82f6", m["theme_accent"])
+	}
+	if m["theme_bg_color"] != "#f0f4f8" {
+		t.Errorf("theme_bg_color = %v, want #f0f4f8", m["theme_bg_color"])
 	}
 	if m["theme_bg_image_url"] != "https://cdn.example.com/bg.jpg" {
 		t.Errorf("theme_bg_image_url = %v", m["theme_bg_image_url"])
@@ -183,6 +190,7 @@ func TestPutSettingsThemeAppearance(t *testing.T) {
 	// empty clears
 	if err := svc.PutSettings(map[string]json.RawMessage{
 		"theme_accent":       rawJSON(t, ""),
+		"theme_bg_color":     rawJSON(t, ""),
 		"theme_bg_image_url": rawJSON(t, ""),
 	}); err != nil {
 		t.Fatal(err)

@@ -12,6 +12,8 @@ import (
 var (
 	// ErrThemeAccentInvalid theme_accent 须为空或 #RGB / #RRGGBB。
 	ErrThemeAccentInvalid = apperr.New("theme_accent 须为空或 #RGB/#RRGGBB")
+	// ErrThemeBgColorInvalid theme_bg_color 须为空或 #RGB / #RRGGBB。
+	ErrThemeBgColorInvalid = apperr.New("theme_bg_color 须为空或 #RGB/#RRGGBB")
 	// ErrThemeBgImageURLInvalid theme_bg_image_url 须为空或 http(s) / 站内路径。
 	ErrThemeBgImageURLInvalid = apperr.New("theme_bg_image_url 须为空或 http(s) URL / 站内路径")
 	// ErrThemeBgDimInvalid theme_bg_dim 须在 0–1。
@@ -53,6 +55,21 @@ func ValidateThemeAccent(s string) error {
 	}
 	if !themeAccentRe.MatchString(s) {
 		return ErrThemeAccentInvalid
+	}
+	return nil
+}
+
+// NormalizeThemeBgColor 与强调色相同规则（空 | #RGB → #RRGGBB）。
+func NormalizeThemeBgColor(s string) string { return NormalizeThemeAccent(s) }
+
+// ValidateThemeBgColor empty OK; else #RGB or #RRGGBB.
+func ValidateThemeBgColor(s string) error {
+	s = strings.TrimSpace(s)
+	if s == "" {
+		return nil
+	}
+	if !themeAccentRe.MatchString(s) {
+		return ErrThemeBgColorInvalid
 	}
 	return nil
 }
