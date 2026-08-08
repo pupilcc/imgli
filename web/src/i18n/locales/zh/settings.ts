@@ -29,6 +29,9 @@ export default {
   publicProfile: '公开主页 / 参与广场',
   publicProfileAria: '公开主页',
   publicProfileHint: '开启后你的公开图片将出现在广场，个人主页 /u/{username}',
+  publicProfileHintPlazaOn:
+    '本站已启用广场：开启后你的公开图片会出现在广场与 /u/{username}；关闭则不会上墙（仍可单独用分享页/直链）。',
+  publicProfileOffWhilePlaza: '当前未开启：即使上传公开图，也不会出现在广场。',
   toastSaved: '已保存',
   saveChanges: '保存修改',
 

@@ -2,6 +2,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { MemoryRouter, Route, Routes } from 'react-router'
+import { useGlobal } from '../../store'
 import { AlbumDetailPage } from './AlbumDetailPage'
 
 function jsonRes(body: unknown): Response {
@@ -20,13 +21,28 @@ class FakeIO {
   unobserve() {}
 }
 
-function mockBackend() {
+function mockBackend(visibility: 'public' | 'private' = 'private') {
   vi.stubGlobal(
     'fetch',
     vi.fn((url: RequestInfo | URL, init?: RequestInit) => {
       const u = String(url)
       if (u.includes('/albums') && (!init || !init.method))
-        return Promise.resolve(jsonRes(env({ items: [{ id: 7, name: '工作', visibility: 'private', image_count: 1, cover_key: 'a', created_at: '2026-07-16T00:00:00Z' }] })))
+        return Promise.resolve(
+          jsonRes(
+            env({
+              items: [
+                {
+                  id: 7,
+                  name: '工作',
+                  visibility,
+                  image_count: 1,
+                  cover_key: 'a',
+                  created_at: '2026-07-16T00:00:00Z',
+                },
+              ],
+            }),
+          ),
+        )
       if (init?.method === 'PATCH') return Promise.resolve(jsonRes(env({ id: 7, name: '改名', visibility: 'public' })))
       if (u.includes('/images?'))
         return Promise.resolve(
@@ -82,4 +98,27 @@ it('内联重命名 PATCH 相册名', async () => {
     expect(String(call![0])).toContain('/albums/7')
     expect(JSON.parse((call![1] as RequestInit).body as string)).toEqual({ name: '改名' })
   })
+})
+
+it('公开相册：复制访客链接有 toast，并提供打开访客页入口', async () => {
+  const user = userEvent.setup()
+  mockBackend('public')
+  const writeText = vi.fn().mockResolvedValue(undefined)
+  Object.defineProperty(navigator, 'clipboard', { value: { writeText }, configurable: true })
+  const open = vi.spyOn(window, 'open').mockImplementation(() => null)
+  useGlobal.setState({ toasts: [] })
+
+  renderPage()
+  await screen.findByText('工作')
+  expect(screen.getByText('PUBLIC')).toBeInTheDocument()
+
+  await user.click(screen.getByRole('button', { name: '打开访客页' }))
+  expect(open).toHaveBeenCalledWith('/a/7', '_blank', 'noopener,noreferrer')
+
+  await user.click(screen.getByRole('button', { name: '复制访客链接' }))
+  await waitFor(() => {
+    expect(writeText).toHaveBeenCalledWith(`${window.location.origin}/a/7`)
+  })
+  expect(useGlobal.getState().toasts.some((t) => t.message.includes('访客链接'))).toBe(true)
+  open.mockRestore()
 })

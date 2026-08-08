@@ -13,20 +13,30 @@ import (
 )
 
 var (
-	ErrNotFound          = errors.New("albumsvc: 相册不存在")
-	ErrInvalidName       = errors.New("albumsvc: 名称需 1-128 字节")
-	ErrInvalidVisibility = errors.New("albumsvc: 可见性仅 public|private")
+	ErrNotFound            = errors.New("albumsvc: 相册不存在")
+	ErrInvalidName         = errors.New("albumsvc: 名称需 1-128 字节")
+	ErrInvalidVisibility   = errors.New("albumsvc: 可见性仅 public|private")
+	ErrInvalidDefaultView  = errors.New("albumsvc: 默认视图仅 gallery|immersive")
 )
 
 type Service struct{ db *gorm.DB }
 
 func New(db *gorm.DB) *Service { return &Service{db: db} }
 
+// OwnerPublic 公开相册页可选作者信息（不泄露邮箱等）。
+type OwnerPublic struct {
+	Username      string
+	Nickname      string
+	PublicProfile bool // true 时前端可链到 /u/{username}
+}
+
 // AlbumView 相册 + 实时统计。
 type AlbumView struct {
 	Album    model.Album
 	Count    int64
 	CoverKey string
+	// Owner 仅 GetPublic 填充；属主列表/详情为 nil。
+	Owner *OwnerPublic
 }
 
 func normVis(v string) (string, error) {
@@ -37,6 +47,25 @@ func normVis(v string) (string, error) {
 		return "", ErrInvalidVisibility
 	}
 	return v, nil
+}
+
+func normDefaultView(v string) (string, error) {
+	if v == "" {
+		return "gallery", nil
+	}
+	if v != "gallery" && v != "immersive" {
+		return "", ErrInvalidDefaultView
+	}
+	return v, nil
+}
+
+// NormalizeDefaultView 导出给 handler 读库后兜底。
+func NormalizeDefaultView(v string) string {
+	out, err := normDefaultView(v)
+	if err != nil {
+		return "gallery"
+	}
+	return out
 }
 
 func (s *Service) view(alb model.Album) (AlbumView, error) {
@@ -82,7 +111,7 @@ func (s *Service) Create(userID uint64, name, visibility string) (*model.Album, 
 	if err != nil {
 		return nil, err
 	}
-	alb := &model.Album{UserID: userID, Name: name, Visibility: vis}
+	alb := &model.Album{UserID: userID, Name: name, Visibility: vis, DefaultView: "gallery"}
 	if err := s.db.Create(alb).Error; err != nil {
 		return nil, err
 	}
@@ -106,6 +135,7 @@ func (s *Service) Get(userID, id uint64) (*AlbumView, error) {
 }
 
 // GetPublic 公开相册访客：仅 visibility=public；否则 ErrNotFound（不区分存在性）。
+// 附带属主展示信息（active 用户）；public_profile 决定前端是否链到公开主页。
 func (s *Service) GetPublic(id uint64) (*AlbumView, error) {
 	var alb model.Album
 	err := s.db.Where("id = ?", id).First(&alb).Error
@@ -120,6 +150,17 @@ func (s *Service) GetPublic(id uint64) (*AlbumView, error) {
 	}
 	v, err := s.viewPublic(alb)
 	if err != nil {
+		return nil, err
+	}
+	var u model.User
+	if err := s.db.Select("username", "nickname", "public_profile", "status").
+		Where("id = ?", alb.UserID).First(&u).Error; err == nil && u.Status == "active" {
+		v.Owner = &OwnerPublic{
+			Username:      u.Username,
+			Nickname:      u.Nickname,
+			PublicProfile: u.PublicProfile,
+		}
+	} else if err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
 		return nil, err
 	}
 	return &v, nil
@@ -226,7 +267,7 @@ func (s *Service) ListPublicImages(albumID uint64, cursor string, limit int) ([]
 // timeNow 可测；生产为 time.Now。
 var timeNow = func() time.Time { return time.Now() }
 
-func (s *Service) Update(userID, id uint64, name, visibility *string) (*model.Album, error) {
+func (s *Service) Update(userID, id uint64, name, visibility, defaultView *string) (*model.Album, error) {
 	var alb model.Album
 	err := s.db.Where("id = ? AND user_id = ?", id, userID).First(&alb).Error
 	if errors.Is(err, gorm.ErrRecordNotFound) {
@@ -250,8 +291,19 @@ func (s *Service) Update(userID, id uint64, name, visibility *string) (*model.Al
 		}
 		updates["visibility"] = v
 	}
+	if defaultView != nil {
+		dv, err := normDefaultView(*defaultView)
+		if err != nil {
+			return nil, err
+		}
+		updates["default_view"] = dv
+	}
 	if len(updates) > 0 {
 		if err := s.db.Model(&alb).Updates(updates).Error; err != nil {
+			return nil, err
+		}
+		// 刷新内存字段
+		if err := s.db.Where("id = ? AND user_id = ?", id, userID).First(&alb).Error; err != nil {
 			return nil, err
 		}
 	}

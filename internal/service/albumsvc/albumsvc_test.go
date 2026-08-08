@@ -110,3 +110,66 @@ func TestAlbumForeignReturnsNotFound(t *testing.T) {
 		t.Errorf("他人相册应 ErrNotFound, got %v", err)
 	}
 }
+
+func TestUpdateDefaultView(t *testing.T) {
+	s, uid := setup(t)
+	alb, err := s.Create(uid, "视图", "public")
+	if err != nil {
+		t.Fatal(err)
+	}
+	bad := "carousel"
+	if _, err := s.Update(uid, alb.ID, nil, nil, &bad); !errors.Is(err, ErrInvalidDefaultView) {
+		t.Fatalf("非法 default_view 应 ErrInvalidDefaultView, got %v", err)
+	}
+	imm := "immersive"
+	got, err := s.Update(uid, alb.ID, nil, nil, &imm)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got.DefaultView != "immersive" {
+		t.Errorf("DefaultView=%q want immersive", got.DefaultView)
+	}
+	v, err := s.GetPublic(alb.ID)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if NormalizeDefaultView(v.Album.DefaultView) != "immersive" {
+		t.Errorf("public DefaultView=%q", v.Album.DefaultView)
+	}
+}
+
+func TestGetPublicOwnerAndVisibility(t *testing.T) {
+	s, uid := setup(t)
+	// setup 创建的用户无 nickname/public_profile；补全
+	s.db.Model(&model.User{}).Where("id = ?", uid).Updates(map[string]any{
+		"nickname": "阿狸", "public_profile": true, "status": "active",
+	})
+	priv, _ := s.Create(uid, "私密", "private")
+	if _, err := s.GetPublic(priv.ID); !errors.Is(err, ErrNotFound) {
+		t.Fatalf("私密相册 GetPublic 应 ErrNotFound, got %v", err)
+	}
+	pub, _ := s.Create(uid, "公开游记", "public")
+	f := &model.File{Hash: "hp", StoragePolicyID: 1, Path: "pp", Size: 1, RefCount: 1}
+	s.db.Create(f)
+	// 仅 public+normal 计入访客
+	s.db.Create(&model.Image{Key: "pubimg000001", UserID: &uid, FileID: f.ID, AlbumID: &pub.ID, Name: "ok", Ext: "png", Visibility: "public", Status: "normal"})
+	s.db.Create(&model.Image{Key: "privimg00001", UserID: &uid, FileID: f.ID, AlbumID: &pub.ID, Name: "hid", Ext: "png", Visibility: "private", Status: "normal"})
+
+	v, err := s.GetPublic(pub.ID)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if v.Count != 1 {
+		t.Errorf("访客 count 应为 1（仅公开图）, got %d", v.Count)
+	}
+	if v.Owner == nil || v.Owner.Username != "a" || v.Owner.Nickname != "阿狸" || !v.Owner.PublicProfile {
+		t.Errorf("Owner 异常: %+v", v.Owner)
+	}
+	items, _, err := s.ListPublicImages(pub.ID, "", 24)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(items) != 1 || items[0].Key != "pubimg000001" {
+		t.Errorf("ListPublicImages 应只吐公开图: %+v", items)
+	}
+}

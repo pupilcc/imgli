@@ -149,8 +149,10 @@ type Album struct {
 	UserID     uint64 `gorm:"index"`
 	Name       string `gorm:"size:128"`
 	Visibility string `gorm:"size:8;default:private"`
-	CreatedAt  time.Time
-	UpdatedAt  time.Time
+	// DefaultView 公开访客页默认模式：gallery | immersive（空=gallery）。
+	DefaultView string `gorm:"size:16;not null;default:gallery"`
+	CreatedAt   time.Time
+	UpdatedAt   time.Time
 
 	User *User `gorm:"foreignKey:UserID;constraint:OnDelete:RESTRICT" json:"-"`
 }

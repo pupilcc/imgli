@@ -31,6 +31,8 @@ export default {
   visibility: 'Visibility',
   public: 'Public',
   private: 'Private',
+  plazaOptInHint: 'Public images are not listed on the plaza until you enable Public profile in Settings.',
+  plazaOptInLink: 'Enable in Settings',
   storagePolicy: 'Storage policy',
   followDefault: 'Use default',
   expiry: 'Expiry',

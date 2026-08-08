@@ -568,6 +568,25 @@ export function UploadPage() {
         </div>
       )}
 
+      {!isGuest &&
+        !!config.data?.plaza_enabled &&
+        !!me &&
+        !me.public_profile &&
+        visibility === 'public' && (
+          <div
+            className="mt-2.5 flex flex-wrap items-center gap-x-2 gap-y-1 rounded-sm border border-border bg-surface px-3.5 py-2.5 text-[12.5px] leading-snug text-muted"
+            data-testid="plaza-opt-in-hint"
+          >
+            <span>{t('upload.plazaOptInHint')}</span>
+            <Link
+              to="/settings/profile"
+              className="shrink-0 font-semibold text-ink underline underline-offset-2"
+            >
+              {t('upload.plazaOptInLink')}
+            </Link>
+          </div>
+        )}
+
       {items.length > 0 && (
         <>
           <div className="mt-10 mb-3 flex items-baseline justify-between">

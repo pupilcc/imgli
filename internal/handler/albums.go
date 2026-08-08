@@ -17,13 +17,27 @@ type AlbumHandlers struct{ D AlbumDeps }
 
 func albumViewDTO(v *albumsvc.AlbumView) map[string]any {
 	return map[string]any{
-		"id":          v.Album.ID,
-		"name":        v.Album.Name,
-		"visibility":  v.Album.Visibility,
-		"image_count": v.Count,
-		"cover_key":   v.CoverKey,
-		"created_at":  v.Album.CreatedAt.Format(time.RFC3339),
+		"id":           v.Album.ID,
+		"name":         v.Album.Name,
+		"visibility":   v.Album.Visibility,
+		"default_view": albumsvc.NormalizeDefaultView(v.Album.DefaultView),
+		"image_count":  v.Count,
+		"cover_key":    v.CoverKey,
+		"created_at":   v.Album.CreatedAt.Format(time.RFC3339),
 	}
+}
+
+// publicAlbumViewDTO 访客页：在相册元数据上附可选 owner（有 public_profile 时可链主页）。
+func publicAlbumViewDTO(v *albumsvc.AlbumView) map[string]any {
+	out := albumViewDTO(v)
+	if v.Owner != nil {
+		out["owner"] = map[string]any{
+			"username":       v.Owner.Username,
+			"nickname":       v.Owner.Nickname,
+			"public_profile": v.Owner.PublicProfile,
+		}
+	}
+	return out
 }
 
 func (h *AlbumHandlers) List(w http.ResponseWriter, r *http.Request) {
@@ -51,7 +65,10 @@ func (h *AlbumHandlers) Create(w http.ResponseWriter, r *http.Request) {
 	alb, err := h.D.Alb.Create(PrincipalFrom(r).User.ID, req.Name, req.Visibility)
 	switch {
 	case err == nil:
-		OK(w, map[string]any{"id": alb.ID, "name": alb.Name, "visibility": alb.Visibility})
+		OK(w, map[string]any{
+			"id": alb.ID, "name": alb.Name, "visibility": alb.Visibility,
+			"default_view": albumsvc.NormalizeDefaultView(alb.DefaultView),
+		})
 	case errors.Is(err, albumsvc.ErrInvalidName), errors.Is(err, albumsvc.ErrInvalidVisibility):
 		Fail(w, http.StatusBadRequest, CodeInvalidRequest, err.Error())
 	default:
@@ -98,7 +115,7 @@ func (h *AlbumHandlers) PublicGet(w http.ResponseWriter, r *http.Request) {
 		Fail(w, http.StatusInternalServerError, CodeInternal, "服务器内部错误")
 		return
 	}
-	OK(w, albumViewDTO(v))
+	OK(w, publicAlbumViewDTO(v))
 }
 
 // PublicImages GET /api/v1/a/{id}/images
@@ -130,6 +147,7 @@ func (h *AlbumHandlers) PublicImages(w http.ResponseWriter, r *http.Request) {
 			"width": it.Width, "height": it.Height, "size": it.Size,
 			"thumbnail_url": "/t/" + it.Key + ".jpg",
 			"url":           "/i/" + it.Key + "." + it.Ext,
+			"share_path":   "/s/" + it.Key,
 		})
 	}
 	OK(w, map[string]any{"items": out, "next_cursor": next})
@@ -142,20 +160,25 @@ func (h *AlbumHandlers) Update(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	var req struct {
-		Name       *string `json:"name"`
-		Visibility *string `json:"visibility"`
+		Name        *string `json:"name"`
+		Visibility  *string `json:"visibility"`
+		DefaultView *string `json:"default_view"`
 	}
 	if err := DecodeJSON(r, &req); err != nil {
 		Fail(w, http.StatusBadRequest, CodeInvalidRequest, "请求体无效")
 		return
 	}
-	alb, err := h.D.Alb.Update(PrincipalFrom(r).User.ID, id, req.Name, req.Visibility)
+	alb, err := h.D.Alb.Update(PrincipalFrom(r).User.ID, id, req.Name, req.Visibility, req.DefaultView)
 	switch {
 	case err == nil:
-		OK(w, map[string]any{"id": alb.ID, "name": alb.Name, "visibility": alb.Visibility})
+		OK(w, map[string]any{
+			"id": alb.ID, "name": alb.Name, "visibility": alb.Visibility,
+			"default_view": albumsvc.NormalizeDefaultView(alb.DefaultView),
+		})
 	case errors.Is(err, albumsvc.ErrNotFound):
 		Fail(w, http.StatusNotFound, CodeNotFound, "相册不存在")
-	case errors.Is(err, albumsvc.ErrInvalidName), errors.Is(err, albumsvc.ErrInvalidVisibility):
+	case errors.Is(err, albumsvc.ErrInvalidName), errors.Is(err, albumsvc.ErrInvalidVisibility),
+		errors.Is(err, albumsvc.ErrInvalidDefaultView):
 		Fail(w, http.StatusBadRequest, CodeInvalidRequest, err.Error())
 	default:
 		Fail(w, http.StatusInternalServerError, CodeInternal, "服务器内部错误")

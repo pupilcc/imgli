@@ -16,6 +16,9 @@ export const queryKeys = {
   userPublic: (username: string) => ['u', username] as const,
   userImages: (username: string, sort: string) => ['u-images', username, sort] as const,
   share: (key: string) => ['share', key] as const,
+  /** Public album visitor page /a/:id */
+  publicAlbum: (id: string) => ['public-album', id] as const,
+  publicAlbumImgs: (id: string) => ['public-album-imgs', id] as const,
   admin: {
     stats: ['admin', 'stats'] as const,
     /** Prefix keys for invalidateQueries (matches all filtered variants). */

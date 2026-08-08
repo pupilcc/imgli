@@ -269,8 +269,13 @@ export function useCreateAlbum() {
 export function useUpdateAlbum() {
   const qc = useQueryClient()
   return useMutation({
-    mutationFn: ({ id, body }: { id: number; body: { name?: string; visibility?: string } }) =>
-      patch(`/albums/${id}`, body),
+    mutationFn: ({
+      id,
+      body,
+    }: {
+      id: number
+      body: { name?: string; visibility?: string; default_view?: 'gallery' | 'immersive' }
+    }) => patch(`/albums/${id}`, body),
     onSuccess: () => qc.invalidateQueries({ queryKey: queryKeys.albums }),
   })
 }

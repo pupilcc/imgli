@@ -30,6 +30,8 @@ export default {
   visibility: '可见性',
   public: '公开',
   private: '私密',
+  plazaOptInHint: '公开图不会自动上广场。请到设置开启「公开主页 / 参与广场」。',
+  plazaOptInLink: '去开启',
   storagePolicy: '存储策略',
   followDefault: '跟随默认',
   expiry: '有效期',

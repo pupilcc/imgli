@@ -29,6 +29,9 @@ export default {
   publicProfile: 'Public profile / discover',
   publicProfileAria: 'Public profile',
   publicProfileHint: 'When enabled, your public images appear on Discover; profile at /u/{username}',
+  publicProfileHintPlazaOn:
+    'Plaza is on: with this enabled, your public images appear on Discover and /u/{username}. Off means no listing (share pages and direct links still work).',
+  publicProfileOffWhilePlaza: 'Currently off: public uploads will not appear on the plaza.',
   toastSaved: 'Saved',
   saveChanges: 'Save changes',
 

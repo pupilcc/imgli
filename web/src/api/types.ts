@@ -92,9 +92,40 @@ export interface Album {
   id: number
   name: string
   visibility: string
+  /** 公开访客页默认：gallery | immersive */
+  default_view?: 'gallery' | 'immersive' | string
   image_count: number
   cover_key: string
   created_at: string
+}
+
+/** 公开相册访客 API 元数据（含可选属主）。 */
+export interface PublicAlbumMeta {
+  id: number
+  name: string
+  visibility: string
+  default_view?: string
+  image_count: number
+  cover_key: string
+  created_at?: string
+  owner?: {
+    username: string
+    nickname: string
+    public_profile: boolean
+  } | null
+}
+
+/** 公开相册访客网格/沉浸共用图行。 */
+export interface PublicAlbumImg {
+  key: string
+  name: string
+  ext: string
+  width: number
+  height: number
+  size: number
+  thumbnail_url: string
+  url: string
+  share_path?: string
 }
 
 export interface ImageItem {
@@ -535,6 +566,8 @@ export interface AdminSettings {
   welcome_email?: boolean
   /** Brand accent (#RRGGBB); empty = product default btn colors */
   theme_accent?: string
+  /** Optional solid page background (#RRGGBB); empty = light/dark default */
+  theme_bg_color?: string
   /** Optional full-page background image URL */
   theme_bg_image_url?: string
   /** Scrim strength over background image, 0–1 (default 0.72) */
@@ -580,6 +613,7 @@ export interface PublicConfig {
   about_enabled?: boolean
   about_body?: string | { zh?: string; en?: string }
   theme_accent?: string
+  theme_bg_color?: string
   theme_bg_image_url?: string
   theme_bg_dim?: number
   theme_glass?: number

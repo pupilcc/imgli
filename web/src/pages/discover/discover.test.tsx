@@ -100,6 +100,38 @@ it('Explore 关闭态：404 显示「广场未开启」', async () => {
   expect(await screen.findByText('广场未开启')).toBeInTheDocument()
 })
 
+it('Explore 空态：说明公开主页 opt-in；登录未开主页时有 CTA', async () => {
+  mockFetch((u) => {
+    if (u.includes('/plaza')) return jsonRes(env({ items: [], next_cursor: '' }))
+    if (u.includes('/auth/session'))
+      return jsonRes(
+        env({
+          id: 1,
+          username: 'boss',
+          email: 'b@img.li',
+          nickname: 'Boss',
+          is_admin: false,
+          email_verified: true,
+          created_at: '',
+          preferences: {
+            default_album_id: null,
+            default_visibility: '',
+            default_policy_id: null,
+            auto_copy_format: '',
+            watermark: { enabled: false, position: '', opacity: 0, margin: 0 },
+          },
+          avatar_url: '',
+          watermark_set: false,
+          public_profile: false,
+        }),
+      )
+  })
+  renderAt('/explore')
+  expect(await screen.findByText('还没有公开图片')).toBeInTheDocument()
+  expect(screen.getByText(/若你已传公开图却看不到自己/)).toBeInTheDocument()
+  expect(screen.getByRole('link', { name: '去设置开启公开主页' })).toHaveAttribute('href', '/settings/profile')
+})
+
 it('Explore 排序切换：点热门后请求 sort=hot', async () => {
   const user = userEvent.setup()
   const fetchMock = mockFetch((u) => {

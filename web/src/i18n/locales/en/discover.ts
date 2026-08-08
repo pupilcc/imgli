@@ -5,6 +5,9 @@ export default {
   loading: 'Loading…',
   loadMore: 'Load more',
   emptyPublic: 'No public images yet',
+  emptyPublicDesc:
+    'The plaza only lists public images from users who enabled Public profile. If you uploaded public images but do not see them, turn that on in Settings.',
+  emptyPublicCta: 'Enable public profile',
   plazaClosed: 'Plaza is closed',
   profileNotFound: 'Profile not found or not public',
   joinedAt: 'Joined {date}',

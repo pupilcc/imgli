@@ -1,59 +1,59 @@
-import { useState } from 'react'
+import { useEffect } from 'react'
 import { Link, useParams } from 'react-router'
-import { useInfiniteQuery, useQuery } from '@tanstack/react-query'
-import { api, ApiError } from '../../api/client'
+import { useConfig } from '../../api/hooks'
 import { useT } from '../../i18n'
-import { EmptyState } from '../../ui/EmptyState'
 import { Button } from '../../ui/Button'
+import { EmptyState } from '../../ui/EmptyState'
+import { Segmented } from '../../ui/Segmented'
+import { ShareBrandFooter } from '../../ui/ShareBrandFooter'
+import { AlbumImmersive } from './AlbumImmersive'
+import type { AlbumPublicMode } from './albumPublicView'
+import { PublicAlbumHero } from './PublicAlbumHero'
+import { PublicAlbumMasonry } from './PublicAlbumMasonry'
+import { useAlbumViewMode } from './useAlbumViewMode'
+import { usePublicAlbum } from './usePublicAlbum'
 
-type AlbumMeta = {
-  id: number
-  name: string
-  visibility: string
-  image_count: number
-  cover_key: string
-}
-
-type AlbumImg = {
-  key: string
-  name: string
-  ext: string
-  width: number
-  height: number
-  size: number
-  thumbnail_url: string
-  url: string
-}
-
-/** 公开相册访客页 /a/:id */
+/** 公开相册访客页 /a/:id —— 瀑布流默认 + 沉浸（URL + 属主 default_view）。 */
 export function PublicAlbumPage() {
   const { id = '' } = useParams()
   const { t } = useT()
-  const [active, setActive] = useState<AlbumImg | null>(null)
+  const cfg = useConfig()
+  const { meta, imgs, rows, notFound } = usePublicAlbum(id)
 
-  const meta = useQuery({
-    queryKey: ['public-album', id],
-    enabled: !!id,
-    retry: false,
-    queryFn: () => api<AlbumMeta>(`/a/${id}`),
-  })
-
-  const imgs = useInfiniteQuery({
-    queryKey: ['public-album-imgs', id],
-    enabled: !!id && !!meta.data,
-    initialPageParam: '' as string,
-    queryFn: ({ pageParam }) => {
-      const q = pageParam ? `?cursor=${encodeURIComponent(pageParam)}` : ''
-      return api<{ items: AlbumImg[]; next_cursor: string }>(`/a/${id}/images${q}`)
+  const {
+    activeIndex,
+    mode,
+    immersive,
+    openImmersive,
+    closeImmersive,
+    goPrev,
+    goNext,
+    selectIndex,
+  } = useAlbumViewMode({
+    defaultView: meta.data?.default_view,
+    rowsLen: rows.length,
+    hasNextPage: !!imgs.hasNextPage,
+    isFetchingNextPage: imgs.isFetchingNextPage,
+    fetchNextPage: () => {
+      void imgs.fetchNextPage()
     },
-    getNextPageParam: (last) => last.next_cursor || undefined,
+    ready: !!meta.data && rows.length > 0,
   })
 
-  const notFound = meta.error instanceof ApiError && meta.error.httpStatus === 404
-  const rows = imgs.data?.pages.flatMap((p) => p.items) ?? []
+  // document.title：相册名 · 站名
+  useEffect(() => {
+    const albumName = meta.data?.name?.trim()
+    if (!albumName) return
+    const site = (cfg.data?.site_name || '').trim() || 'imgli'
+    const prev = document.title
+    document.title = `${albumName} · ${site}`
+    return () => {
+      document.title = prev
+    }
+  }, [meta.data?.name, cfg.data?.site_name])
 
   if (meta.isLoading) {
-    return <div className="flex flex-col items-center gap-4 px-4 py-12 text-center text-muted">{t('discover.loading')}</div>
+    return <div className="px-4 py-12 text-center text-muted">{t('discover.loading')}</div>
   }
   if (notFound) {
     return (
@@ -66,56 +66,92 @@ export function PublicAlbumPage() {
     )
   }
   if (meta.isError || !meta.data) {
-    return <div className="flex flex-col items-center gap-4 px-4 py-12 text-center text-muted">{t('share.loadFailed')}</div>
+    return <div className="px-4 py-12 text-center text-muted">{t('share.loadFailed')}</div>
   }
 
+  const canPrev = immersive && activeIndex != null && activeIndex > 0
+  const canNext =
+    immersive &&
+    activeIndex != null &&
+    (activeIndex < rows.length - 1 || !!imgs.hasNextPage)
+  const cover =
+    (meta.data.cover_key && rows.find((r) => r.key === meta.data.cover_key)) || rows[0] || null
+  const coverIndex = cover ? rows.findIndex((r) => r.key === cover.key) : 0
+
   return (
-    <div className="mx-auto max-w-[1100px] px-4 pt-6 pb-12">
-      <header className="mb-5">
-        <h1 className="mb-1.5 mt-0 text-[22px] font-bold">{meta.data.name}</h1>
-        <p className="m-0 text-[13px] text-muted">{t('albums.publicCount', { count: meta.data.image_count })}</p>
-      </header>
-      {imgs.isLoading ? (
-        <div className="flex flex-col items-center gap-4 px-4 py-12 text-center text-muted">{t('discover.loading')}</div>
-      ) : rows.length === 0 ? (
-        <EmptyState title={t('albums.publicEmpty')} />
-      ) : (
-        <>
-          <div className="grid grid-cols-[repeat(auto-fill,minmax(140px,1fr))] gap-2.5">
-            {rows.map((r) => (
-              <button
-                key={r.key}
-                type="button"
-                className="aspect-square cursor-pointer overflow-hidden rounded border border-border bg-soft p-0"
-                onClick={() => setActive(r)}
-              >
-                <img src={r.thumbnail_url} alt={r.name} loading="lazy" className="block size-full object-cover" />
-              </button>
-            ))}
+    <div className="flex min-h-[60vh] flex-col">
+      <PublicAlbumHero
+        meta={meta.data}
+        cover={cover}
+        coverIndex={coverIndex}
+        loading={imgs.isLoading}
+        onEnterImmersive={openImmersive}
+      />
+
+      {rows.length > 0 && (
+        <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
+          <div className="font-mono text-[10px] tracking-[0.14em] text-muted">
+            {t('albums.scrollGallery').toUpperCase()}
           </div>
-          {imgs.hasNextPage && (
-            <div className="mt-5 flex justify-center">
-              <Button variant="secondary" disabled={imgs.isFetchingNextPage} onClick={() => imgs.fetchNextPage()}>
-                {t('discover.loadMore')}
-              </Button>
-            </div>
-          )}
-        </>
-      )}
-      {active && (
-        <div
-          className="fixed inset-0 z-[80] flex items-center justify-center bg-black/72 p-6"
-          role="dialog"
-          onClick={() => setActive(null)}
-        >
-          <img
-            src={active.url}
-            alt={active.name}
-            className="max-h-[90vh] max-w-[min(96vw,1100px)] rounded object-contain"
-            onClick={(e) => e.stopPropagation()}
-          />
+          <div className="flex flex-wrap items-center gap-2">
+            <Segmented<AlbumPublicMode>
+              compact
+              options={[
+                { value: 'gallery', label: t('albums.modeGallery') },
+                { value: 'immersive', label: t('albums.modeImmersive') },
+              ]}
+              value={mode}
+              onChange={(m) => {
+                if (m === 'immersive') openImmersive(activeIndex ?? 0)
+                else closeImmersive()
+              }}
+            />
+          </div>
         </div>
       )}
+
+      <PublicAlbumMasonry
+        rows={rows}
+        loading={imgs.isLoading}
+        hasNextPage={!!imgs.hasNextPage}
+        isFetchingNextPage={imgs.isFetchingNextPage}
+        onFetchMore={() => {
+          void imgs.fetchNextPage()
+        }}
+        onOpenImmersive={openImmersive}
+      />
+
+      {immersive && activeIndex != null && rows[activeIndex] && (
+        <AlbumImmersive
+          items={rows}
+          index={activeIndex}
+          totalCount={meta.data.image_count}
+          canPrev={!!canPrev}
+          canNext={!!canNext}
+          onClose={closeImmersive}
+          onPrev={goPrev}
+          onNext={goNext}
+          onSelectIndex={selectIndex}
+        />
+      )}
+
+      {activeIndex != null && !rows[activeIndex] && imgs.isFetchingNextPage && (
+        <div
+          className="fixed inset-0 z-[90] flex items-center justify-center bg-black/90 text-sm text-white/70"
+          data-testid="album-immersive-loading"
+        >
+          {t('discover.loading')}
+        </div>
+      )}
+
+      <ShareBrandFooter
+        siteName={(cfg.data?.site_name || 'imgli').trim() || 'imgli'}
+        branding={cfg.data?.share_branding || 'off'}
+        helpURL={cfg.data?.help_url}
+        upgradeURL={cfg.data?.upgrade_url}
+        className="mt-auto pt-10 pb-2"
+        testId="album-share-brand-foot"
+      />
     </div>
   )
 }

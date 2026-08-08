@@ -43,7 +43,7 @@ function jsonRes(body: unknown, status = 200): Response {
 }
 const env = (data: unknown) => ({ status: true, message: 'ok', data })
 
-function mockBackend(sessionUser: User = BASE_USER) {
+function mockBackend(sessionUser: User = BASE_USER, opts: { plazaEnabled?: boolean } = {}) {
   vi.stubGlobal(
     'fetch',
     vi.fn((url: RequestInfo | URL) => {
@@ -61,6 +61,7 @@ function mockBackend(sessionUser: User = BASE_USER) {
           jsonRes(env({
             site_name: 'img.li', registration_mode: 'open', guest_upload_enabled: false,
             guest: null,
+            plaza_enabled: !!opts.plazaEnabled,
           })),
         )
       return Promise.resolve(jsonRes({ status: false, message: '', data: { code: 'not_found' } }, 404))
@@ -125,6 +126,25 @@ it('选项面板默认收起，展开含相册、可见性与有效期（无存�
   expect(screen.queryByText('存储策略')).not.toBeInTheDocument()
   expect(screen.getByText('有效期')).toBeInTheDocument()
   expect(screen.getByRole('button', { name: '7 天' })).toBeInTheDocument()
+})
+
+it('广场开启且未开公开主页：公开可见性显示 opt-in 引导', async () => {
+  const user = userEvent.setup()
+  mockBackend(BASE_USER, { plazaEnabled: true })
+  renderPage()
+  await screen.findByText(/MAX 20 MB/)
+  expect(await screen.findByTestId('plaza-opt-in-hint')).toBeInTheDocument()
+  expect(screen.getByRole('link', { name: '去开启' })).toHaveAttribute('href', '/settings/profile')
+  await user.click(screen.getByRole('button', { name: /上传选项/ }))
+  await user.click(screen.getByRole('button', { name: '私密' }))
+  expect(screen.queryByTestId('plaza-opt-in-hint')).not.toBeInTheDocument()
+})
+
+it('广场关闭：不显示广场 opt-in 引导', async () => {
+  mockBackend(BASE_USER, { plazaEnabled: false })
+  renderPage()
+  await screen.findByText(/MAX 20 MB/)
+  expect(screen.queryByTestId('plaza-opt-in-hint')).not.toBeInTheDocument()
 })
 
 it('选 7 天有效期 → 入队 opts.expiresIn=604800', async () => {

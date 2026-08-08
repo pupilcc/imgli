@@ -31,6 +31,7 @@ const SESSION_USER = {
   preferences: EMPTY_PREFS,
   avatar_url: '',
   watermark_set: false,
+  public_profile: false,
 }
 
 const ALBUM_A = {
@@ -53,7 +54,7 @@ const ALBUM_B = {
 let tokenCreated = false
 function mockBackend(
   sessionUser: typeof SESSION_USER = SESSION_USER,
-  opts: { policies?: { id: number; name: string }[] } = {},
+  opts: { policies?: { id: number; name: string }[]; plazaEnabled?: boolean } = {},
 ) {
   const policies = opts.policies ?? [{ id: 1, name: '本地' }]
   vi.stubGlobal(
@@ -68,7 +69,7 @@ function mockBackend(
               site_name: 'img.li',
               registration_mode: 'open',
               guest_upload_enabled: false,
-              plaza_enabled: false,
+              plaza_enabled: !!opts.plazaEnabled,
               guest: null,
               base_url: 'https://img.li',
             }),
@@ -126,6 +127,14 @@ it('默认 profile；非法 tab 回落；不渲染清单', async () => {
   expect(screen.getByRole('button', { name: '上传头像' })).toBeInTheDocument()
   expect(screen.getByRole('button', { name: '永久注销账号' })).toBeInTheDocument()
   expect(screen.getByRole('button', { name: '上传偏好' })).toBeInTheDocument()
+})
+
+it('广场开启且未开公开主页：资料页强化说明', async () => {
+  mockBackend(SESSION_USER, { plazaEnabled: true })
+  renderAt('/settings/profile')
+  expect(await screen.findByDisplayValue('凌')).toBeInTheDocument()
+  expect(screen.getByText(/本站已启用广场/)).toBeInTheDocument()
+  expect(screen.getByTestId('public-profile-plaza-off')).toHaveTextContent(/不会出现在广场/)
 })
 
 it('改密码：旧密码错显示行内错误且无全局 toast', async () => {

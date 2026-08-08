@@ -3,13 +3,16 @@ import { Link, useNavigate, useParams } from 'react-router'
 import { defaultFilter, useAlbums, useDeleteImage, useImages, useUpdateAlbum, useUpdateImage } from '../../api/hooks'
 import type { ImageItem } from '../../api/types'
 import { useT } from '../../i18n'
+import { copyText } from '../../lib/copy'
 import { formatDate } from '../../lib/format'
 import { useGlobal } from '../../store'
 import { Button } from '../../ui/Button'
 import { EmptyState } from '../../ui/EmptyState'
+import { Segmented } from '../../ui/Segmented'
 import { BatchBar } from '../images/BatchBar'
 import { DetailModal } from '../images/DetailModal'
 import { ImageGrid } from '../images/ImageGrid'
+import type { AlbumPublicMode } from './albumPublicView'
 
 export function AlbumDetailPage() {
   const { t } = useT()
@@ -81,8 +84,18 @@ export function AlbumDetailPage() {
     updateAlbum.mutate({ id, body: { visibility: album.visibility === 'public' ? 'private' : 'public' } })
   }
 
+  const setDefaultView = (v: AlbumPublicMode) => {
+    if (!album || album.default_view === v) return
+    updateAlbum.mutate(
+      { id, body: { default_view: v } },
+      { onSuccess: () => pushToast(t('albums.defaultViewSaved')) },
+    )
+  }
+
   const quickVis = (item: ImageItem) =>
     update.mutate({ key: item.key, body: { visibility: item.visibility === 'public' ? 'private' : 'public' } })
+
+  const defaultView: AlbumPublicMode = album?.default_view === 'immersive' ? 'immersive' : 'gallery'
 
   return (
     <div className="mx-auto max-w-[1120px] pt-11">
@@ -134,16 +147,25 @@ export function AlbumDetailPage() {
             </div>
           )}
         </div>
-        <div className="flex gap-2">
+        <div className="flex flex-wrap gap-2">
           {album?.visibility === 'public' && (
-            <Button
-              onClick={() => {
-                const url = `${window.location.origin}/a/${album.id}`
-                void navigator.clipboard?.writeText(url)
-              }}
-            >
-              {t('albums.publicLink')}
-            </Button>
+            <>
+              <Button
+                onClick={() => {
+                  const url = `${window.location.origin}/a/${album.id}`
+                  void copyText(url, t('albums.publicLink'))
+                }}
+              >
+                {t('albums.copyPublicLink')}
+              </Button>
+              <Button
+                onClick={() => {
+                  window.open(`/a/${album.id}`, '_blank', 'noopener,noreferrer')
+                }}
+              >
+                {t('albums.openPublicLink')}
+              </Button>
+            </>
           )}
           <Button onClick={togglePrivacy} disabled={updateAlbum.isPending}>
             {album?.visibility === 'public' ? t('albums.setPrivate') : t('albums.setPublic')}
@@ -156,6 +178,26 @@ export function AlbumDetailPage() {
       <div className="mb-3.5 font-mono text-xs-plus tracking-[0.06em] text-muted">
         {album ? t('albums.detailMeta', { count: album.image_count, date: formatDate(album.created_at) }) : ''}
       </div>
+      {album?.visibility === 'public' && (
+        <div
+          className="mb-5 flex flex-wrap items-center justify-between gap-3 rounded-sm border border-border bg-surface px-3.5 py-3"
+          data-testid="album-default-view"
+        >
+          <div className="min-w-0">
+            <div className="text-[12.5px] font-semibold text-ink">{t('albums.defaultViewLabel')}</div>
+            <div className="mt-0.5 text-[11.5px] text-muted">{t('albums.defaultViewHint')}</div>
+          </div>
+          <Segmented<AlbumPublicMode>
+            compact
+            options={[
+              { value: 'gallery', label: t('albums.modeGallery') },
+              { value: 'immersive', label: t('albums.modeImmersive') },
+            ]}
+            value={defaultView}
+            onChange={setDefaultView}
+          />
+        </div>
+      )}
 
       {items.length === 0 && !images.isLoading ? (
         <EmptyState title={t('albums.detailEmptyTitle')} desc={t('albums.detailEmptyDesc')}>

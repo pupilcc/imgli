@@ -4,6 +4,7 @@ import { useNavigate } from 'react-router'
 import { ApiError } from '../../api/client'
 import {
   useChangePassword,
+  useConfig,
   useDeleteAccount,
   useDeleteAvatar,
   useResendVerification,
@@ -35,6 +36,7 @@ const errLine = 'animate-[fadeIn_0.15s] text-xs text-err'
 export function ProfileTab() {
   const { t } = useT()
   const { data: user } = useSession()
+  const { data: config } = useConfig()
   const updateProfile = useUpdateProfile()
   const changePwd = useChangePassword()
   const changeEmail = useChangeEmail()
@@ -217,8 +219,15 @@ export function ProfileTab() {
               />
             </div>
             <div className={`${label} font-normal`}>
-              {t('settings.publicProfileHint', { username: user.username })}
+              {t(config?.plaza_enabled ? 'settings.publicProfileHintPlazaOn' : 'settings.publicProfileHint', {
+                username: user.username,
+              })}
             </div>
+            {!!config?.plaza_enabled && !user.public_profile && (
+              <div className={`${label} font-normal text-ink`} data-testid="public-profile-plaza-off">
+                {t('settings.publicProfileOffWhilePlaza')}
+              </div>
+            )}
           </div>
           <Button
             variant="primary"

@@ -9,6 +9,7 @@ import { BrandLockup } from '../../ui/Brand'
 import { Button } from '../../ui/Button'
 import { Input } from '../../ui/Input'
 import { LangToggle } from '../../ui/LangToggle'
+import { ShareBrandFooter } from '../../ui/ShareBrandFooter'
 import { useGlobal } from '../../store'
 
 /** Public share landing: preview + copy links for public/normal images. */
@@ -23,10 +24,6 @@ export function SharePage() {
   const data = q.data
   const [pw, setPw] = useState('')
   const siteName = (cfg.data?.site_name || 'imgli').trim() || 'imgli'
-  const branding = cfg.data?.share_branding || 'off'
-  const helpURL = (cfg.data?.help_url || '').trim()
-  const upgradeURL = (cfg.data?.upgrade_url || '').trim()
-  const showBrand = branding === 'site' || branding === 'links'
 
   const notFound = q.error instanceof ApiError && q.error.httpStatus === 404
   const needPw = !!(data?.password_required || (data?.has_access_password && !data?.links?.url))
@@ -188,38 +185,13 @@ export function SharePage() {
           </div>
         )}
       </main>
-      <footer
-        className="mx-auto flex max-w-[960px] flex-wrap items-center gap-1.5 px-4 pt-2 pb-7 text-xs text-muted [&_a]:text-ink [&_a]:underline [&_a]:underline-offset-2"
-        data-testid="share-brand-foot"
-      >
-        <span>{t('share.ossCredit')}</span>
-        {showBrand && (
-          <>
-            <span className="opacity-45">·</span>
-            <span>{t('share.brandVia', { site: siteName })}</span>
-          </>
-        )}
-        {branding === 'links' && (helpURL || upgradeURL) && (
-          <>
-            {helpURL && (
-              <>
-                <span className="opacity-45">·</span>
-                <a href={helpURL} rel="noopener noreferrer">
-                  {t('share.helpLink')}
-                </a>
-              </>
-            )}
-            {upgradeURL && (
-              <>
-                <span className="opacity-45">·</span>
-                <a href={upgradeURL} rel="noopener noreferrer">
-                  {t('share.upgradeLink')}
-                </a>
-              </>
-            )}
-          </>
-        )}
-      </footer>
+      <ShareBrandFooter
+        siteName={siteName}
+        branding={cfg.data?.share_branding || 'off'}
+        helpURL={cfg.data?.help_url}
+        upgradeURL={cfg.data?.upgrade_url}
+        className="mx-auto max-w-[960px] px-4 pt-2 pb-7"
+      />
     </div>
   )
 }

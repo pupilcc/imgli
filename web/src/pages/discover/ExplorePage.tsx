@@ -1,9 +1,11 @@
 import { useState } from 'react'
+import { Link } from 'react-router'
 import { ApiError } from '../../api/client'
-import { usePlaza } from '../../api/hooks'
+import { usePlaza, useSession } from '../../api/hooks'
 import type { DiscoverRow } from '../../api/types'
 import { useT } from '../../i18n'
 import { cn } from '../../lib/cn'
+import { Button } from '../../ui/Button'
 import { EmptyState } from '../../ui/EmptyState'
 import { Segmented } from '../../ui/Segmented'
 import { ImageCard } from './ImageCard'
@@ -15,12 +17,14 @@ const moreBtn =
 /** 广场公开流：排序 + 网格 + 灯箱。 */
 export function ExplorePage() {
   const { t } = useT()
+  const { data: me } = useSession()
   const [sort, setSort] = useState<'new' | 'hot'>('new')
   const q = usePlaza(sort)
   const rows = q.data?.pages.flatMap((p) => p.items) ?? []
   const [active, setActive] = useState<DiscoverRow | null>(null)
 
   const closed = q.error instanceof ApiError && q.error.httpStatus === 404
+  const showOptInCta = !!me && !me.public_profile
 
   const sortOptions = [
     { value: 'new' as const, label: t('discover.sortNew') },
@@ -41,7 +45,13 @@ export function ExplorePage() {
       ) : q.isLoading ? (
         <div className="px-4 py-20 text-center text-[13px] text-muted">{t('discover.loading')}</div>
       ) : rows.length === 0 ? (
-        <EmptyState title={t('discover.emptyPublic')} />
+        <EmptyState title={t('discover.emptyPublic')} desc={t('discover.emptyPublicDesc')}>
+          {showOptInCta ? (
+            <Link to="/settings/profile">
+              <Button variant="primary">{t('discover.emptyPublicCta')}</Button>
+            </Link>
+          ) : null}
+        </EmptyState>
       ) : (
         <>
           <div className="grid grid-cols-[repeat(auto-fill,minmax(160px,1fr))] gap-3.5">
