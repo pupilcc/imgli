@@ -64,13 +64,37 @@ export default {
   pathStyle: '路径风格',
   pathStyleVirtual: '虚拟主机',
   pathStylePath: '路径风格',
+  pathStyleHint:
+    'MinIO 等自建常需「路径风格」；阿里云 OSS / 腾讯 COS / Cloudflare R2 / 七牛等请用「虚拟主机」。选错会导致上传失败。',
+  s3EndpointHint: '区域 API 主机，如 oss-cn-hangzhou.aliyuncs.com（不要填 CDN 域名）',
+  s3RegionHint: '与厂商控制台区域一致（如 cn-hangzhou / ap-guangzhou / auto）；不是随意填写',
+  s3VendorExamples: '厂商示例',
+  s3VendorExamplesHint: '仅填入示例 Endpoint / Region / 路径风格，Bucket 与密钥仍需自备',
+  s3VendorOss: '阿里云 OSS',
+  s3VendorCos: '腾讯云 COS',
+  s3VendorR2: 'Cloudflare R2',
+  s3VendorMinio: 'MinIO',
   prefix: '前缀',
+  prefixHint:
+    '桶内最外层目录，如 upload/（会自动补尾 /）。最终对象键 = 前缀 + public|private/ + 路径模板。',
   cdnDomain: 'CDN 域名（原图 /i）',
-  cdnDomainPlaceholder: '对象存储 CDN(公开原图 302 目标);留空则经服务端流式回源',
+  cdnDomainPlaceholder: 'https://img.cdn.example.com',
+  cdnDomainHint:
+    '公开原图访问 /i 时 302 到该前缀。须含 https://；不是 Endpoint，也不是 bucket.oss-….aliyuncs.com。无 CDN 加速域名请留空（走服务端流式）。',
   presignDomain: '预签名直连域',
   presignDomainHint:
     '仅 S3 兼容驱动。私密原图改为 302 到该域上的 60 秒时效签名链接。必须是不经 CDN 缓存、不重写路径的直连域。留空则私密图继续经服务端流式。缩略图始终经应用。注意：签发后的链接在 60 秒内可被转发。',
   pathTemplate: '路径命名模板',
+  pathTemplateHint:
+    '控制 surface 之后的相对路径。占位符：{Y}{m}{d}{H}{M}{S}{ms} 时间；{uniqid}/{rand}/{rand:N} base62；{hex:N}/{HEX:N} 十六进制；{digits:N} 数字；{ext} 扩展名。须含随机段。public/ 与 private/ 由系统按可见性强制添加，模板无法关闭。',
+  pathTemplatePreview: '示例对象键（公开图）',
+  pathTemplatePresets: '常用模板',
+  pathTplPresetDefault: '默认（年/月/日）',
+  pathTplPresetFlat: '扁平（无日期目录）',
+  pathTplPresetToSecond: '精确到秒',
+  pathTplPresetDigits: '纯数字文件名',
+  warnPathStyleVendor:
+    '当前 Endpoint 多为公有云对象存储，通常应使用「虚拟主机」路径风格；路径风格可能导致上传失败。自建网关若确认需要路径风格可忽略本提示。',
   enabled: '启用',
   testConnection: '测试连接',
   connectedMs: '已连接 · {ms}ms',

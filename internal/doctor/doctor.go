@@ -113,6 +113,13 @@ func checkStorageCaps(db *gorm.DB, r *Report) {
 		if caps.PrivatePresignCapable && !eff.PrivatePresignReady {
 			r.add("presign_unconfigured", OK, fmt.Sprintf("策略 %q 未配置 presign_domain：私密图经服务端流式", p.Name))
 		}
+		if p.Driver == "s3" &&
+			strings.EqualFold(strings.TrimSpace(p.Config["path_style"]), "true") &&
+			storage.PathStyleLikelyUnsupported(p.Config["endpoint"]) {
+			r.add("path_style_vendor", Warn, fmt.Sprintf(
+				"策略 %q 对公有云类 Endpoint（%s）使用了路径风格（path_style=true）；OSS/COS/R2 等通常应改用虚拟主机，否则上传/探针易失败",
+				p.Name, strings.TrimSpace(p.Config["endpoint"])))
+		}
 		if caps.Tier != storage.TierCompat {
 			compatOnly = false
 		}

@@ -265,6 +265,7 @@ Changelog: [CHANGELOG.md](CHANGELOG.md). Security: [SECURITY.md](SECURITY.md) ·
 ## Docs map (self-hosters)
 
 - Storage matrices: [S3](docs/s3-compatibility.md) · [WebDAV](docs/webdav-compatibility.md) · [FTP dual-track](docs/storage-ftp.md)
+- **How to fill S3 policy fields (CDN / prefix / path style / path template):** [docs/s3-compatibility.md#storage-policy-fields-s3](docs/s3-compatibility.md#storage-policy-fields-s3)
 - **Storage migrate (ops):** [docs/storage-migrate.md](docs/storage-migrate.md) — CLI + Admin job
 - **User-group lifecycle (v0.9):** [docs/user-groups-lifecycle.md](docs/user-groups-lifecycle.md) — expiry/max-views, retention, force age, stock clamp
 - **Site customization (L0 / L2 appearance):** [docs/design/site-customization-ia.md](docs/design/site-customization-ia.md) — `site_name`, accent, background, glass (v0.9.5)

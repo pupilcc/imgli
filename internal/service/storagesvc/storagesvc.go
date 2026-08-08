@@ -2,14 +2,12 @@
 package storagesvc
 
 import (
-	"crypto/rand"
 	"fmt"
 	"net/url"
 	"sort"
 	"strconv"
 	"strings"
 	"sync"
-	"time"
 
 	"gorm.io/gorm"
 
@@ -119,34 +117,7 @@ func (r *Resolver) EffectiveFor(p *model.StoragePolicy) (storage.Effective, erro
 
 const base62 = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz"
 
-// randBase62 返回 n 位随机 base62（拒绝取模偏置：用 62 的整数倍上限重采样）。
-func randBase62(n int) (string, error) {
-	out := make([]byte, n)
-	buf := make([]byte, n)
-	if _, err := rand.Read(buf); err != nil {
-		return "", err
-	}
-	for i := 0; i < n; i++ {
-		out[i] = base62[int(buf[i])%62]
-	}
-	return string(out), nil
-}
-
-// RenderPath 渲染 {Y}/{m}/{d}/{uniqid}.{ext}（uniqid 12 位 base62）。
-func (r *Resolver) RenderPath(tmpl, ext string, now time.Time) (string, error) {
-	uniq, err := randBase62(12)
-	if err != nil {
-		return "", err
-	}
-	rep := strings.NewReplacer(
-		"{Y}", now.Format("2006"),
-		"{m}", now.Format("01"),
-		"{d}", now.Format("02"),
-		"{uniqid}", uniq,
-		"{ext}", ext,
-	)
-	return rep.Replace(tmpl), nil
-}
+// RenderPath 见 path_template.go（时间 + 随机占位符；不含 surface/prefix）。
 
 // CDNEligibleObjectKey 判断对象键是否允许走「未鉴权 CDN/公网 302」(S4 纵深)。
 // fail-closed：显式 private/ 前缀（及 private 下缩略图）一律禁止；

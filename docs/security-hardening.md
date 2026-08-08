@@ -15,7 +15,9 @@ proxy, and moderation sidecars.
 ## Object storage (private surface)
 
 imgli prefixes objects by surface (`public/` vs `private/` when using path
-layout). Application routes:
+layout). These prefixes are **mandatory** (not part of the operator path
+template); see [s3-compatibility.md](s3-compatibility.md) storage policy fields.
+Application routes:
 
 - Public: may `302` to CDN / public URL.
 - Private: may `302` to a **short-lived presigned URL**, or stream via the app.

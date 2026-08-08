@@ -13,6 +13,10 @@ import type { AdminPolicy, StorageCaps } from '../../../api/types'
 import { useT } from '../../../i18n'
 import { cn } from '../../../lib/cn'
 import { formatBytes } from '../../../lib/format'
+import {
+  PATH_TEMPLATE_PRESETS,
+  previewObjectKey,
+} from '../../../lib/pathTemplatePreview'
 import { useGlobal } from '../../../store'
 import { PageHeader } from '../../../shell/PageHeader'
 import { Button } from '../../../ui/Button'
@@ -85,6 +89,51 @@ const tierBadgeClass =
 const ackRowClass = 'flex items-start gap-2.5 text-[13px] leading-snug'
 const warnInlineClass = 'm-0 text-xs leading-snug text-err'
 const toggleRowClass = 'flex items-center gap-3'
+const presetChipClass =
+  'cursor-pointer rounded border border-border bg-card px-2 py-0.5 text-[11px] text-muted hover:border-ink/30 hover:text-ink'
+
+function pathStyleLikelyUnsupported(endpoint: string): boolean {
+  const ep = endpoint.trim().toLowerCase().replace(/^https?:\/\//, '')
+  return (
+    ep.includes('aliyuncs.com') ||
+    ep.includes('myqcloud.com') ||
+    ep.includes('amazonaws.com') ||
+    ep.includes('r2.cloudflarestorage.com') ||
+    ep.includes('qiniucs.com')
+  )
+}
+
+function presetLabel(t: (k: string) => string, id: string): string {
+  if (id === 'flat') return t('adminB.pathTplPresetFlat')
+  if (id === 'toSecond') return t('adminB.pathTplPresetToSecond')
+  if (id === 'digits') return t('adminB.pathTplPresetDigits')
+  return t('adminB.pathTplPresetDefault')
+}
+
+/** Example fills only; operators still enter real bucket/keys. */
+const S3_VENDOR_EXAMPLES: {
+  id: string
+  endpoint: string
+  region: string
+  pathStyle: 'true' | 'false'
+}[] = [
+  { id: 'oss', endpoint: 'oss-cn-hangzhou.aliyuncs.com', region: 'cn-hangzhou', pathStyle: 'false' },
+  { id: 'cos', endpoint: 'cos.ap-guangzhou.myqcloud.com', region: 'ap-guangzhou', pathStyle: 'false' },
+  { id: 'r2', endpoint: 'https://<ACCOUNT_ID>.r2.cloudflarestorage.com', region: 'auto', pathStyle: 'false' },
+  { id: 'minio', endpoint: 'http://127.0.0.1:9000', region: 'us-east-1', pathStyle: 'true' },
+]
+
+function vendorExampleLabel(t: (k: string) => string, id: string): string {
+  if (id === 'cos') return t('adminB.s3VendorCos')
+  if (id === 'r2') return t('adminB.s3VendorR2')
+  if (id === 'minio') return t('adminB.s3VendorMinio')
+  return t('adminB.s3VendorOss')
+}
+
+/** Apply server-normalized config (e.g. prefix trailing /) back into the form. */
+function applyPolicyToForm(p: AdminPolicy, setForm: (f: FormState) => void) {
+  setForm(formOf(p))
+}
 
 function formOf(p: AdminPolicy): FormState {
   let root = ''
@@ -156,9 +205,9 @@ function formOf(p: AdminPolicy): FormState {
     ftpPassword,
     ftpPrefix,
     ftpAllowInsecure,
-    cdn: p.cdn_domain,
-    tpl: p.path_template,
-    enabled: p.enabled,
+    cdn: p.cdn_domain ?? '',
+    tpl: p.path_template || NEW_FORM.tpl,
+    enabled: p.enabled !== false,
   }
 }
 
@@ -343,6 +392,7 @@ export function PoliciesPage() {
   const [sel, setSel] = useState<number | 'new' | null>(null)
   const [form, setForm] = useState<FormState>(NEW_FORM)
   const [testMsg, setTestMsg] = useState<string | null>(null)
+  const [testOk, setTestOk] = useState(false)
   const [compatAck, setCompatAck] = useState(false)
   const [migFrom, setMigFrom] = useState<number | ''>('')
   const [migTo, setMigTo] = useState<number | ''>('')
@@ -363,24 +413,64 @@ export function PoliciesPage() {
     setSel(p.id)
     setForm(formOf(p))
     setTestMsg(null)
+    setTestOk(false)
     setCompatAck(false)
   }
   const selectNew = () => {
     setSel('new')
     setForm(NEW_FORM)
     setTestMsg(null)
+    setTestOk(false)
     setCompatAck(false)
   }
 
   const caps = current?.caps && current.driver === form.driver ? current.caps : staticCaps(form.driver)
+  const clientWarnings = useMemo(() => {
+    const w: NonNullable<AdminPolicy['warnings']> = []
+    if ((form.cdn ?? '').trim() && !caps.public_cdn_offload_recommended) {
+      w.push({ code: 'cdn_not_recommended', message_key: 'adminB.warnCdnWithoutCap', severity: 'warning' })
+    }
+    if (form.driver === 'ftp' && form.ftpAllowInsecure) {
+      w.push({ code: 'insecure_transport', message_key: 'adminB.warnInsecureTransport', severity: 'warning' })
+    }
+    if (
+      form.driver === 's3' &&
+      form.s3PathStyle === 'true' &&
+      pathStyleLikelyUnsupported(form.s3Endpoint)
+    ) {
+      w.push({ code: 'path_style_vendor', message_key: 'adminB.warnPathStyleVendor', severity: 'warning' })
+    }
+    return w
+  }, [
+    form.cdn,
+    form.driver,
+    form.ftpAllowInsecure,
+    form.s3Endpoint,
+    form.s3PathStyle,
+    caps.public_cdn_offload_recommended,
+  ])
   const warnings =
-    current?.warnings && current.driver === form.driver
-      ? current.warnings
-      : form.cdn.trim() && !caps.public_cdn_offload_recommended
-        ? [{ code: 'cdn_not_recommended', message_key: 'adminB.warnCdnWithoutCap', severity: 'warning' }]
-        : form.driver === 'ftp' && form.ftpAllowInsecure
-          ? [{ code: 'insecure_transport', message_key: 'adminB.warnInsecureTransport', severity: 'warning' }]
-          : undefined
+    current?.warnings && current.driver === form.driver && sel !== 'new'
+      ? (() => {
+          // Merge client-side path_style warning for unsaved form edits.
+          const codes = new Set(current.warnings.map((x) => x.code))
+          const extra = clientWarnings.filter((x) => !codes.has(x.code))
+          return [...current.warnings, ...extra]
+        })()
+      : clientWarnings.length
+        ? clientWarnings
+        : undefined
+
+  const objectKeyPreview = useMemo(
+    () =>
+      previewObjectKey({
+        prefix: form.driver === 's3' ? form.s3Prefix : form.driver === 'ftp' ? form.ftpPrefix : '',
+        template: form.tpl,
+        surface: 'public',
+        ext: 'png',
+      }),
+    [form.driver, form.s3Prefix, form.ftpPrefix, form.tpl],
+  )
 
   const config = buildConfig(form)
 
@@ -389,6 +479,7 @@ export function PoliciesPage() {
 
   const submit = () => {
     setTestMsg(null)
+    setTestOk(false)
     if (needsCompatAck && !compatAck) return
     if (sel === 'new') {
       create.mutate(
@@ -400,20 +491,72 @@ export function PoliciesPage() {
           path_template: form.tpl,
           enabled: form.enabled,
         },
-        { onSuccess: () => setSel(null) },
+        {
+          onSuccess: (p) => {
+            // Prefer server DTO so normalized prefix/path_template appear; incomplete mocks clear selection.
+            if (p?.id && typeof p.config === 'string') {
+              setSel(p.id)
+              applyPolicyToForm(p, setForm)
+            } else {
+              setSel(null)
+            }
+            setCompatAck(false)
+          },
+        },
       )
     } else if (current) {
-      update.mutate({
-        id: current.id,
-        body: { name: form.name.trim(), config, cdn_domain: form.cdn, path_template: form.tpl, enabled: form.enabled },
-      })
+      update.mutate(
+        {
+          id: current.id,
+          body: {
+            name: form.name.trim(),
+            config,
+            cdn_domain: form.cdn,
+            path_template: form.tpl,
+            enabled: form.enabled,
+          },
+        },
+        {
+          onSuccess: (p) => {
+            if (p && typeof p.config === 'string') {
+              applyPolicyToForm(p, setForm)
+            }
+          },
+        },
+      )
     }
   }
 
   const runTest = () => {
     if (!current) return
     setTestMsg(null)
-    test.mutate(current.id, { onSuccess: (r) => setTestMsg(t('adminB.connectedMs', { ms: r.latency_ms })) })
+    setTestOk(false)
+    test.mutate(current.id, {
+      onSuccess: (r) => {
+        setTestOk(true)
+        setTestMsg(t('adminB.connectedMs', { ms: r.latency_ms }))
+      },
+      onError: (e) => {
+        // toastApiError already fired from hook; also pin failure text under the button.
+        const msg =
+          e && typeof e === 'object' && 'message' in e && typeof (e as { message: unknown }).message === 'string'
+            ? (e as { message: string }).message
+            : t('adminB.testFailed')
+        setTestOk(false)
+        setTestMsg(msg)
+      },
+    })
+  }
+
+  const applyVendorExample = (id: string) => {
+    const ex = S3_VENDOR_EXAMPLES.find((x) => x.id === id)
+    if (!ex) return
+    setForm((f) => ({
+      ...f,
+      s3Endpoint: ex.endpoint,
+      s3Region: ex.region,
+      s3PathStyle: ex.pathStyle,
+    }))
   }
 
   const driverLabel =
@@ -675,13 +818,31 @@ export function PoliciesPage() {
                       <Input
                         label="Endpoint"
                         value={form.s3Endpoint}
-                        placeholder="s3.us-east-1.amazonaws.com"
+                        placeholder="oss-cn-hangzhou.aliyuncs.com"
+                        extra={<span className={hintClass}>{t('adminB.s3EndpointHint')}</span>}
                         onChange={(e) => set('s3Endpoint', e.target.value)}
                       />
+                      <div className="flex flex-col gap-1">
+                        <span className={labelClass}>{t('adminB.s3VendorExamples')}</span>
+                        <div className="flex flex-wrap gap-1.5">
+                          {S3_VENDOR_EXAMPLES.map((v) => (
+                            <button
+                              key={v.id}
+                              type="button"
+                              className={presetChipClass}
+                              onClick={() => applyVendorExample(v.id)}
+                            >
+                              {vendorExampleLabel(t, v.id)}
+                            </button>
+                          ))}
+                        </div>
+                        <span className={hintClass}>{t('adminB.s3VendorExamplesHint')}</span>
+                      </div>
                       <Input
                         label="Region"
                         value={form.s3Region}
-                        placeholder="us-east-1"
+                        placeholder="cn-hangzhou"
+                        extra={<span className={hintClass}>{t('adminB.s3RegionHint')}</span>}
                         onChange={(e) => set('s3Region', e.target.value)}
                       />
                       <Input label="Bucket" value={form.s3Bucket} onChange={(e) => set('s3Bucket', e.target.value)} />
@@ -702,11 +863,13 @@ export function PoliciesPage() {
                           value={form.s3PathStyle}
                           onChange={(v) => set('s3PathStyle', v)}
                         />
+                        <span className={hintClass}>{t('adminB.pathStyleHint')}</span>
                       </AdminField>
                       <Input
                         label={t('adminB.prefix')}
                         value={form.s3Prefix}
-                        placeholder="imgli/"
+                        placeholder="upload/"
+                        extra={<span className={hintClass}>{t('adminB.prefixHint')}</span>}
                         onChange={(e) => set('s3Prefix', e.target.value)}
                       />
                       <Input
@@ -722,12 +885,37 @@ export function PoliciesPage() {
                     label={t('adminB.cdnDomain')}
                     value={form.cdn}
                     placeholder={t('adminB.cdnDomainPlaceholder')}
+                    extra={<span className={hintClass}>{t('adminB.cdnDomainHint')}</span>}
                     onChange={(e) => set('cdn', e.target.value)}
                   />
                   {!caps.public_cdn_offload_recommended && form.cdn.trim() && (
                     <p className={warnInlineClass}>{t('adminB.warnCdnWithoutCap')}</p>
                   )}
-                  <Input label={t('adminB.pathTemplate')} value={form.tpl} onChange={(e) => set('tpl', e.target.value)} />
+                  <Input
+                    label={t('adminB.pathTemplate')}
+                    value={form.tpl}
+                    extra={<span className={hintClass}>{t('adminB.pathTemplateHint')}</span>}
+                    onChange={(e) => set('tpl', e.target.value)}
+                  />
+                  <div className="flex flex-col gap-1.5">
+                    <span className={labelClass}>{t('adminB.pathTemplatePresets')}</span>
+                    <div className="flex flex-wrap gap-1.5">
+                      {PATH_TEMPLATE_PRESETS.map((p) => (
+                        <button
+                          key={p.id}
+                          type="button"
+                          className={presetChipClass}
+                          onClick={() => set('tpl', p.template)}
+                        >
+                          {presetLabel(t, p.id)}
+                        </button>
+                      ))}
+                    </div>
+                    <div className="rounded-sm border border-border bg-soft px-2.5 py-1.5 font-mono text-[11px] leading-snug text-muted break-all">
+                      <span className="mr-1.5 font-sans text-muted/80">{t('adminB.pathTemplatePreview')}:</span>
+                      {objectKeyPreview}
+                    </div>
+                  </div>
                   <div className={toggleRowClass}>
                     <span className={labelClass}>{t('adminB.enabled')}</span>
                     <Toggle checked={form.enabled} onChange={(v) => set('enabled', v)} />
@@ -770,7 +958,17 @@ export function PoliciesPage() {
                         />
                       </>
                     )}
-                    {testMsg && <span className="text-[13px] text-ok">{testMsg}</span>}
+                    {testMsg && (
+                      <span
+                        className={
+                          testOk
+                            ? 'text-[13px] text-ok'
+                            : 'max-w-xl text-[13px] leading-snug text-err break-all'
+                        }
+                      >
+                        {testMsg}
+                      </span>
+                    )}
                   </div>
                 </div>
               )}

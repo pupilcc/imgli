@@ -252,6 +252,7 @@ cd web && npm run e2e   # Playwright,会先构建二进制
 ## 文档索引（自托管）
 
 - 存储矩阵：[S3](docs/s3-compatibility.md) · [WebDAV](docs/webdav-compatibility.md) · [FTP 双轨](docs/storage-ftp.md)
+- **S3 策略字段怎么填（CDN / 前缀 / 路径风格 / 路径模板）**：[docs/s3-compatibility.md#storage-policy-fields-s3](docs/s3-compatibility.md#storage-policy-fields-s3)
 - **跨策略搬迁**：[docs/storage-migrate.md](docs/storage-migrate.md)（CLI + Admin 任务）
 - **用户组生命周期（v0.9）**：[docs/user-groups-lifecycle.md](docs/user-groups-lifecycle.md)（有效期/次数上限、保留与强制存活、存量钳制）
 - **站点定制（L0 / L2 外观）**：[docs/design/site-customization-ia.md](docs/design/site-customization-ia.md)（站名、强调色、背景图、毛玻璃；v0.9.5）

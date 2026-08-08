@@ -47,6 +47,71 @@ automated report in this repo yet.
 - Set `presign_domain` / CDN domain per storage policy in admin when offloading.
 - Path-style is required for many MinIO deployments (`force path style`).
 
+## Storage policy fields (S3)
+
+<a id="storage-policy-fields-s3"></a>
+
+Admin → storage policy. Final object key:
+
+```text
+{prefix}{public|private/}{path_template}
+```
+
+Example with `prefix=upload/`, public image, default template:
+
+```text
+upload/public/2026/08/08/Ab3xY9kLmN2p.png
+```
+
+| Field | What to put | Common mistake |
+|-------|-------------|----------------|
+| **Endpoint** | Regional S3 API host, e.g. `oss-cn-hangzhou.aliyuncs.com` | CDN hostname or `https://` CDN URL |
+| **Region** | Vendor region string, e.g. `cn-hangzhou` | Leaving empty |
+| **Bucket** | Bucket name only | Embedding bucket into endpoint as virtual-host host |
+| **Path style** | **Virtual host** for OSS/COS/R2/Qiniu/AWS; **path style** often for MinIO | Path style on Aliyun OSS → Put fails |
+| **Prefix** | Optional outer folder, e.g. `upload/` (trailing `/` is normalized) | Expecting prefix alone to be the full path |
+| **CDN domain** | Public original **302** target: `https://img.cdn.example.com` | Bare `bucket.oss-….aliyuncs.com` (not a CDN; leave empty if none) |
+| **Presign domain** | Private original signed GET host (no CDN rewrite/cache) | Pointing at a caching CDN |
+| **Path template** | Relative path **after** surface prefix | Trying to remove `public/` via the template |
+
+### Why `public/` / `private/` always appear
+
+Surface prefixes are **forced by visibility** (security partition + CDN eligibility).
+They are **not** part of `path_template` and **cannot** be disabled. To flatten
+date folders only, change the template (e.g. `{uniqid}.{ext}` →
+`upload/public/{uniqid}.png`).
+
+See [security-hardening.md](security-hardening.md).
+
+### Path template tokens
+
+Default: `{Y}/{m}/{d}/{uniqid}.{ext}`
+
+| Token | Meaning | Constraints |
+|-------|---------|-------------|
+| `{Y}` `{m}` `{d}` | Year / month / day | — |
+| `{H}` `{M}` `{S}` | Hour / minute / second | — |
+| `{ms}` | Milliseconds (3 digits) | Do not use alone for uniqueness |
+| `{uniqid}` / `{rand}` | 12-char base62 | Default random |
+| `{rand:N}` | Base62 length N | N ∈ [8, 32] |
+| `{hex:N}` / `{HEX:N}` | Hex lower / upper | N ∈ [12, 32] |
+| `{digits:N}` | Digits only | N ∈ [16, 32] (entropy floor) |
+| `{ext}` | Extension without dot | — |
+
+Rules: at least one **random** token is required; no `..`, no leading `/`, no
+backslash. Application link keys (`images.key`, 12-char base62) are separate and
+not configured here.
+
+### CDN domain vs endpoint vs presign
+
+| | Role | Scheme required |
+|--|------|-----------------|
+| Endpoint | Signed Put/Get/Delete API host | Optional `http://`/`https://` (default https) |
+| CDN domain | Unauthenticated **public** original 302 | **Yes** `http(s)://` |
+| Presign domain | **Private** short-lived signed URL host | **Yes** pure origin |
+
+Empty CDN domain is valid: public originals stream through imgli.
+
 ## FTP and legacy vendors (dual track)
 
 Some hosts only expose **FTP** (e.g. certain virtual-host / panel storage). imgli

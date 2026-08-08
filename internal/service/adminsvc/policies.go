@@ -7,6 +7,7 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"io"
 	"net/url"
 	"os"
@@ -17,6 +18,7 @@ import (
 	"gorm.io/gorm"
 
 	"github.com/yixian-huang/imgli/internal/model"
+	"github.com/yixian-huang/imgli/internal/service/storagesvc"
 	"github.com/yixian-huang/imgli/internal/storage"
 	"github.com/yixian-huang/imgli/internal/storage/ftp"
 	"github.com/yixian-huang/imgli/internal/storage/s3"
@@ -81,6 +83,19 @@ func validateLocalConfig(cfg map[string]string) error {
 	return nil
 }
 
+// normalizeS3Prefix ensures a non-empty prefix ends with "/" so prefix+key does not glue.
+func normalizeS3Prefix(cfg map[string]string) {
+	p := strings.TrimSpace(cfg["prefix"])
+	if p == "" {
+		cfg["prefix"] = ""
+		return
+	}
+	if !strings.HasSuffix(p, "/") {
+		p += "/"
+	}
+	cfg["prefix"] = p
+}
+
 // validateS3Config 校验 s3 驱动必填字段、path_style 与可选 presign_domain。
 func validateS3Config(cfg map[string]string) error {
 	for _, k := range []string{"endpoint", "region", "bucket", "access_key_id", "secret_access_key"} {
@@ -93,6 +108,7 @@ func validateS3Config(cfg map[string]string) error {
 	default:
 		return ErrBadConfig
 	}
+	normalizeS3Prefix(cfg)
 	// presign_domain 可选;非空时必须是纯 origin 的 http(s) URL。带 path 会破坏
 	// SigV4 的 canonical URI(签名覆盖 path),内联 userinfo 则是明文凭据回显面。
 	// 非 ASCII 主机名拒绝:与 s3.New 一致——浏览器会转 punycode,我们无转换
@@ -170,12 +186,32 @@ func validateFTPConfig(cfg map[string]string) error {
 	return nil
 }
 
-// validateCDNDomain wraps storage.ValidateCDNDomain as ErrBadConfig.
+// validateCDNDomain wraps storage.ValidateCDNDomain with operator-facing messages.
 func validateCDNDomain(raw string) error {
+	raw = strings.TrimSpace(raw)
+	if raw == "" {
+		return nil
+	}
+	// Bare hostnames are the most common misconfig (paste OSS endpoint as CDN).
+	if !strings.Contains(raw, "://") {
+		return fmt.Errorf("%w: CDN 域名须以 http:// 或 https:// 开头，例如 https://cdn.example.com；裸主机名（如 bucket.oss-cn-xxx.aliyuncs.com）不是 CDN，无加速域名请留空", ErrBadConfig)
+	}
 	if err := storage.ValidateCDNDomain(raw); err != nil {
-		return ErrBadConfig
+		return fmt.Errorf("%w: CDN 域名须为 http(s) origin（可含 path 前缀），禁止账号密码、query、fragment", ErrBadConfig)
 	}
 	return nil
+}
+
+// normalizePathTemplate applies default and validates placeholders.
+func normalizePathTemplate(pt string) (string, error) {
+	pt = strings.TrimSpace(pt)
+	if pt == "" {
+		return defaultPathTemplate, nil
+	}
+	if err := storagesvc.ValidatePathTemplate(pt); err != nil {
+		return "", fmt.Errorf("%w: %s", ErrBadConfig, err.Error())
+	}
+	return pt, nil
 }
 
 // validateDriverConfig 按驱动类型校验 config。
@@ -300,9 +336,9 @@ func (s *Service) CreatePolicy(p *model.StoragePolicy) error {
 		return err
 	}
 	p.Name = name
-	pt := strings.TrimSpace(p.PathTemplate)
-	if pt == "" {
-		pt = defaultPathTemplate
+	pt, err := normalizePathTemplate(p.PathTemplate)
+	if err != nil {
+		return err
 	}
 	p.PathTemplate = pt
 
@@ -397,9 +433,9 @@ func (s *Service) UpdatePolicy(id uint64, patch PolicyPatch) (*model.StoragePoli
 		cols = append(cols, "cdn_domain")
 	}
 	if patch.PathTemplate != nil {
-		pt := strings.TrimSpace(*patch.PathTemplate)
-		if pt == "" {
-			pt = defaultPathTemplate
+		pt, err := normalizePathTemplate(*patch.PathTemplate)
+		if err != nil {
+			return nil, err
 		}
 		p.PathTemplate = pt
 		cols = append(cols, "path_template")
@@ -548,7 +584,18 @@ func (s *Service) TestPolicy(id uint64) (int64, error) {
 			if p.Driver == "webdav" {
 				return 0, formatWebDAVWriteProbeErr(ep, p.Config, err)
 			}
-			return 0, formatRemoteProbeErr("写入探针失败", p.Driver, ep, err)
+			base := formatRemoteProbeErr("写入探针失败", p.Driver, ep, err)
+			// Public-cloud S3 often rejects path-style; surface the same advice as admin warnings.
+			if p.Driver == "s3" &&
+				strings.EqualFold(strings.TrimSpace(p.Config["path_style"]), "true") &&
+				storage.PathStyleLikelyUnsupported(p.Config["endpoint"]) {
+				return 0, &probeMsgError{
+					msg: base.Error() +
+						"。公有云对象存储通常应使用「虚拟主机」路径风格（path_style=false），请改回后重试",
+					cause: err,
+				}
+			}
+			return 0, base
 		}
 		rc, err := d.Open(ctx, probeKey)
 		if err != nil {

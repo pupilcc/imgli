@@ -75,6 +75,57 @@ func TestRunHappyLocal(t *testing.T) {
 	_ = os.Remove(filepath.Join(dir, ".imgli-doctor-write"))
 }
 
+func TestPathStyleVendorWarn(t *testing.T) {
+	dir := t.TempDir()
+	cfg := &config.Config{
+		Listen:  "127.0.0.1:0",
+		BaseURL: "https://img.li",
+		DataDir: dir,
+		Database: config.Database{
+			Driver: "sqlite",
+			DSN:    filepath.Join(dir, "ps.db"),
+		},
+	}
+	db, err := model.Open(cfg)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := model.Migrate(db); err != nil {
+		t.Fatal(err)
+	}
+	p := model.StoragePolicy{
+		Name: "oss-path", Driver: "s3", Enabled: true,
+		Config: map[string]string{
+			"endpoint": "oss-cn-hangzhou.aliyuncs.com", "region": "cn-hangzhou",
+			"bucket": "b", "access_key_id": "a", "secret_access_key": "s",
+			"path_style": "true",
+		},
+	}
+	if err := db.Create(&p).Error; err != nil {
+		t.Fatal(err)
+	}
+	sqlDB, _ := db.DB()
+	_ = sqlDB.Close()
+
+	rep := Run(cfg)
+	var found *Check
+	for i := range rep.Checks {
+		if rep.Checks[i].Name == "path_style_vendor" {
+			found = &rep.Checks[i]
+			break
+		}
+	}
+	if found == nil {
+		t.Fatal("missing path_style_vendor check")
+	}
+	if found.Level != Warn {
+		t.Fatalf("level=%s want warn msg=%q", found.Level, found.Message)
+	}
+	if !strings.Contains(found.Message, "虚拟主机") && !strings.Contains(found.Message, "path_style") {
+		t.Fatalf("msg=%q", found.Message)
+	}
+}
+
 func TestCDNMeteringWarn(t *testing.T) {
 	dir := t.TempDir()
 	cfg := &config.Config{

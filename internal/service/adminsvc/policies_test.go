@@ -625,6 +625,15 @@ func TestValidateS3ConfigAndDriverConfig(t *testing.T) {
 	if err := validateS3Config(cfg); err != ErrBadConfig {
 		t.Errorf("path_style x err = %v, want ErrBadConfig", err)
 	}
+	// prefix 自动补尾 /
+	cfg = validS3Config()
+	cfg["prefix"] = "upload"
+	if err := validateS3Config(cfg); err != nil {
+		t.Fatal(err)
+	}
+	if cfg["prefix"] != "upload/" {
+		t.Errorf("prefix = %q, want upload/", cfg["prefix"])
+	}
 	if err := validateDriverConfig("oss", map[string]string{}); err != ErrDriverUnsupported {
 		t.Errorf("oss err = %v, want ErrDriverUnsupported", err)
 	}
@@ -633,6 +642,56 @@ func TestValidateS3ConfigAndDriverConfig(t *testing.T) {
 	}
 	if err := validateDriverConfig("local", map[string]string{"root": "/x"}); err != nil {
 		t.Errorf("local driver config err = %v", err)
+	}
+}
+
+func TestValidateCDNDomainMessages(t *testing.T) {
+	if err := validateCDNDomain(""); err != nil {
+		t.Fatal(err)
+	}
+	if err := validateCDNDomain("https://cdn.example.com"); err != nil {
+		t.Fatal(err)
+	}
+	err := validateCDNDomain("bucket.oss-cn-hangzhou.aliyuncs.com")
+	if !errors.Is(err, ErrBadConfig) {
+		t.Fatalf("bare host: %v", err)
+	}
+	if !strings.Contains(err.Error(), "https://") {
+		t.Errorf("message should mention scheme: %v", err)
+	}
+	err = validateCDNDomain("https://user:pass@cdn.example")
+	if !errors.Is(err, ErrBadConfig) {
+		t.Fatalf("userinfo: %v", err)
+	}
+}
+
+func TestNormalizePathTemplate(t *testing.T) {
+	pt, err := normalizePathTemplate("")
+	if err != nil || pt != defaultPathTemplate {
+		t.Fatalf("empty → default: %q %v", pt, err)
+	}
+	pt, err = normalizePathTemplate("{uniqid}.{ext}")
+	if err != nil || pt != "{uniqid}.{ext}" {
+		t.Fatalf("flat: %q %v", pt, err)
+	}
+	_, err = normalizePathTemplate("{Y}/{m}/{d}.{ext}")
+	if !errors.Is(err, ErrBadConfig) {
+		t.Fatalf("no random: %v", err)
+	}
+}
+
+func TestCreatePolicyRejectsBadPathTemplateAndCDN(t *testing.T) {
+	db := model.TestDB(t)
+	svc := New(db)
+	p := newLocalPolicy("badtpl", "/data/z")
+	p.PathTemplate = "{Y}.{ext}"
+	if err := svc.CreatePolicy(p); !errors.Is(err, ErrBadConfig) {
+		t.Fatalf("path template: %v", err)
+	}
+	p2 := newLocalPolicy("badcdn", "/data/z2")
+	p2.CDNDomain = "cdn.example.com"
+	if err := svc.CreatePolicy(p2); !errors.Is(err, ErrBadConfig) {
+		t.Fatalf("cdn: %v", err)
 	}
 }
 

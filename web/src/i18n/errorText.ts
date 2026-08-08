@@ -13,6 +13,12 @@ export function errorText(code: string | undefined, fallback: string): string {
     if (msg !== key) return msg
   }
   if (useGlobal.getState().lang === 'zh') return fallback
+  // en: prefer detailed server validation (CDN / path_template / probe hints) over short
+  // generic code maps like invalid_request → "Invalid request".
+  const fb = (fallback || '').trim()
+  if (fb && (fb.length > 28 || /CDN|path_style|path template|config /i.test(fb))) {
+    return fb
+  }
   if (!code) return fallback
   const key = `errors.${code}`
   const msg = t(key)

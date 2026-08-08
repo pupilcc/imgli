@@ -64,13 +64,37 @@ export default {
   pathStyle: 'Path style',
   pathStyleVirtual: 'Virtual host',
   pathStylePath: 'Path style',
+  pathStyleHint:
+    'Self-hosted MinIO often needs path-style. Aliyun OSS / Tencent COS / Cloudflare R2 / Qiniu usually need virtual-host. Wrong style causes upload failures.',
+  s3EndpointHint: 'Regional API host, e.g. oss-cn-hangzhou.aliyuncs.com (not a CDN domain)',
+  s3RegionHint: 'Must match the vendor console region (e.g. cn-hangzhou / ap-guangzhou / auto)',
+  s3VendorExamples: 'Vendor examples',
+  s3VendorExamplesHint: 'Fills sample Endpoint / Region / path style only; you still need a real bucket and keys',
+  s3VendorOss: 'Aliyun OSS',
+  s3VendorCos: 'Tencent COS',
+  s3VendorR2: 'Cloudflare R2',
+  s3VendorMinio: 'MinIO',
   prefix: 'Prefix',
+  prefixHint:
+    'Outer bucket folder, e.g. upload/ (trailing / is added automatically). Final key = prefix + public|private/ + path template.',
   cdnDomain: 'CDN domain (original /i)',
-  cdnDomainPlaceholder: 'Object storage CDN (public original 302 target); empty = stream via server',
+  cdnDomainPlaceholder: 'https://img.cdn.example.com',
+  cdnDomainHint:
+    'Public originals 302 here from /i. Must include https://. Not the S3 endpoint and not bucket.oss-….aliyuncs.com. Leave empty to stream via the app.',
   presignDomain: 'Presign domain',
   presignDomainHint:
     'S3 only. Private originals 302 to a 60s signed URL on this domain. Must not be a caching CDN that rewrites paths. Empty keeps private images streaming via the app. Thumbnails always use the app.',
   pathTemplate: 'Path template',
+  pathTemplateHint:
+    'Relative path after the surface prefix. Tokens: {Y}{m}{d}{H}{M}{S}{ms} time; {uniqid}/{rand}/{rand:N} base62; {hex:N}/{HEX:N}; {digits:N}; {ext}. A random token is required. public/ and private/ are forced by visibility and cannot be disabled in the template.',
+  pathTemplatePreview: 'Example object key (public)',
+  pathTemplatePresets: 'Presets',
+  pathTplPresetDefault: 'Default (Y/m/d)',
+  pathTplPresetFlat: 'Flat (no date dirs)',
+  pathTplPresetToSecond: 'To the second',
+  pathTplPresetDigits: 'Digits-only filename',
+  warnPathStyleVendor:
+    'This endpoint looks like a public cloud object store that usually needs virtual-host path style; path-style may fail uploads. Ignore if your gateway truly requires path-style.',
   enabled: 'Enabled',
   testConnection: 'Test connection',
   connectedMs: 'Connected · {ms}ms',

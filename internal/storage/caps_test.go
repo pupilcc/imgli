@@ -95,3 +95,29 @@ func TestValidateCDNDomain(t *testing.T) {
 		t.Fatal("want error")
 	}
 }
+
+func TestWarningsPathStyleVendor(t *testing.T) {
+	c, _ := storage.CapsForDriver("s3")
+	cfg := map[string]string{
+		"endpoint": "oss-cn-hangzhou.aliyuncs.com", "path_style": "true",
+		"presign_domain": "https://s3.example",
+	}
+	eff, _ := storage.EffectiveFor("s3", cfg, "")
+	w := storage.WarningsFor("s3", cfg, "", true, c, eff)
+	found := false
+	for _, x := range w {
+		if x.Code == "path_style_vendor" {
+			found = true
+		}
+	}
+	if !found {
+		t.Fatalf("want path_style_vendor, got %#v", w)
+	}
+	cfg["path_style"] = "false"
+	w = storage.WarningsFor("s3", cfg, "", true, c, eff)
+	for _, x := range w {
+		if x.Code == "path_style_vendor" {
+			t.Fatal("virtual-host should not warn path_style_vendor")
+		}
+	}
+}

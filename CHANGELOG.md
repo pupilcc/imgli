@@ -10,6 +10,24 @@ separate version in `go.mod` or `web/package.json`.
 
 ## [Unreleased]
 
+## [0.9.9] - 2026-08-08
+
+Theme: **Storage policy operator UX — path template, CDN / path-style guidance**.
+
+### Added
+
+- **Storage path template tokens:** `{H}{M}{S}{ms}`, `{rand}`/`{rand:N}`, `{hex:N}`/`{HEX:N}`, `{digits:N}` with length floors; create/update rejects templates without a random segment.
+- **Admin storage policy UX:** field hints (endpoint / region / CDN / prefix / path style / template), live example object key preview, path-template presets (default / flat / to-second / digits), S3 vendor example chips (OSS / COS / R2 / MinIO).
+- **`imgli doctor`:** WARN `path_style_vendor` when an enabled S3 policy uses path-style on typical public-cloud endpoints.
+- **Test connection:** path-style + public-cloud endpoint appends a virtual-host remediation hint on Put probe failure; failure text also pinned under the button.
+
+### Changed
+
+- **S3 prefix:** non-empty `prefix` is normalized with a trailing `/` on save; admin form reloads server-normalized config after create/update.
+- **CDN domain errors:** bare hostnames (common OSS endpoint paste) return an explicit “must be http(s)” message; detailed validation messages prefer surfacing in toasts over generic `invalid_request`.
+- **Path-style advisory:** S3 policies with `path_style=true` on typical public-cloud endpoints emit `path_style_vendor` warning (does not block save).
+- **Docs:** [s3-compatibility.md](docs/s3-compatibility.md) storage policy fields section; README / README.zh-CN link; surface-prefix cross-link in [security-hardening.md](docs/security-hardening.md).
+
 ## [0.9.8] - 2026-08-08
 
 Theme: **Album management — settings modal, batch rename pipeline, share stats & plaza listing**.

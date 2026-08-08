@@ -109,7 +109,34 @@ func WarningsFor(driver string, config map[string]string, policyCDN string, enab
 			Code: "compat_tier", MessageKey: "adminB.warnCompatTier", Severity: "warning",
 		})
 	}
+	// Soft advisory only: many cloud S3 APIs reject path-style; do not block save.
+	if strings.EqualFold(strings.TrimSpace(driver), "s3") &&
+		strings.EqualFold(strings.TrimSpace(config["path_style"]), "true") &&
+		PathStyleLikelyUnsupported(config["endpoint"]) {
+		w = append(w, PolicyWarning{
+			Code: "path_style_vendor", MessageKey: "adminB.warnPathStyleVendor", Severity: "warning",
+		})
+	}
 	return w
+}
+
+// PathStyleLikelyUnsupported matches common public cloud endpoints that expect virtual-host
+// (OSS/COS/R2/Qiniu/AWS). Used by admin warnings, doctor, and TestPolicy hints.
+func PathStyleLikelyUnsupported(endpoint string) bool {
+	ep := strings.ToLower(strings.TrimSpace(endpoint))
+	ep = strings.TrimPrefix(ep, "https://")
+	ep = strings.TrimPrefix(ep, "http://")
+	switch {
+	case strings.Contains(ep, "aliyuncs.com"),
+		strings.Contains(ep, "myqcloud.com"),
+		strings.Contains(ep, "amazonaws.com"),
+		strings.Contains(ep, "r2.cloudflarestorage.com"),
+		strings.Contains(ep, "qiniucs.com"),
+		strings.Contains(ep, "amazonaws.com.cn"):
+		return true
+	default:
+		return false
+	}
 }
 
 func isRemoteDriver(driver string) bool {

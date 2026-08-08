@@ -22,3 +22,10 @@ test('无 code → fallback', () => {
   useGlobal.setState({ lang: 'en' })
   expect(errorText(undefined, 'fb')).toBe('fb')
 })
+
+test('en: detailed invalid_request keeps server message', () => {
+  useGlobal.setState({ lang: 'en' })
+  const long =
+    'config 无效: CDN 域名须以 http:// 或 https:// 开头，例如 https://cdn.example.com'
+  expect(errorText('invalid_request', long)).toBe(long)
+})
