@@ -26,7 +26,9 @@ function mockBackend(visibility: 'public' | 'private' = 'private') {
     'fetch',
     vi.fn((url: RequestInfo | URL, init?: RequestInit) => {
       const u = String(url)
-      if (u.includes('/albums') && (!init || !init.method))
+      if (u.includes('/albums/') && u.includes('/stats'))
+        return Promise.resolve(jsonRes(env({ total: 0, daily: Array.from({ length: 30 }, (_, i) => ({ date: `2026-07-${String(i + 1).padStart(2, '0')}`, views: 0 })) })))
+      if (u.match(/\/albums\/?\d*$/) || (u.includes('/albums') && !u.includes('/albums/') && (!init || !init.method)))
         return Promise.resolve(
           jsonRes(
             env({
@@ -38,6 +40,9 @@ function mockBackend(visibility: 'public' | 'private' = 'private') {
                   image_count: 1,
                   cover_key: 'a',
                   created_at: '2026-07-16T00:00:00Z',
+                  list_in_plaza: true,
+                  has_access_password: false,
+                  description: '',
                 },
               ],
             }),
@@ -94,10 +99,30 @@ it('内联重命名 PATCH 相册名', async () => {
   await user.click(screen.getByRole('button', { name: '保存' }))
   await waitFor(() => {
     const f = vi.mocked(fetch)
-    const call = f.mock.calls.find((c) => (c[1] as RequestInit)?.method === 'PATCH')
+    const call = f.mock.calls.find((c) => {
+      if ((c[1] as RequestInit)?.method !== 'PATCH') return false
+      try {
+        return JSON.parse((c[1] as RequestInit).body as string).name === '改名'
+      } catch {
+        return false
+      }
+    })
+    expect(call).toBeTruthy()
     expect(String(call![0])).toContain('/albums/7')
-    expect(JSON.parse((call![1] as RequestInit).body as string)).toEqual({ name: '改名' })
   })
+})
+
+it('设置弹窗：打开后可见分享与访问，默认视图在弹窗内', async () => {
+  const user = userEvent.setup()
+  mockBackend('public')
+  renderPage()
+  await screen.findByText('工作')
+  expect(screen.queryByTestId('album-default-view')).not.toBeInTheDocument()
+  await user.click(screen.getByTestId('album-settings-btn'))
+  expect(await screen.findByTestId('album-settings-share')).toBeInTheDocument()
+  expect(screen.getByTestId('album-default-view')).toBeInTheDocument()
+  await user.click(screen.getByRole('button', { name: '内容与广场' }))
+  expect(await screen.findByTestId('album-settings-content')).toBeInTheDocument()
 })
 
 it('公开相册：复制访客链接有 toast，并提供打开访客页入口', async () => {

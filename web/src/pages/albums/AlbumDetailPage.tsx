@@ -1,18 +1,31 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router'
-import { defaultFilter, useAlbums, useDeleteImage, useImages, useUpdateAlbum, useUpdateImage } from '../../api/hooks'
+import {
+  defaultFilter,
+  useAlbumReorder,
+  useAlbumSetImagesVisibility,
+  useAlbumStats,
+  useAlbums,
+  useDeleteImage,
+  useImages,
+  useUpdateAlbum,
+  useUpdateImage,
+} from '../../api/hooks'
 import type { ImageItem } from '../../api/types'
 import { useT } from '../../i18n'
 import { copyText } from '../../lib/copy'
 import { formatDate } from '../../lib/format'
+import { cn } from '../../lib/cn'
 import { useGlobal } from '../../store'
 import { Button } from '../../ui/Button'
 import { EmptyState } from '../../ui/EmptyState'
-import { Segmented } from '../../ui/Segmented'
 import { BatchBar } from '../images/BatchBar'
 import { DetailModal } from '../images/DetailModal'
 import { ImageGrid } from '../images/ImageGrid'
-import type { AlbumPublicMode } from './albumPublicView'
+import { AlbumSettingsModal, type AlbumSettingsTab } from './AlbumSettingsModal'
+
+const chipCls =
+  'inline-flex items-center rounded-[2px] border border-border px-[7px] py-0.5 font-mono text-[9.5px] tracking-[0.1em] text-muted'
 
 export function AlbumDetailPage() {
   const { t } = useT()
@@ -20,16 +33,21 @@ export function AlbumDetailPage() {
   const id = Number(idParam)
   const albums = useAlbums()
   const album = albums.data?.items.find((a) => a.id === id)
-  const images = useImages(useMemo(() => ({ ...defaultFilter, album: id }), [id]))
+  const images = useImages(useMemo(() => ({ ...defaultFilter, album: id, sort: 'position' }), [id]))
   const update = useUpdateImage()
   const removeImg = useDeleteImage()
   const updateAlbum = useUpdateAlbum()
+  const setVis = useAlbumSetImagesVisibility()
+  const reorder = useAlbumReorder()
+  const stats = useAlbumStats(Number.isFinite(id) ? id : undefined)
   const pushToast = useGlobal((s) => s.pushToast)
   const navigate = useNavigate()
   const [selected, setSelected] = useState<Set<string>>(new Set())
   const [focusKey, setFocusKey] = useState<string | null>(null)
   const [renaming, setRenaming] = useState(false)
   const [renameVal, setRenameVal] = useState('')
+  const [settingsOpen, setSettingsOpen] = useState(false)
+  const [settingsTab, setSettingsTab] = useState<AlbumSettingsTab>('share')
   const sentinelRef = useRef<HTMLDivElement>(null)
 
   const items = useMemo(() => images.data?.pages.flatMap((p) => p.items) ?? [], [images.data])
@@ -79,27 +97,23 @@ export function AlbumDetailPage() {
     )
   }
 
-  const togglePrivacy = () => {
-    if (!album) return
-    updateAlbum.mutate({ id, body: { visibility: album.visibility === 'public' ? 'private' : 'public' } })
-  }
-
-  const setDefaultView = (v: AlbumPublicMode) => {
-    if (!album || album.default_view === v) return
-    updateAlbum.mutate(
-      { id, body: { default_view: v } },
-      { onSuccess: () => pushToast(t('albums.defaultViewSaved')) },
-    )
-  }
-
   const quickVis = (item: ImageItem) =>
     update.mutate({ key: item.key, body: { visibility: item.visibility === 'public' ? 'private' : 'public' } })
 
-  const defaultView: AlbumPublicMode = album?.default_view === 'immersive' ? 'immersive' : 'gallery'
+  const allSelected = items.length > 0 && selected.size === items.length
+  const toggleAll = () => setSelected(allSelected ? new Set() : new Set(items.map((i) => i.key)))
+
+  const openSettings = (tab: AlbumSettingsTab = 'share') => {
+    setSettingsTab(tab)
+    setSettingsOpen(true)
+  }
+
+  const listInPlaza = album?.list_in_plaza !== false
 
   return (
     <div className="mx-auto max-w-[1120px] pt-11">
-      <div className="mb-6 flex animate-[fadeIn_0.2s] items-end justify-between border-b border-border pb-[18px]">
+      {/* L0 顶栏：身份 + 主操作 */}
+      <div className="mb-4 flex animate-[fadeIn_0.2s] flex-wrap items-end justify-between gap-4 border-b border-border pb-[18px]">
         <div className="min-w-0">
           <Link
             to="/albums"
@@ -127,7 +141,7 @@ export function AlbumDetailPage() {
               </button>
             </div>
           ) : (
-            <div className="flex items-baseline gap-3">
+            <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
               <h1 className="m-0 text-[26px] font-bold tracking-[-0.015em]">{album?.name ?? '…'}</h1>
               <button
                 type="button"
@@ -140,10 +154,10 @@ export function AlbumDetailPage() {
                 {t('albums.rename')}
               </button>
               {album && (
-                <span className="rounded-[2px] border border-border px-[7px] py-0.5 font-mono text-[9.5px] tracking-[0.1em] text-muted">
-                  {album.visibility === 'public' ? 'PUBLIC' : 'PRIVATE'}
-                </span>
+                <span className={chipCls}>{album.visibility === 'public' ? 'PUBLIC' : 'PRIVATE'}</span>
               )}
+              {album?.has_access_password && <span className={chipCls}>LOCKED</span>}
+              {album && !listInPlaza && <span className={chipCls}>NO PLAZA</span>}
             </div>
           )}
         </div>
@@ -152,8 +166,7 @@ export function AlbumDetailPage() {
             <>
               <Button
                 onClick={() => {
-                  const url = `${window.location.origin}/a/${album.id}`
-                  void copyText(url, t('albums.publicLink'))
+                  void copyText(`${window.location.origin}/a/${album.id}`, t('albums.publicLink'))
                 }}
               >
                 {t('albums.copyPublicLink')}
@@ -167,35 +180,67 @@ export function AlbumDetailPage() {
               </Button>
             </>
           )}
-          <Button onClick={togglePrivacy} disabled={updateAlbum.isPending}>
-            {album?.visibility === 'public' ? t('albums.setPrivate') : t('albums.setPublic')}
+          <Button onClick={() => openSettings('share')} data-testid="album-settings-btn">
+            {t('albums.settings')}
           </Button>
           <Link to={album ? `/?album=${album.id}` : '/'}>
             <Button variant="primary">{t('albums.uploadToAlbum')}</Button>
           </Link>
         </div>
       </div>
-      <div className="mb-3.5 font-mono text-xs-plus tracking-[0.06em] text-muted">
-        {album ? t('albums.detailMeta', { count: album.image_count, date: formatDate(album.created_at) }) : ''}
+
+      {/* 摘要行：可点访问量进数据 Tab */}
+      <div className="mb-4 flex flex-wrap items-center gap-x-3 gap-y-1 font-mono text-xs-plus tracking-[0.06em] text-muted">
+        <span>
+          {album ? t('albums.detailMeta', { count: album.image_count, date: formatDate(album.created_at) }) : ''}
+        </span>
+        {stats.data && (
+          <button
+            type="button"
+            className={cn(
+              'cursor-pointer border-0 bg-transparent p-0 font-mono text-xs-plus tracking-[0.06em] text-muted underline-offset-2 hover:text-ink hover:underline',
+            )}
+            data-testid="album-stats-total"
+            onClick={() => openSettings('stats')}
+          >
+            {t('albums.viewsTotal', { count: stats.data.total })}
+          </button>
+        )}
       </div>
-      {album?.visibility === 'public' && (
-        <div
-          className="mb-5 flex flex-wrap items-center justify-between gap-3 rounded-sm border border-border bg-surface px-3.5 py-3"
-          data-testid="album-default-view"
-        >
-          <div className="min-w-0">
-            <div className="text-[12.5px] font-semibold text-ink">{t('albums.defaultViewLabel')}</div>
-            <div className="mt-0.5 text-[11.5px] text-muted">{t('albums.defaultViewHint')}</div>
+
+      {/* L1 网格操作条 */}
+      {items.length > 0 && (
+        <div className="mb-3.5 flex flex-wrap items-center justify-between gap-2">
+          <div className="flex flex-wrap items-center gap-2">
+            <Button onClick={toggleAll}>{allSelected ? t('albums.deselectAll') : t('albums.selectAll')}</Button>
+            <Button
+              disabled={reorder.isPending || items.length === 0}
+              onClick={() =>
+                reorder.mutate(
+                  { id, keys: items.map((i) => i.key) },
+                  { onSuccess: () => pushToast(t('albums.orderSaved')) },
+                )
+              }
+            >
+              {t('albums.saveOrder')}
+            </Button>
+            {selected.size === 1 && (
+              <Button
+                disabled={updateAlbum.isPending}
+                onClick={() => {
+                  const key = [...selected][0]
+                  if (!key) return
+                  updateAlbum.mutate(
+                    { id, body: { cover_key: key } },
+                    { onSuccess: () => pushToast(t('albums.coverSaved')) },
+                  )
+                }}
+              >
+                {t('albums.setCover')}
+              </Button>
+            )}
           </div>
-          <Segmented<AlbumPublicMode>
-            compact
-            options={[
-              { value: 'gallery', label: t('albums.modeGallery') },
-              { value: 'immersive', label: t('albums.modeImmersive') },
-            ]}
-            value={defaultView}
-            onChange={setDefaultView}
-          />
+          <div className="text-[11.5px] text-muted">{t('albums.orderHint')}</div>
         </div>
       )}
 
@@ -226,9 +271,43 @@ export function AlbumDetailPage() {
         />
       )}
 
-      <BatchBar selected={selected} items={items} onClear={() => setSelected(new Set())} />
+      <BatchBar selected={selected} items={items} albumId={id} onClear={() => setSelected(new Set())} />
       {focusKey && (
-        <DetailModal items={items} focusKey={focusKey} onClose={() => setFocusKey(null)} onNavigate={setFocusKey} />
+        <DetailModal
+          items={items}
+          focusKey={focusKey}
+          onClose={() => setFocusKey(null)}
+          onNavigate={setFocusKey}
+        />
+      )}
+
+      {album && (
+        <AlbumSettingsModal
+          open={settingsOpen}
+          onClose={() => setSettingsOpen(false)}
+          tab={settingsTab}
+          onTabChange={setSettingsTab}
+          album={album}
+          albumId={id}
+          hasImages={items.length > 0 || (album.image_count ?? 0) > 0}
+          pending={updateAlbum.isPending}
+          setVisPending={setVis.isPending}
+          stats={
+            stats.data && Array.isArray(stats.data.daily)
+              ? { total: stats.data.total, daily: stats.data.daily }
+              : undefined
+          }
+          onUpdate={(body) => updateAlbum.mutate({ id, body })}
+          onBulkVis={(visibility) =>
+            setVis.mutate(
+              { id, visibility },
+              {
+                onSuccess: (d) => pushToast(t('albums.bulkVisDone', { count: d.updated })),
+              },
+            )
+          }
+          onSaved={(msg) => pushToast(msg)}
+        />
       )}
     </div>
   )

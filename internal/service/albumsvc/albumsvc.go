@@ -17,6 +17,11 @@ var (
 	ErrInvalidName         = errors.New("albumsvc: 名称需 1-128 字节")
 	ErrInvalidVisibility   = errors.New("albumsvc: 可见性仅 public|private")
 	ErrInvalidDefaultView  = errors.New("albumsvc: 默认视图仅 gallery|immersive")
+	ErrInvalidDescription  = errors.New("albumsvc: 描述过长")
+	ErrInvalidCover        = errors.New("albumsvc: 封面图不在此相册")
+	ErrInvalidPassword     = errors.New("albumsvc: 口令不合法")
+	ErrBadPassword         = errors.New("albumsvc: 口令错误")
+	ErrInvalidReorder      = errors.New("albumsvc: 排序 keys 无效")
 )
 
 type Service struct{ db *gorm.DB }
@@ -68,19 +73,48 @@ func NormalizeDefaultView(v string) string {
 	return out
 }
 
+func (s *Service) resolveCover(alb model.Album, publicOnly bool) (string, error) {
+	if k := strings.TrimSpace(alb.CoverKey); k != "" {
+		q := s.db.Model(&model.Image{}).
+			Where("key = ? AND album_id = ? AND user_id = ? AND deleted_at IS NULL", k, alb.ID, alb.UserID)
+		if publicOnly {
+			q = q.Where("visibility = ? AND status = ?", "public", "normal").
+				Where("(expires_at IS NULL OR expires_at > ?)", timeNow()).
+				Where("(access_password_hash = '' OR access_password_hash IS NULL)")
+		}
+		var n int64
+		if err := q.Count(&n).Error; err != nil {
+			return "", err
+		}
+		if n > 0 {
+			return k, nil
+		}
+	}
+	q := s.db.Where("album_id = ? AND user_id = ? AND deleted_at IS NULL", alb.ID, alb.UserID)
+	if publicOnly {
+		q = q.Where("visibility = ? AND status = ?", "public", "normal").
+			Where("(expires_at IS NULL OR expires_at > ?)", timeNow()).
+			Where("(access_password_hash = '' OR access_password_hash IS NULL)")
+	}
+	var cover model.Image
+	err := q.Order("CASE WHEN album_pos > 0 THEN 0 ELSE 1 END, album_pos ASC, id DESC").First(&cover).Error
+	if err == nil {
+		return cover.Key, nil
+	}
+	if errors.Is(err, gorm.ErrRecordNotFound) {
+		return "", nil
+	}
+	return "", err
+}
+
 func (s *Service) view(alb model.Album) (AlbumView, error) {
 	var count int64
 	if err := s.db.Model(&model.Image{}).
 		Where("album_id = ? AND user_id = ? AND deleted_at IS NULL", alb.ID, alb.UserID).Count(&count).Error; err != nil {
 		return AlbumView{}, err
 	}
-	var cover model.Image
-	coverKey := ""
-	err := s.db.Where("album_id = ? AND user_id = ? AND deleted_at IS NULL", alb.ID, alb.UserID).
-		Order("created_at DESC, id DESC").First(&cover).Error
-	if err == nil {
-		coverKey = cover.Key
-	} else if !errors.Is(err, gorm.ErrRecordNotFound) {
+	coverKey, err := s.resolveCover(alb, false)
+	if err != nil {
 		return AlbumView{}, err
 	}
 	return AlbumView{Album: alb, Count: count, CoverKey: coverKey}, nil
@@ -111,7 +145,10 @@ func (s *Service) Create(userID uint64, name, visibility string) (*model.Album, 
 	if err != nil {
 		return nil, err
 	}
-	alb := &model.Album{UserID: userID, Name: name, Visibility: vis, DefaultView: "gallery"}
+	alb := &model.Album{
+		UserID: userID, Name: name, Visibility: vis,
+		DefaultView: "gallery", ListInPlaza: true,
+	}
 	if err := s.db.Create(alb).Error; err != nil {
 		return nil, err
 	}
@@ -168,14 +205,6 @@ func (s *Service) GetPublic(id uint64) (*AlbumView, error) {
 
 // viewPublic 统计/封面仅 public+normal+未过期+非口令图（口令图不出现在访客封面网格）。
 func (s *Service) viewPublic(alb model.Album) (AlbumView, error) {
-	q := s.db.Model(&model.Image{}).
-		Where("album_id = ? AND user_id = ? AND deleted_at IS NULL AND visibility = ? AND status = ?",
-			alb.ID, alb.UserID, "public", "normal").
-		Where("expires_at IS NULL OR expires_at > NOW()").
-		Where("access_password_hash = '' OR access_password_hash IS NULL")
-	// SQLite 兼容：NOW() 在 SQLite 可能不行 — 用 gorm 表达式 time.Now()
-	// 改用 Where 与 imagesvc 一致
-	_ = q
 	var count int64
 	nowQ := s.db.Model(&model.Image{}).
 		Where("album_id = ? AND user_id = ? AND deleted_at IS NULL AND visibility = ? AND status = ?",
@@ -185,16 +214,8 @@ func (s *Service) viewPublic(alb model.Album) (AlbumView, error) {
 	if err := nowQ.Count(&count).Error; err != nil {
 		return AlbumView{}, err
 	}
-	var cover model.Image
-	coverKey := ""
-	err := s.db.Where("album_id = ? AND user_id = ? AND deleted_at IS NULL AND visibility = ? AND status = ?",
-		alb.ID, alb.UserID, "public", "normal").
-		Where("(expires_at IS NULL OR expires_at > ?)", timeNow()).
-		Where("(access_password_hash = '' OR access_password_hash IS NULL)").
-		Order("created_at DESC, id DESC").First(&cover).Error
-	if err == nil {
-		coverKey = cover.Key
-	} else if !errors.Is(err, gorm.ErrRecordNotFound) {
+	coverKey, err := s.resolveCover(alb, true)
+	if err != nil {
 		return AlbumView{}, err
 	}
 	return AlbumView{Album: alb, Count: count, CoverKey: coverKey}, nil
@@ -226,27 +247,35 @@ func (s *Service) ListPublicImages(albumID uint64, cursor string, limit int) ([]
 		return nil, "", err
 	}
 	q := s.db.Model(&model.Image{}).
-		Select("images.key, images.name, images.ext, files.width, files.height, files.size, images.id").
+		Select("images.key, images.name, images.ext, files.width, files.height, files.size, images.id, images.album_pos").
 		Joins("JOIN files ON files.id = images.file_id").
 		Where("images.album_id = ? AND images.user_id = ? AND images.deleted_at IS NULL", alb.ID, alb.UserID).
 		Where("images.visibility = ? AND images.status = ?", "public", "normal").
 		Where("(images.expires_at IS NULL OR images.expires_at > ?)", timeNow()).
 		Where("(images.access_password_hash = '' OR images.access_password_hash IS NULL)").
-		Order("images.id DESC")
+		Order("images.album_pos ASC, images.id DESC")
 	if cursor != "" {
+		// cursor = "pos:id"；兼容旧仅 id
+		var pos int
 		var cid uint64
-		if _, err := fmt.Sscanf(cursor, "%d", &cid); err == nil && cid > 0 {
+		if n, _ := fmt.Sscanf(cursor, "%d:%d", &pos, &cid); n == 2 && cid > 0 {
+			q = q.Where(
+				"images.album_pos > ? OR (images.album_pos = ? AND images.id < ?)",
+				pos, pos, cid,
+			)
+		} else if _, err := fmt.Sscanf(cursor, "%d", &cid); err == nil && cid > 0 {
 			q = q.Where("images.id < ?", cid)
 		}
 	}
 	type row struct {
-		Key    string
-		Name   string
-		Ext    string
-		Width  int
-		Height int
-		Size   int64
-		ID     uint64
+		Key      string
+		Name     string
+		Ext      string
+		Width    int
+		Height   int
+		Size     int64
+		ID       uint64
+		AlbumPos int
 	}
 	var rows []row
 	if err := q.Limit(limit + 1).Scan(&rows).Error; err != nil {
@@ -254,7 +283,8 @@ func (s *Service) ListPublicImages(albumID uint64, cursor string, limit int) ([]
 	}
 	next := ""
 	if len(rows) > limit {
-		next = fmt.Sprintf("%d", rows[limit-1].ID)
+		last := rows[limit-1]
+		next = fmt.Sprintf("%d:%d", last.AlbumPos, last.ID)
 		rows = rows[:limit]
 	}
 	out := make([]PublicImage, 0, len(rows))
@@ -267,7 +297,20 @@ func (s *Service) ListPublicImages(albumID uint64, cursor string, limit int) ([]
 // timeNow 可测；生产为 time.Now。
 var timeNow = func() time.Time { return time.Now() }
 
-func (s *Service) Update(userID, id uint64, name, visibility, defaultView *string) (*model.Album, error) {
+// UpdatePatch 属主更新相册可选字段；指针 nil 表示不改。
+// AccessPassword：nil=不改；""=清除；非空=写入哈希。
+// CoverKey：nil=不改；""=清除手动封面；非空=校验图在相册内。
+type UpdatePatch struct {
+	Name           *string
+	Visibility     *string
+	DefaultView    *string
+	Description    *string
+	CoverKey       *string
+	AccessPassword *string
+	ListInPlaza    *bool
+}
+
+func (s *Service) Update(userID, id uint64, p UpdatePatch) (*model.Album, error) {
 	var alb model.Album
 	err := s.db.Where("id = ? AND user_id = ?", id, userID).First(&alb).Error
 	if errors.Is(err, gorm.ErrRecordNotFound) {
@@ -277,32 +320,73 @@ func (s *Service) Update(userID, id uint64, name, visibility, defaultView *strin
 		return nil, err
 	}
 	updates := map[string]any{}
-	if name != nil {
-		n := strings.TrimSpace(*name)
+	if p.Name != nil {
+		n := strings.TrimSpace(*p.Name)
 		if n == "" || len(n) > 128 {
 			return nil, ErrInvalidName
 		}
 		updates["name"] = n
 	}
-	if visibility != nil {
-		v, err := normVis(*visibility)
+	if p.Visibility != nil {
+		v, err := normVis(*p.Visibility)
 		if err != nil {
 			return nil, err
 		}
 		updates["visibility"] = v
 	}
-	if defaultView != nil {
-		dv, err := normDefaultView(*defaultView)
+	if p.DefaultView != nil {
+		dv, err := normDefaultView(*p.DefaultView)
 		if err != nil {
 			return nil, err
 		}
 		updates["default_view"] = dv
 	}
+	if p.Description != nil {
+		d := strings.TrimSpace(*p.Description)
+		if len(d) > 2000 {
+			return nil, ErrInvalidDescription
+		}
+		updates["description"] = d
+	}
+	if p.CoverKey != nil {
+		k := strings.TrimSpace(*p.CoverKey)
+		if k == "" {
+			updates["cover_key"] = ""
+		} else {
+			var n int64
+			if err := s.db.Model(&model.Image{}).
+				Where("key = ? AND album_id = ? AND user_id = ? AND deleted_at IS NULL", k, id, userID).
+				Count(&n).Error; err != nil {
+				return nil, err
+			}
+			if n == 0 {
+				return nil, ErrInvalidCover
+			}
+			updates["cover_key"] = k
+		}
+	}
+	if p.AccessPassword != nil {
+		pw := strings.TrimSpace(*p.AccessPassword)
+		if pw == "" {
+			updates["access_password_hash"] = ""
+		} else {
+			if len(pw) > 128 {
+				return nil, ErrInvalidPassword
+			}
+			h, err := hashAlbumPassword(pw)
+			if err != nil {
+				return nil, err
+			}
+			updates["access_password_hash"] = h
+		}
+	}
+	if p.ListInPlaza != nil {
+		updates["list_in_plaza"] = *p.ListInPlaza
+	}
 	if len(updates) > 0 {
 		if err := s.db.Model(&alb).Updates(updates).Error; err != nil {
 			return nil, err
 		}
-		// 刷新内存字段
 		if err := s.db.Where("id = ? AND user_id = ?", id, userID).First(&alb).Error; err != nil {
 			return nil, err
 		}

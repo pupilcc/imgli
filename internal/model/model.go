@@ -120,6 +120,8 @@ type Image struct {
 	UserID        *uint64 `gorm:"index"`               // 游客上传为 nil
 	FileID        uint64  `gorm:"index"`
 	AlbumID       *uint64 `gorm:"index"`
+	// AlbumPos 相册内排序：>0 时升序优先；0 表示未手动排序（公开/属主列表回落到 id/时间）。
+	AlbumPos      int     `gorm:"not null;default:0;index"`
 	Name          string  `gorm:"size:255"`
 	Ext           string  `gorm:"size:8"`
 	Visibility    string  `gorm:"size:8;default:public"`  // public | private
@@ -151,10 +153,26 @@ type Album struct {
 	Visibility string `gorm:"size:8;default:private"`
 	// DefaultView 公开访客页默认模式：gallery | immersive（空=gallery）。
 	DefaultView string `gorm:"size:16;not null;default:gallery"`
+	// Description 可选说明（公开页展示）。
+	Description string `gorm:"size:2000;not null;default:''"`
+	// CoverKey 手动封面图 key；空=自动取最新可展示图。
+	CoverKey string `gorm:"size:16;not null;default:''"`
+	// AccessPasswordHash 非空时访客须口令才能看 /a 列表（不挡图直链）；空=无口令。
+	AccessPasswordHash string `gorm:"size:255;not null;default:''"`
+	// ListInPlaza 相册内 public 图是否参与广场（默认 true）；无相册的图不受影响。
+	ListInPlaza bool `gorm:"not null;default:true"`
 	CreatedAt   time.Time
 	UpdatedAt   time.Time
 
 	User *User `gorm:"foreignKey:UserID;constraint:OnDelete:RESTRICT" json:"-"`
+}
+
+// AlbumAccessStat 相册页 PV 日聚合（仅公开访客）。
+type AlbumAccessStat struct {
+	ID      uint64 `gorm:"primaryKey"`
+	AlbumID uint64 `gorm:"uniqueIndex:idx_album_access,priority:1"`
+	Date    string `gorm:"size:10;uniqueIndex:idx_album_access,priority:2"` // 2006-01-02
+	Views   int64
 }
 
 type APIToken struct {
@@ -283,6 +301,6 @@ func AllModels() []any {
 		&User{}, &UserGroup{}, &File{}, &Image{}, &Album{},
 		&APIToken{}, &Session{}, &AuthToken{}, &InviteCode{},
 		&StoragePolicy{}, &Setting{}, &Task{}, &AuditLog{}, &SchemaVersion{},
-		&AccessStat{}, &RefererStat{}, &RefererImageStat{},
+		&AccessStat{}, &RefererStat{}, &RefererImageStat{}, &AlbumAccessStat{},
 	}
 }

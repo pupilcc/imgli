@@ -94,8 +94,11 @@ export interface Album {
   visibility: string
   /** 公开访客页默认：gallery | immersive */
   default_view?: 'gallery' | 'immersive' | string
+  description?: string
   image_count: number
   cover_key: string
+  list_in_plaza?: boolean
+  has_access_password?: boolean
   created_at: string
 }
 
@@ -105,14 +108,32 @@ export interface PublicAlbumMeta {
   name: string
   visibility: string
   default_view?: string
+  description?: string
   image_count: number
   cover_key: string
+  password_required?: boolean
+  has_access_password?: boolean
   created_at?: string
   owner?: {
     username: string
     nickname: string
     public_profile: boolean
   } | null
+}
+
+/** 广场/公开主页相册卡片。 */
+export interface PublicAlbumCard {
+  id: number
+  name: string
+  description?: string
+  image_count: number
+  cover_key: string
+  cover_url?: string
+  thumbnail_url?: string
+  views?: number
+  username: string
+  nickname: string
+  created_at: string
 }
 
 /** 公开相册访客网格/沉浸共用图行。 */
@@ -168,6 +189,7 @@ export interface ImageStats {
 }
 
 export interface BatchResult {
+  skipped?: boolean
   key: string
   ok: boolean
   error?: string

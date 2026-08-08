@@ -118,11 +118,11 @@ func TestUpdateDefaultView(t *testing.T) {
 		t.Fatal(err)
 	}
 	bad := "carousel"
-	if _, err := s.Update(uid, alb.ID, nil, nil, &bad); !errors.Is(err, ErrInvalidDefaultView) {
+	if _, err := s.Update(uid, alb.ID, UpdatePatch{DefaultView: &bad}); !errors.Is(err, ErrInvalidDefaultView) {
 		t.Fatalf("非法 default_view 应 ErrInvalidDefaultView, got %v", err)
 	}
 	imm := "immersive"
-	got, err := s.Update(uid, alb.ID, nil, nil, &imm)
+	got, err := s.Update(uid, alb.ID, UpdatePatch{DefaultView: &imm})
 	if err != nil {
 		t.Fatal(err)
 	}

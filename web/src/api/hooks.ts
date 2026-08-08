@@ -98,7 +98,7 @@ export interface ImagesFilter {
   format: 'ALL' | 'PNG' | 'JPG' | 'GIF' | 'WEBP'
   album: 'all' | 'none' | number
   visibility: 'all' | 'public' | 'private'
-  sort: 'date' | 'size' | 'name'
+  sort: 'date' | 'size' | 'name' | 'position'
 }
 
 export const defaultFilter: ImagesFilter = { q: '', format: 'ALL', album: 'all', visibility: 'all', sort: 'date' }
@@ -244,8 +244,19 @@ export function useDeleteImage() {
 export function useBatchImages() {
   const qc = useQueryClient()
   return useMutation({
-    mutationFn: (body: { action: 'delete' | 'visibility' | 'move'; keys: string[]; visibility?: string; album_id?: number | null }) =>
-      post<{ results: BatchResult[] }>('/images/batch', body),
+    mutationFn: (body: {
+      action: 'delete' | 'visibility' | 'move' | 'rename'
+      keys: string[]
+      visibility?: string
+      album_id?: number | null
+      name_pattern?: string
+      find?: string
+      replace?: string
+      replace_ignore_case?: boolean
+      clean_separators?: boolean
+      start_n?: number
+      album_name?: string
+    }) => post<{ results: BatchResult[] }>('/images/batch', body),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: queryKeys.imagesRoot })
       qc.invalidateQueries({ queryKey: queryKeys.quota })
@@ -274,9 +285,76 @@ export function useUpdateAlbum() {
       body,
     }: {
       id: number
-      body: { name?: string; visibility?: string; default_view?: 'gallery' | 'immersive' }
+      body: {
+        name?: string
+        visibility?: string
+        default_view?: 'gallery' | 'immersive'
+        description?: string
+        cover_key?: string
+        access_password?: string
+        list_in_plaza?: boolean
+      }
     }) => patch(`/albums/${id}`, body),
     onSuccess: () => qc.invalidateQueries({ queryKey: queryKeys.albums }),
+  })
+}
+
+export function useAlbumStats(id: number | undefined) {
+  return useQuery({
+    queryKey: ['album-stats', id],
+    enabled: !!id,
+    queryFn: () => api<{ total: number; daily: { date: string; views: number }[] }>(`/albums/${id}/stats`),
+  })
+}
+
+export function useAlbumReorder() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: ({ id, keys }: { id: number; keys: string[] }) =>
+      post<{ ok: boolean; count: number }>(`/albums/${id}/reorder`, { keys }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: queryKeys.imagesRoot })
+      qc.invalidateQueries({ queryKey: queryKeys.albums })
+    },
+  })
+}
+
+export function useAlbumSetImagesVisibility() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: ({ id, visibility }: { id: number; visibility: 'public' | 'private' }) =>
+      post<{ updated: number; visibility: string }>(`/albums/${id}/images/visibility`, { visibility }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: queryKeys.imagesRoot })
+      qc.invalidateQueries({ queryKey: queryKeys.albums })
+    },
+  })
+}
+
+export function usePlazaAlbums() {
+  return useInfiniteQuery({
+    queryKey: ['plaza-albums'],
+    initialPageParam: '' as string,
+    queryFn: ({ pageParam }) => {
+      const q = pageParam ? `?cursor=${encodeURIComponent(pageParam)}` : ''
+      return api<{ items: import('./types').PublicAlbumCard[]; next_cursor: string }>(`/plaza/albums${q}`)
+    },
+    getNextPageParam: (last) => last.next_cursor || undefined,
+  })
+}
+
+export function useUserAlbums(username: string) {
+  return useInfiniteQuery({
+    queryKey: ['u-albums', username],
+    enabled: !!username,
+    initialPageParam: '' as string,
+    queryFn: ({ pageParam }) => {
+      const q = pageParam ? `?cursor=${encodeURIComponent(pageParam)}` : ''
+      return api<{ items: import('./types').PublicAlbumCard[]; next_cursor: string }>(
+        `/u/${encodeURIComponent(username)}/albums${q}`,
+      )
+    },
+    getNextPageParam: (last) => last.next_cursor || undefined,
   })
 }
 

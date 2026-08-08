@@ -10,6 +10,27 @@ separate version in `go.mod` or `web/package.json`.
 
 ## [Unreleased]
 
+## [0.9.8] - 2026-08-08
+
+Theme: **Album management — settings modal, batch rename pipeline, share stats & plaza listing**.
+
+### Added
+
+- **Album owner tools:** description, manual cover, visitor access password (gates `/a` only), `list_in_plaza`, album PV stats (30-day chart), bulk set all images public/private, reorder via `album_pos`, settings modal (share / content / stats tabs).
+- **Public discovery of albums:** `GET /plaza/albums`, `GET /u/{username}/albums`; Explore and public profile **Albums** tabs.
+- **Batch rename pipeline:** optional find/replace (multi-keyword, case-insensitive, clean separators) then optional template (`{name}` `{original}` `{n}`/`{n:03}` `{yyyy}{mm}{dd}` `{ext}` `{album}`); start index; skip unchanged; in-batch conflict detection; full preview (only-changed filter).
+- **Album password unlock:** `POST /a/{id}/unlock` + cookie; public images list requires unlock when password set.
+
+### Changed
+
+- **Album detail UI:** settings/stats moved into modal so the page stays image-first (select all, order, cover, batch bar).
+- **Plaza eligibility:** images in albums with `list_in_plaza=false` are excluded from plaza feed; uncategorized public images unchanged.
+- **Public album image order:** respects `album_pos` (then id).
+
+### Fixed
+
+- **BatchBar Hooks order:** move `useMemo` above early return when selection is empty.
+
 ## [0.9.7] - 2026-08-08
 
 Theme: **Public album share dual-mode · solid page background · plaza opt-in clarity**.

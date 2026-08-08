@@ -29,25 +29,35 @@ func (s *Service) List(userID uint64, f Filter, cursor string, limit int) ([]Row
 		if derr != nil || cur.Sort != normSort(f.Sort) {
 			return nil, "", ErrBadCursor
 		}
-		cmp := "<"
-		if !desc {
-			cmp = ">"
-		}
-		// keyset: (col,id) 在边界之后 —— col cmp ? OR (col = ? AND images.id cmp ?)
-		cond := fmt.Sprintf("%s %s ? OR (%s = ? AND images.id %s ?)", col, cmp, col, cmp)
-		if f.Sort == "name" {
-			q = q.Where(cond, cur.ValStr, cur.ValStr, cur.ID)
+		if f.Sort == "position" {
+			// album_pos ASC, id DESC
+			q = q.Where("images.album_pos > ? OR (images.album_pos = ? AND images.id < ?)",
+				cur.ValInt, cur.ValInt, cur.ID)
 		} else {
-			q = q.Where(cond, cur.ValInt, cur.ValInt, cur.ID)
+			cmp := "<"
+			if !desc {
+				cmp = ">"
+			}
+			// keyset: (col,id) 在边界之后 —— col cmp ? OR (col = ? AND images.id cmp ?)
+			cond := fmt.Sprintf("%s %s ? OR (%s = ? AND images.id %s ?)", col, cmp, col, cmp)
+			if f.Sort == "name" {
+				q = q.Where(cond, cur.ValStr, cur.ValStr, cur.ID)
+			} else {
+				q = q.Where(cond, cur.ValInt, cur.ValInt, cur.ID)
+			}
 		}
 	}
-	dir := "DESC"
-	if !desc {
-		dir = "ASC"
+	q = q.Select("images.*, files.size AS sort_size")
+	if f.Sort == "position" {
+		q = q.Order("images.album_pos ASC, images.id DESC")
+	} else {
+		dir := "DESC"
+		if !desc {
+			dir = "ASC"
+		}
+		q = q.Order(fmt.Sprintf("%s %s, images.id %s", col, dir, dir))
 	}
-	q = q.Select("images.*, files.size AS sort_size").
-		Order(fmt.Sprintf("%s %s, images.id %s", col, dir, dir)).
-		Limit(limit + 1)
+	q = q.Limit(limit + 1)
 
 	var scans []listScan
 	if err := q.Scan(&scans).Error; err != nil {
@@ -63,6 +73,8 @@ func (s *Service) List(userID uint64, f Filter, cursor string, limit int) ([]Row
 			c.ValInt = last.SortSize
 		case "name":
 			c.ValStr = last.Name
+		case "position":
+			c.ValInt = int64(last.AlbumPos)
 		default:
 			c.ValInt = int64(last.ID)
 		}

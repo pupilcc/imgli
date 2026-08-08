@@ -15,4 +15,10 @@ export default {
   copyExternal: '复制外链',
   externalLink: '外链',
   close: '关闭',
+  tabImages: '图片',
+  tabAlbums: '相册',
+  emptyAlbums: '还没有公开相册',
+  emptyAlbumsDesc: '公开相册需设为公开，且至少有一张可展示的公开图。',
+  albumImages: '{count} 张',
+  albumViews: '{count} 次访问',
 }

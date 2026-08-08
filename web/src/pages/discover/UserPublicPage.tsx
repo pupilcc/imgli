@@ -1,11 +1,12 @@
 import { useState } from 'react'
 import { useParams } from 'react-router'
 import { ApiError } from '../../api/client'
-import { useUserImages, useUserPublic } from '../../api/hooks'
+import { useUserAlbums, useUserImages, useUserPublic } from '../../api/hooks'
 import type { DiscoverRow } from '../../api/types'
 import { useT } from '../../i18n'
 import { EmptyState } from '../../ui/EmptyState'
 import { Segmented } from '../../ui/Segmented'
+import { AlbumCard } from './AlbumCard'
 import { ImageCard } from './ImageCard'
 import { Lightbox } from './Lightbox'
 
@@ -13,14 +14,17 @@ const moreBtn =
   'h-8 cursor-pointer rounded-sm border border-border bg-surface px-[18px] text-sm-plus font-semibold text-ink hover:enabled:bg-soft disabled:cursor-default disabled:opacity-55'
 const centerMsg = 'px-4 py-20 text-center text-[13px] text-muted'
 
-/** 用户公开主页：资料头 + 公开图网格 + 灯箱。 */
+/** 用户公开主页：资料头 + 图片/相册 + 灯箱。 */
 export function UserPublicPage() {
   const { t, lang } = useT()
   const { username = '' } = useParams()
+  const [tab, setTab] = useState<'images' | 'albums'>('images')
   const [sort, setSort] = useState<'new' | 'hot'>('new')
   const prof = useUserPublic(username)
   const imgs = useUserImages(username, sort)
+  const albumsQ = useUserAlbums(username)
   const rows = imgs.data?.pages.flatMap((p) => p.items) ?? []
+  const albumRows = albumsQ.data?.pages.flatMap((p) => p.items) ?? []
   const [active, setActive] = useState<DiscoverRow | null>(null)
 
   const closed = prof.error instanceof ApiError && prof.error.httpStatus === 404
@@ -29,6 +33,10 @@ export function UserPublicPage() {
   const sortOptions = [
     { value: 'new' as const, label: t('discover.sortNew') },
     { value: 'hot' as const, label: t('discover.sortHot') },
+  ]
+  const tabOptions = [
+    { value: 'images' as const, label: t('discover.tabImages') },
+    { value: 'albums' as const, label: t('discover.tabAlbums') },
   ]
 
   if (closed) {
@@ -63,11 +71,40 @@ export function UserPublicPage() {
         </div>
       </header>
 
-      <div className="flex justify-end">
-        <Segmented<'new' | 'hot'> options={sortOptions} value={sort} onChange={setSort} />
+      <div className="flex flex-wrap items-center justify-end gap-2">
+        <Segmented<'images' | 'albums'> options={tabOptions} value={tab} onChange={setTab} />
+        {tab === 'images' && (
+          <Segmented<'new' | 'hot'> options={sortOptions} value={sort} onChange={setSort} />
+        )}
       </div>
 
-      {imgs.isLoading ? (
+      {tab === 'albums' ? (
+        albumsQ.isLoading ? (
+          <div className={centerMsg}>{t('discover.loading')}</div>
+        ) : albumRows.length === 0 ? (
+          <EmptyState title={t('discover.emptyAlbums')} />
+        ) : (
+          <>
+            <div className="grid grid-cols-[repeat(auto-fill,minmax(200px,1fr))] gap-3.5">
+              {albumRows.map((c) => (
+                <AlbumCard key={c.id} card={c} />
+              ))}
+            </div>
+            {albumsQ.hasNextPage && (
+              <div className="flex justify-center py-2 pb-4">
+                <button
+                  type="button"
+                  className={moreBtn}
+                  disabled={albumsQ.isFetchingNextPage}
+                  onClick={() => albumsQ.fetchNextPage()}
+                >
+                  {albumsQ.isFetchingNextPage ? t('discover.loading') : t('discover.loadMore')}
+                </button>
+              </div>
+            )}
+          </>
+        )
+      ) : imgs.isLoading ? (
         <div className={centerMsg}>{t('discover.loading')}</div>
       ) : rows.length === 0 ? (
         <EmptyState title={t('discover.emptyPublic')} />

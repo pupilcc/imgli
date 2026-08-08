@@ -86,6 +86,9 @@ func orderSpec(sort string) (col string, desc, ok bool) {
 		return "files.size", true, true
 	case "name":
 		return "images.name", false, true
+	case "position":
+		// 相册内排序：album_pos 升序，同 pos 再按 id 降序
+		return "images.album_pos", false, true
 	default:
 		return "", false, false
 	}

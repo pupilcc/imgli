@@ -4,11 +4,13 @@ import (
 	"errors"
 	"net/http"
 	"strconv"
+	"time"
 
 	"github.com/go-chi/chi/v5"
 	"gorm.io/gorm"
 
 	"github.com/yixian-huang/imgli/internal/model"
+	"github.com/yixian-huang/imgli/internal/service/albumsvc"
 	"github.com/yixian-huang/imgli/internal/service/discoversvc"
 	"github.com/yixian-huang/imgli/internal/service/settings"
 )
@@ -163,4 +165,83 @@ func (h *DiscoverHandler) UserImages(w http.ResponseWriter, r *http.Request) {
 	}
 	w.Header().Set("Cache-Control", "public, max-age=30")
 	OK(w, map[string]any{"items": rows, "next_cursor": next})
+}
+
+func publicAlbumCardDTO(c albumsvc.PublicAlbumCard) map[string]any {
+	coverURL := ""
+	thumb := ""
+	if c.CoverKey != "" {
+		ext := c.CoverExt
+		if ext == "" {
+			ext = "jpg"
+		}
+		coverURL = "/i/" + c.CoverKey + "." + ext
+		thumb = "/t/" + c.CoverKey + ".jpg"
+	}
+	return map[string]any{
+		"id":            c.ID,
+		"name":          c.Name,
+		"description":   c.Description,
+		"image_count":   c.ImageCount,
+		"cover_key":     c.CoverKey,
+		"cover_url":     coverURL,
+		"thumbnail_url": thumb,
+		"views":         c.Views,
+		"username":      c.Username,
+		"nickname":      c.Nickname,
+		"created_at":    c.CreatedAt.Format(time.RFC3339),
+	}
+}
+
+// PlazaAlbums GET /api/v1/plaza/albums
+func (h *DiscoverHandler) PlazaAlbums(w http.ResponseWriter, r *http.Request) {
+	ok, err := h.enabled()
+	if err != nil {
+		Fail(w, http.StatusInternalServerError, CodeInternal, "服务器内部错误")
+		return
+	}
+	if !ok {
+		Fail(w, http.StatusNotFound, CodeNotFound, "资源不存在")
+		return
+	}
+	items, next, err := albumsvc.New(h.DB).ListPublicAlbums(r.URL.Query().Get("cursor"), parseLimit(r))
+	if err != nil {
+		Fail(w, http.StatusInternalServerError, CodeInternal, "服务器内部错误")
+		return
+	}
+	out := make([]map[string]any, 0, len(items))
+	for _, c := range items {
+		out = append(out, publicAlbumCardDTO(c))
+	}
+	w.Header().Set("Cache-Control", "public, max-age=30")
+	OK(w, map[string]any{"items": out, "next_cursor": next})
+}
+
+// UserAlbums GET /api/v1/u/{username}/albums
+func (h *DiscoverHandler) UserAlbums(w http.ResponseWriter, r *http.Request) {
+	ok, err := h.enabled()
+	if err != nil {
+		Fail(w, http.StatusInternalServerError, CodeInternal, "服务器内部错误")
+		return
+	}
+	if !ok {
+		Fail(w, http.StatusNotFound, CodeNotFound, "资源不存在")
+		return
+	}
+	username := chi.URLParam(r, "username")
+	items, next, err := albumsvc.New(h.DB).ListUserPublicAlbums(username, r.URL.Query().Get("cursor"), parseLimit(r))
+	if errors.Is(err, albumsvc.ErrNotFound) {
+		Fail(w, http.StatusNotFound, CodeNotFound, "主页不存在或未公开")
+		return
+	}
+	if err != nil {
+		Fail(w, http.StatusInternalServerError, CodeInternal, "服务器内部错误")
+		return
+	}
+	out := make([]map[string]any, 0, len(items))
+	for _, c := range items {
+		out = append(out, publicAlbumCardDTO(c))
+	}
+	w.Header().Set("Cache-Control", "public, max-age=30")
+	OK(w, map[string]any{"items": out, "next_cursor": next})
 }

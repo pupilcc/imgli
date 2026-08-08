@@ -15,4 +15,10 @@ export default {
   copyExternal: 'Copy link',
   externalLink: 'link',
   close: 'Close',
+  tabImages: 'Images',
+  tabAlbums: 'Albums',
+  emptyAlbums: 'No public albums yet',
+  emptyAlbumsDesc: 'Public albums must be public and contain at least one showable public image.',
+  albumImages: '{count} images',
+  albumViews: '{count} views',
 }

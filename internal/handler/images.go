@@ -242,10 +242,17 @@ const maxBatchKeys = 100
 // Batch POST /api/v1/images/batch
 func (h *ImageHandlers) Batch(w http.ResponseWriter, r *http.Request) {
 	var req struct {
-		Action     string   `json:"action"`
-		Keys       []string `json:"keys"`
-		Visibility string   `json:"visibility"`
-		AlbumID    *int64   `json:"album_id"`
+		Action            string   `json:"action"`
+		Keys              []string `json:"keys"`
+		Visibility        string   `json:"visibility"`
+		AlbumID           *int64   `json:"album_id"`
+		NamePattern       string   `json:"name_pattern"`
+		Find              string   `json:"find"`
+		Replace           string   `json:"replace"`
+		ReplaceIgnoreCase *bool    `json:"replace_ignore_case"`
+		CleanSeparators   *bool    `json:"clean_separators"`
+		StartN            *int     `json:"start_n"`
+		AlbumName         string   `json:"album_name"`
 	}
 	if err := DecodeJSON(r, &req); err != nil {
 		Fail(w, http.StatusBadRequest, CodeInvalidRequest, "请求体无效")
@@ -255,9 +262,28 @@ func (h *ImageHandlers) Batch(w http.ResponseWriter, r *http.Request) {
 		Fail(w, http.StatusBadRequest, CodeInvalidRequest, "keys 数量需为 1-100")
 		return
 	}
-	results, err := h.D.Img.Batch(PrincipalFrom(r).User.ID, req.Action, req.Keys, req.Visibility, req.AlbumID)
+	opts := imagesvc.BatchOpts{
+		Visibility:  req.Visibility,
+		AlbumID:     req.AlbumID,
+		NamePattern: req.NamePattern,
+		Find:        req.Find,
+		Replace:     req.Replace,
+		AlbumName:   req.AlbumName,
+	}
+	if req.ReplaceIgnoreCase != nil {
+		opts.ReplaceIgnoreCase = *req.ReplaceIgnoreCase
+	}
+	if req.CleanSeparators != nil {
+		opts.CleanSeparators = *req.CleanSeparators
+	} else if strings.TrimSpace(req.Find) != "" {
+		opts.CleanSeparators = true
+	}
+	if req.StartN != nil {
+		opts.StartN = *req.StartN
+	}
+	results, err := h.D.Img.Batch(PrincipalFrom(r).User.ID, req.Action, req.Keys, opts)
 	if errors.Is(err, imagesvc.ErrInvalidAction) {
-		Fail(w, http.StatusBadRequest, CodeInvalidRequest, "action 仅支持 delete|visibility|move")
+		Fail(w, http.StatusBadRequest, CodeInvalidRequest, "action 仅支持 delete|visibility|move|rename")
 		return
 	}
 	if err != nil {

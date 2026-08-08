@@ -49,6 +49,7 @@ var ErrNotFound = errors.New("discoversvc: 主页不存在或未公开")
 var ErrBadCursor = errors.New("discoversvc: 游标格式错误")
 
 // eligible 恒定资格硬过滤：只吐可公开陈列的图。所有列表/计数必须经此单点。
+// 相册 list_in_plaza=false 时排除该相册内图片；无相册（album_id NULL）仍可进广场。
 func (s *Service) eligible() *gorm.DB {
 	return s.db.Model(&model.Image{}).
 		Joins("JOIN users ON users.id = images.user_id").
@@ -58,7 +59,10 @@ func (s *Service) eligible() *gorm.DB {
 		Where("images.expires_at IS NULL OR images.expires_at > ?", time.Now()).
 		Where("images.user_id IS NOT NULL").
 		Where("users.public_profile = ?", true).
-		Where("users.status = ?", "active")
+		Where("users.status = ?", "active").
+		Where(`images.album_id IS NULL OR EXISTS (
+			SELECT 1 FROM albums WHERE albums.id = images.album_id AND albums.list_in_plaza = ?
+		)`, true)
 }
 
 // scanRow 一次 join 投影接收结构。

@@ -1,9 +1,11 @@
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import { Link, useParams } from 'react-router'
+import { ApiError } from '../../api/client'
 import { useConfig } from '../../api/hooks'
 import { useT } from '../../i18n'
 import { Button } from '../../ui/Button'
 import { EmptyState } from '../../ui/EmptyState'
+import { Input } from '../../ui/Input'
 import { Segmented } from '../../ui/Segmented'
 import { ShareBrandFooter } from '../../ui/ShareBrandFooter'
 import { AlbumImmersive } from './AlbumImmersive'
@@ -18,7 +20,9 @@ export function PublicAlbumPage() {
   const { id = '' } = useParams()
   const { t } = useT()
   const cfg = useConfig()
-  const { meta, imgs, rows, notFound } = usePublicAlbum(id)
+  const { meta, imgs, rows, notFound, locked, unlock } = usePublicAlbum(id)
+  const [gatePw, setGatePw] = useState('')
+  const [gateErr, setGateErr] = useState('')
 
   const {
     activeIndex,
@@ -69,6 +73,40 @@ export function PublicAlbumPage() {
     return <div className="px-4 py-12 text-center text-muted">{t('share.loadFailed')}</div>
   }
 
+  if (locked) {
+    return (
+      <div className="mx-auto flex min-h-[50vh] max-w-md flex-col items-center justify-center gap-4 px-4 py-16 text-center">
+        <h1 className="m-0 text-xl font-bold">{meta.data.name}</h1>
+        <p className="m-0 text-[13px] text-muted">{t('albums.passwordGateHint')}</p>
+        <form
+          className="flex w-full flex-col gap-2"
+          onSubmit={(e) => {
+            e.preventDefault()
+            setGateErr('')
+            unlock.mutate(gatePw, {
+              onError: (err) => {
+                if (err instanceof ApiError && err.httpStatus === 401) setGateErr(t('albums.passwordWrong'))
+                else setGateErr(t('albums.unlockFailed'))
+              },
+            })
+          }}
+        >
+          <Input
+            type="password"
+            value={gatePw}
+            onChange={(e) => setGatePw(e.target.value)}
+            placeholder={t('albums.passwordGateTitle')}
+            autoFocus
+          />
+          {gateErr && <div className="text-left text-[12px] text-err">{gateErr}</div>}
+          <Button type="submit" variant="primary" disabled={unlock.isPending || !gatePw.trim()}>
+            {t('albums.passwordSubmit')}
+          </Button>
+        </form>
+      </div>
+    )
+  }
+
   const canPrev = immersive && activeIndex != null && activeIndex > 0
   const canNext =
     immersive &&
@@ -87,6 +125,11 @@ export function PublicAlbumPage() {
         loading={imgs.isLoading}
         onEnterImmersive={openImmersive}
       />
+      {meta.data.description?.trim() && (
+        <p className="mt-[-1rem] mb-5 max-w-[52rem] text-[13.5px] leading-relaxed text-muted">
+          {meta.data.description}
+        </p>
+      )}
 
       {rows.length > 0 && (
         <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
