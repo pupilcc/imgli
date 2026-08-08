@@ -260,7 +260,11 @@ run_docker() {
 
   cleanup_bind() {
     docker rm -f "$name" >/dev/null 2>&1 || true
-    rm -rf "$data_bind"
+    # entrypoint chown's /data to uid 1000; host runner may not list/rm the bind path
+    if [ -n "${data_bind:-}" ] && [ -d "$data_bind" ]; then
+      docker run --rm -v "${data_bind}:/data" alpine:3.20 sh -c 'rm -rf /data/* /data/.[!.]* 2>/dev/null; true' >/dev/null 2>&1 || true
+      rmdir "$data_bind" 2>/dev/null || rm -rf "$data_bind" 2>/dev/null || true
+    fi
   }
   trap cleanup_bind EXIT INT TERM
 
@@ -268,12 +272,11 @@ run_docker() {
     docker logs "$name" 2>&1 | tail -n 80 >&2 || true
     die "docker (bind mount) not healthy — check entrypoint chown / SQLite path"
   fi
-  # SQLite file should exist after first request
+  # SQLite file should exist after first request (check inside container — host may lack list perms after chown)
   assert_user_journey "$base"
-  if [ ! -f "${data_bind}/imgli.db" ] && [ ! -f "${data_bind}/imgli.db-wal" ]; then
-    # Some setups create db on migrate at start
-    ls -la "$data_bind" >&2 || true
-    die "bind mount: expected imgli.db under host data dir after serve"
+  if ! docker exec "$name" sh -c 'test -f /data/imgli.db || test -f /data/imgli.db-wal'; then
+    docker exec "$name" ls -la /data >&2 || true
+    die "bind mount: expected imgli.db under /data after serve"
   fi
   info "docker bind-mount smoke PASS"
   info "docker smoke PASS"

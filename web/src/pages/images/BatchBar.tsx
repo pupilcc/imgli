@@ -26,6 +26,8 @@ function summarize(
   const bad = results.filter((r) => !r.ok).length
   if (bad === 0 && skipped === 0) return t('images.batchDone', { verb, ok })
   if (bad === 0) return t('images.batchDoneWithSkip', { verb, ok, skipped })
+  // 无 skip 时沿用旧文案，避免「跳过 0」
+  if (skipped === 0) return t('images.batchDonePartial', { verb, ok, bad })
   return t('images.batchDonePartialSkip', { verb, ok, skipped, bad })
 }
 
