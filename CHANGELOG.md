@@ -10,9 +10,28 @@ separate version in `go.mod` or `web/package.json`.
 
 ## [Unreleased]
 
+## [0.9.7] - 2026-08-08
+
+Theme: **Public album share dual-mode · solid page background · plaza opt-in clarity**.
+
 ### Added
 
+- **Public album share (`/a/:id`):** magazine hero, masonry gallery, cinematic immersive viewer (fullscreen, palette letterbox, filmstrip, zoom/swipe), owner `default_view` (`gallery`|`immersive`), deep links `?view=immersive&i=N`, infinite scroll + preload.
+- **Album default view:** owners set default visitor mode on album detail; visitors follow URL first, then owner default (no localStorage preference).
+- **Solid page background:** admin Appearance `theme_bg_color` (#RGB/#RRGGBB) → soft gradient wash under optional photo background + scrim.
+- **Plaza / public dual opt-in guidance:** upload, profile, and explore copy clarify that plaza listing needs both public image visibility and public profile.
 - **Release install smoke:** `scripts/ops-smoke-install.sh` plus release jobs `smoke-binary` / `smoke-docker` — pull published Release binary or Docker image, start fresh, check SPA/healthz, register first user, upload, GET object; Docker covers named volume and bind mount.
+
+### Changed
+
+- **Visitor album link / copy feedback:** public album copy uses shared toast path; share/album footers unified via `ShareBrandFooter`.
+- **Segmented control:** selected chip text/background contrast hard-locked via CSS variables (`data-segmented-active`) so labels stay readable on accent.
+- **Public album structure:** extract hooks (`usePublicAlbum`, `useAlbumViewMode`), hero/masonry components, immersive icons/fullscreen helper, and shared `albumLinks` types.
+
+### Fixed
+
+- Public album visitor links that previously failed silently when copy/open needed feedback.
+- Nested invalid interactive markup on album share surfaces (button-in-anchor style issues).
 
 ## [0.9.6] - 2026-08-06
 
