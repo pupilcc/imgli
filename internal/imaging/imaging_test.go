@@ -70,3 +70,26 @@ func TestThumbnailNoUpscale(t *testing.T) {
 		t.Errorf("被放大了: %v", img.Bounds())
 	}
 }
+
+func TestThumbnailRejectsTooManyPixels(t *testing.T) {
+	// 用小图 + 压低像素预算，避免测试里分配巨型位图。
+	old := MaxDecodePixels
+	MaxDecodePixels = 100 // 300×200 alphaPNG = 60k 像素 >> 100
+	t.Cleanup(func() { MaxDecodePixels = old })
+	_, err := NewGo().Thumbnail(bytes.NewReader(alphaPNG(t)), 400)
+	if !errors.Is(err, ErrTooLarge) {
+		t.Fatalf("err=%v, want ErrTooLarge", err)
+	}
+}
+
+func TestThumbnailRejectsOversizedBytes(t *testing.T) {
+	// 伪造超大输入：LimitReader 在读满 MaxThumbSourceBytes+1 后判 TooLarge
+	old := MaxThumbSourceBytes
+	MaxThumbSourceBytes = 1024
+	t.Cleanup(func() { MaxThumbSourceBytes = old })
+	blob := bytes.Repeat([]byte{0x00}, 2048)
+	_, err := NewGo().Thumbnail(bytes.NewReader(blob), 400)
+	if !errors.Is(err, ErrTooLarge) {
+		t.Fatalf("err=%v, want ErrTooLarge", err)
+	}
+}

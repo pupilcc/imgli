@@ -3,7 +3,7 @@
 | File | Purpose |
 |------|---------|
 | [`backup-sqlite.sh`](backup-sqlite.sh) | Online SQLite `.backup` + retention (env-overridable paths) |
-| [`health-check.sh`](health-check.sh) | Disk / process / queue snapshot (legacy VIP defaults) |
+| [`health-check.sh`](health-check.sh) | Disk / process / queue / cgroup memory / local HTTP; optional `AUTO_RESTART=1` |
 | [`../../scripts/ops-deploy-baili.sh`](../../scripts/ops-deploy-baili.sh) | Deploy GitHub Release binary → `/opt/baili` + restart `baili` |
 | [`../../scripts/ops-smoke-public.sh`](../../scripts/ops-smoke-public.sh) | Public SPA smoke (root / healthz / JS / config) |
 | [`../../scripts/ops-smoke-install.sh`](../../scripts/ops-smoke-install.sh) | Install-path smoke: docker/binary start + register + upload |

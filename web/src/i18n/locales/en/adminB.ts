@@ -288,6 +288,8 @@ export default {
   enableTextWatermark: 'Enable text watermark',
   textWatermark: 'Text watermark',
   textWatermarkPlaceholder: 'e.g. Imgli · img.li',
+  textWatermarkHint:
+    'Embedded font covers common CJK (GB2312 level-1) plus Latin/punctuation; unsupported characters are rejected on save (they would render as tofu boxes).',
   watermarkPos: 'Watermark position',
   opacity: 'Opacity',
   textOpacityAria: 'Text watermark opacity',
@@ -347,7 +349,7 @@ export default {
   removeLink: 'Remove link',
   htmlInject: 'Custom HTML',
   htmlInjectWarn:
-    'Admin-only. You may inject analytics scripts; broken or malicious markup affects the whole site. Do not paste untrusted HTML.',
+    'Admin-only. You may inject analytics scripts; broken or malicious markup affects the whole site. Do not paste untrusted HTML. Scripts run after page load (including analytics).',
   htmlHead: 'Inject into head',
   htmlBodyEnd: 'Inject before body end',
 

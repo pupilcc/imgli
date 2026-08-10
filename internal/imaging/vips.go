@@ -103,16 +103,19 @@ func (vipsProcessor) Thumbnail(r io.Reader, maxEdge int) ([]byte, error) {
 	if err := ensureVips(); err != nil {
 		return nil, err
 	}
-	data, err := io.ReadAll(r)
+	data, err := readThumbSource(r)
 	if err != nil {
 		return nil, err
 	}
-	if len(data) == 0 {
-		return nil, ErrUnsupported
+	// vips 有 shrink-on-load，像素上限可放宽，但仍拒绝明显解压炸弹与超大文件。
+	if err := checkDecodeBudget(data); err != nil {
+		return nil, err
 	}
 	if maxEdge < 1 {
 		maxEdge = 1
 	}
+	release := acquireThumbSlot()
+	defer release()
 
 	var out unsafe.Pointer
 	var outLen C.size_t

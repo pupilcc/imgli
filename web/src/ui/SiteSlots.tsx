@@ -184,6 +184,51 @@ export function SiteFooter({ footer, siteName, ossCredit, sourceUrl, aboutEnable
   )
 }
 
+/**
+ * 把 template/innerHTML 解析出的节点挂到 target。
+ * 浏览器不会执行 via innerHTML/cloneNode 插入的 <script>，统计脚本会「进了 DOM 却不发请求」。
+ * 对 script 用 createElement 重建并拷贝属性/正文，外链与内联均可执行。
+ */
+function appendHTMLFragment(html: string, target: ParentNode): Node[] {
+  const tpl = document.createElement('template')
+  tpl.innerHTML = html
+  const mounted: Node[] = []
+
+  const activateScripts = (root: ParentNode) => {
+    // 静态 NodeList：替换时边遍历边改 DOM 安全
+    const scripts = Array.from(root.querySelectorAll('script'))
+    for (const old of scripts) {
+      const s = document.createElement('script')
+      for (const attr of Array.from(old.attributes)) {
+        s.setAttribute(attr.name, attr.value)
+      }
+      s.text = old.textContent ?? ''
+      old.replaceWith(s)
+    }
+  }
+
+  Array.from(tpl.content.childNodes).forEach((n) => {
+    if (n.nodeName === 'SCRIPT') {
+      const old = n as HTMLScriptElement
+      const s = document.createElement('script')
+      for (const attr of Array.from(old.attributes)) {
+        s.setAttribute(attr.name, attr.value)
+      }
+      s.text = old.textContent ?? ''
+      target.appendChild(s)
+      mounted.push(s)
+      return
+    }
+    const c = n.cloneNode(true)
+    target.appendChild(c)
+    if (c instanceof Element) {
+      activateScripts(c)
+    }
+    mounted.push(c)
+  })
+  return mounted
+}
+
 export function HtmlInject({ inject }: { inject?: HTMLInject | null }) {
   useEffect(() => {
     if (!inject) return
@@ -191,22 +236,10 @@ export function HtmlInject({ inject }: { inject?: HTMLInject | null }) {
     const bodyNodes: Node[] = []
 
     if (inject.head?.trim()) {
-      const tpl = document.createElement('template')
-      tpl.innerHTML = inject.head
-      tpl.content.childNodes.forEach((n) => {
-        const c = n.cloneNode(true)
-        document.head.appendChild(c)
-        headNodes.push(c)
-      })
+      headNodes.push(...appendHTMLFragment(inject.head, document.head))
     }
     if (inject.body_end?.trim()) {
-      const tpl = document.createElement('template')
-      tpl.innerHTML = inject.body_end
-      tpl.content.childNodes.forEach((n) => {
-        const c = n.cloneNode(true)
-        document.body.appendChild(c)
-        bodyNodes.push(c)
-      })
+      bodyNodes.push(...appendHTMLFragment(inject.body_end, document.body))
     }
 
     return () => {

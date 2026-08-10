@@ -15,6 +15,7 @@ import (
 	"os"
 	"path/filepath"
 	"testing"
+	"time"
 
 	"github.com/yixian-huang/imgli/internal/model"
 	"github.com/yixian-huang/imgli/internal/service/settings"
@@ -336,4 +337,120 @@ func mustPNGBytes(t *testing.T, w, h int, c color.Color) []byte {
 		t.Fatal(err)
 	}
 	return buf.Bytes()
+}
+
+// TestBurnTextSecondUploadReuses 开文字水印后同字节二次上传须复用 live image（非新 key）。
+func TestBurnTextSecondUploadReuses(t *testing.T) {
+	svc, u, _ := setup(t)
+	dir := t.TempDir()
+	src := pngFile(t, dir, 120, 80)
+
+	proc := DefaultProcessing()
+	proc.TextWatermark.Enabled = true
+	proc.TextWatermark.Text = "测试水印"
+	if err := settings.New(svc.db).Set(model.SettingProcessing, proc); err != nil {
+		t.Fatal(err)
+	}
+
+	tmp1 := filepath.Join(dir, "a1.png")
+	copyFile(t, src, tmp1)
+	res1, err := svc.Save(context.Background(), tmp1, "a.png", u, Opts{}, "")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if res1.Instant || res1.Reused {
+		t.Fatal("first upload should be new")
+	}
+
+	tmp2 := filepath.Join(dir, "a2.png")
+	copyFile(t, src, tmp2)
+	res2, err := svc.Save(context.Background(), tmp2, "a.png", u, Opts{}, "")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !res2.Reused {
+		t.Errorf("second watermarked upload should reuse: instant=%v reused=%v", res2.Instant, res2.Reused)
+	}
+	if res1.Image.Key != res2.Image.Key {
+		t.Errorf("keys differ: %s vs %s", res1.Image.Key, res2.Image.Key)
+	}
+	if res1.File.Hash != res2.File.Hash {
+		t.Errorf("hashes differ: %s vs %s", res1.File.Hash, res2.File.Hash)
+	}
+}
+
+// TestBurnTextDeterministicHash 烧录后 content-hash 须确定性（秒传前提）。
+func TestBurnTextDeterministicHash(t *testing.T) {
+	svc, u, _ := setup(t)
+	dir := t.TempDir()
+	src := pngFile(t, dir, 200, 100)
+
+	proc := DefaultProcessing()
+	proc.TextWatermark.Enabled = true
+	proc.TextWatermark.Text = "白栗©2026"
+	if err := settings.New(svc.db).Set(model.SettingProcessing, proc); err != nil {
+		t.Fatal(err)
+	}
+
+	var hashes []string
+	for i := 0; i < 3; i++ {
+		tmp := filepath.Join(dir, fmt.Sprintf("d%d.png", i))
+		copyFile(t, src, tmp)
+		u2 := *u
+		u2.ID = 0
+		u2.Username = fmt.Sprintf("u%d", i)
+		u2.Email = fmt.Sprintf("u%d@t.local", i)
+		if err := svc.db.Create(&u2).Error; err != nil {
+			t.Fatal(err)
+		}
+		res, err := svc.Save(context.Background(), tmp, "x.png", &u2, Opts{}, "")
+		if err != nil {
+			t.Fatal(err)
+		}
+		hashes = append(hashes, res.File.Hash)
+	}
+	if hashes[0] != hashes[1] || hashes[1] != hashes[2] {
+		t.Errorf("watermarked hash not deterministic: %v", hashes)
+	}
+}
+
+// TestSaveInstantExpiresSkewReuses 带有效期再传：ExpiresAt 相差数秒仍应复用，
+// 避免 now+expires_in 漂移导致「同一张图可重复进图库」。
+func TestSaveInstantExpiresSkewReuses(t *testing.T) {
+	svc, u, _ := setup(t)
+	dir := t.TempDir()
+	src := pngFile(t, dir, 90, 60)
+
+	exp1 := time.Now().Add(24 * time.Hour)
+	tmp1 := filepath.Join(dir, "e1.png")
+	copyFile(t, src, tmp1)
+	res1, err := svc.Save(context.Background(), tmp1, "a.png", u, Opts{Visibility: "public", ExpiresAt: &exp1}, "")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	exp2 := exp1.Add(45 * time.Second) // 仍在 expiresReuseSkew 内
+	tmp2 := filepath.Join(dir, "e2.png")
+	copyFile(t, src, tmp2)
+	res2, err := svc.Save(context.Background(), tmp2, "a.png", u, Opts{Visibility: "public", ExpiresAt: &exp2}, "")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !res2.Reused {
+		t.Fatalf("skew within 2m should reuse: instant=%v reused=%v", res2.Instant, res2.Reused)
+	}
+	if res2.Image.Key != res1.Image.Key {
+		t.Fatalf("key %s vs %s", res2.Image.Key, res1.Image.Key)
+	}
+
+	exp3 := exp1.Add(5 * time.Minute) // 超出 skew → 新建
+	tmp3 := filepath.Join(dir, "e3.png")
+	copyFile(t, src, tmp3)
+	res3, err := svc.Save(context.Background(), tmp3, "a.png", u, Opts{Visibility: "public", ExpiresAt: &exp3}, "")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if res3.Reused || res3.Image.Key == res1.Image.Key {
+		t.Fatalf("skew >2m should new image: reused=%v key=%s", res3.Reused, res3.Image.Key)
+	}
 }

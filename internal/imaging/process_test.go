@@ -291,6 +291,42 @@ func TestWatermarkTextExtremeAspectBounded(t *testing.T) {
 	}
 }
 
+// TestWatermarkTextFitsNarrowCanvas 窄图+长文案须缩到完整入画，不得靠裁层丢末字。
+func TestWatermarkTextFitsNarrowCanvas(t *testing.T) {
+	// 280×200 足够高、偏窄：旧逻辑一次缩放后 +pad 仍可能 lw>w 再钳宽裁字。
+	src := image.NewRGBA(image.Rect(0, 0, 280, 200))
+	for i := range src.Pix {
+		src.Pix[i] = 255
+	}
+	var buf bytes.Buffer
+	if err := png.Encode(&buf, src); err != nil {
+		t.Fatal(err)
+	}
+	text := "白栗测试水印一段较长的文字内容"
+	out, err := WatermarkText(buf.Bytes(), text, "bc", 1.0, 0.12, 0)
+	if err != nil {
+		t.Fatal(err)
+	}
+	img, _, err := image.Decode(bytes.NewReader(out))
+	if err != nil {
+		t.Fatal(err)
+	}
+	b := img.Bounds()
+	// 底栏应有明显非白像素（完整水印笔画）
+	nonWhite := 0
+	for y := b.Max.Y - b.Dy()/3; y < b.Max.Y; y++ {
+		for x := b.Min.X; x < b.Max.X; x++ {
+			r, g, bb, _ := img.At(x, y).RGBA()
+			if r>>8 < 250 || g>>8 < 250 || bb>>8 < 250 {
+				nonWhite++
+			}
+		}
+	}
+	if nonWhite < 200 {
+		t.Errorf("窄画布水印笔画过少 nonWhite=%d（可能被裁切）", nonWhite)
+	}
+}
+
 func TestProcessRejects(t *testing.T) {
 	// 最小手造 GIF
 	gifImg := image.NewPaletted(image.Rect(0, 0, 1, 1), color.Palette{color.White})

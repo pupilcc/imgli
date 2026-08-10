@@ -2,6 +2,7 @@
 package upload
 
 import (
+	"fmt"
 	"strings"
 	"unicode/utf8"
 
@@ -117,6 +118,7 @@ func DefaultProcessing() Processing {
 
 // ValidateProcessing 校验(全部违规返回 ErrProcessingInvalid)。
 // output_format=webp 时还要求本构建 WebPEncodeAvailable（无 vips 的纯 Go 构建不可开启）。
+// 启用文字水印时还会检查嵌入字体字形覆盖，缺字会显示为口/方框，拒绝保存。
 func ValidateProcessing(p Processing) error {
 	tw := p.TextWatermark
 	if !imaging.Positions[tw.Position] {
@@ -132,6 +134,10 @@ func ValidateProcessing(p Processing) error {
 		text := strings.TrimSpace(tw.Text)
 		if text == "" || utf8.RuneCountInString(text) > 64 {
 			return ErrProcessingInvalid
+		}
+		if miss := imaging.MissingWatermarkRunes(text); len(miss) > 0 {
+			// 动态文案便于管理端定位缺字；仍可 errors.Is → ErrProcessingInvalid
+			return fmt.Errorf("%w: 文字水印含字体未覆盖字符（会显示为口）: %s", ErrProcessingInvalid, string(miss))
 		}
 	}
 	if p.MaxEdge != 0 && (p.MaxEdge < 256 || p.MaxEdge > 16384) {

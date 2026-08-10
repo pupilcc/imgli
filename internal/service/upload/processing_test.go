@@ -138,6 +138,11 @@ func TestValidateProcessingMatrix(t *testing.T) {
 			p.TextWatermark.Enabled = true
 			p.TextWatermark.Text = strings.Repeat("字", 65)
 		}},
+		{"enabled missing glyph", func(p *Processing) {
+			p.TextWatermark.Enabled = true
+			// U+A000 彝文音节不在子集内 → 会显示为口
+			p.TextWatermark.Text = "测\uA000试"
+		}},
 		{"max_edge 100", func(p *Processing) { p.MaxEdge = 100 }},
 		{"max_edge 20000", func(p *Processing) { p.MaxEdge = 20000 }},
 		{"jpeg_quality -1", func(p *Processing) { p.JpegQuality = -1 }},

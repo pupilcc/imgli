@@ -287,6 +287,8 @@ export default {
   enableTextWatermark: '启用文字水印',
   textWatermark: '文字水印',
   textWatermarkPlaceholder: '例如：图鲤 · img.li',
+  textWatermarkHint:
+    '嵌入字体覆盖常用汉字（GB2312 一级）与拉丁/标点；生僻字保存时会拒绝（否则显示为口口）。',
   watermarkPos: '水印位置',
   opacity: '不透明度',
   textOpacityAria: '文字水印不透明度',
@@ -345,7 +347,7 @@ export default {
   removeLink: '删除链接',
   htmlInject: '自定义 HTML',
   htmlInjectWarn:
-    '仅管理员可配置。可注入分析脚本等，错误或恶意代码会影响全站（自托管自伤面）。请勿粘贴不可信内容。',
+    '仅管理员可配置。可注入分析脚本等，错误或恶意代码会影响全站（自托管自伤面）。请勿粘贴不可信内容。脚本会在页面加载后执行（含统计 JS）。',
   htmlHead: '注入 head',
   htmlBodyEnd: '注入 body 末尾',
 

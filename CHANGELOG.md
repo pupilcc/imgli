@@ -10,6 +10,17 @@ separate version in `go.mod` or `web/package.json`.
 
 ## [Unreleased]
 
+## [0.9.10] - 2026-08-10
+
+Theme: **Stability patch — thumbnail memory, watermark/dedup, HTML inject scripts**.
+
+### Fixed
+
+- **Thumbnail OOM / cgroup thrash:** pure-Go `/t` and upload thumbs now cap source bytes (24MiB) and decode pixels (16MP), limit concurrent full-frame decodes (`IMGLI_THUMB_CONCURRENCY`, default 1), and skip oversized `?w=` generation instead of decoding multi-hundred-MB bitmaps. Ops: `MemoryHigh`/`GOMEMLIMIT` guidance in unit example; `health-check.sh` monitors cgroup memory + optional auto-restart.
+- **Text watermark incomplete / tofu (口口):** shrink font iteratively so padded outline fits the canvas (avoids clipping last glyphs); admin save rejects watermark text with glyphs missing from the embedded Noto Sans SC subset.
+- **Same image re-upload with expiry:** content-hash reuse compared absolute `ExpiresAt` by exact second; `now+expires_in` (and group default expiry) drifted across uploads so the same photo created multiple library rows. Reuse now tolerates ≤2 minutes skew.
+- **Custom HTML inject scripts never ran:** SPA mounted inject markup via `innerHTML`/`cloneNode`, so analytics `<script>` entered the DOM but did not execute or fetch. Scripts are re-created with `document.createElement('script')` so inline and external tags run.
+
 ## [0.9.9] - 2026-08-08
 
 Theme: **Storage policy operator UX — path template, CDN / path-style guidance**.
@@ -476,7 +487,11 @@ Theme: **Workflow & Trust** — CLI/integrations, share landing, privacy
 - Bilingual UI (中文/English), PWA, dark mode, text watermark, admin audit logs.
 - Docker Compose quick start and GitHub Actions CI (Go matrix, web, e2e smoke).
 
-[Unreleased]: https://github.com/yixian-huang/imgli/compare/v0.9.6...HEAD
+[Unreleased]: https://github.com/yixian-huang/imgli/compare/v0.9.10...HEAD
+[0.9.10]: https://github.com/yixian-huang/imgli/compare/v0.9.9...v0.9.10
+[0.9.9]: https://github.com/yixian-huang/imgli/compare/v0.9.8...v0.9.9
+[0.9.8]: https://github.com/yixian-huang/imgli/compare/v0.9.7...v0.9.8
+[0.9.7]: https://github.com/yixian-huang/imgli/compare/v0.9.6...v0.9.7
 [0.9.6]: https://github.com/yixian-huang/imgli/compare/v0.9.5...v0.9.6
 [0.9.5]: https://github.com/yixian-huang/imgli/compare/v0.9.4...v0.9.5
 [0.9.4]: https://github.com/yixian-huang/imgli/compare/v0.9.3...v0.9.4

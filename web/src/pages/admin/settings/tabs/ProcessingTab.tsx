@@ -83,6 +83,7 @@ export function ProcessingTab({ form, set }: { form: FormState; set: FormSet }) 
         value={form.twText}
         onChange={(e) => set('twText', e.target.value)}
       />
+      <span className={s.hint}>{t('adminB.textWatermarkHint')}</span>
       <div className={s.field}>
         <label className={s.label} htmlFor="proc-wm-pos">
           {t('adminB.watermarkPos')}

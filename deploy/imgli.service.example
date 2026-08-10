@@ -22,6 +22,17 @@ Restart=on-failure
 RestartSec=3
 TimeoutStopSec=35
 
+# Memory: pure-Go thumbnail decodes full bitmaps (~4*W*H). A 8k×8k image is
+# ~256MiB alone; keep High/Max well above that, or prefer -tags vips builds.
+# img.li incident 2026-08-09: MemoryHigh=400M thrashing hung the process
+# (threads stuck in mem_cgroup_handle_over_high). Floor for public hosts:
+MemoryHigh=768M
+MemoryMax=1G
+# Soft GC target so Go releases heap before hard cgroup pressure:
+Environment=GOMEMLIMIT=700MiB
+# Cap concurrent full-image thumbnail decodes (default in-process is 1):
+# Environment=IMGLI_THUMB_CONCURRENCY=1
+
 # Harden, but keep upgrade path open:
 ProtectSystem=strict
 ProtectHome=true
@@ -34,6 +45,5 @@ ReadWritePaths=/opt/imgli/data /opt/imgli/bin
 # ReadOnlyPaths=/opt/imgli/imgli.yaml
 
 Environment=IMGLI_TRUST_PROXY=true
-
 [Install]
 WantedBy=multi-user.target

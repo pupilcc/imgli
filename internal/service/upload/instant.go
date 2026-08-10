@@ -33,6 +33,11 @@ func (s *Service) findReusableLiveImage(userID, fileID uint64, visibility string
 	return nil, false
 }
 
+// expiresReuseSkew 秒传复用时允许的绝对过期时刻偏差。
+// handler 用 time.Now()+expires_in 生成 ExpiresAt；组默认有效期同理。
+// 若按秒严格相等，同一用户隔数秒再传同图会因时刻漂移建出多条 image（「可重复上传」）。
+const expiresReuseSkew = 2 * time.Minute
+
 func expiresEqual(a, b *time.Time) bool {
 	if a == nil && b == nil {
 		return true
@@ -40,7 +45,11 @@ func expiresEqual(a, b *time.Time) bool {
 	if a == nil || b == nil {
 		return false
 	}
-	return a.Unix() == b.Unix()
+	d := a.Sub(*b)
+	if d < 0 {
+		d = -d
+	}
+	return d <= expiresReuseSkew
 }
 
 func (s *Service) commitInstant(u *model.User, file *model.File, filename, ext, visibility, ip string, size int64, albumID *uint64, expiresAt *time.Time, maxViews int, accessPasswordHash string, storageQuota int64) (*model.Image, error) {

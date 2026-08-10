@@ -38,6 +38,26 @@ func TestSubsetFontCoversWatermarkSamples(t *testing.T) {
 				t.Errorf("%q 缺字形 U+%04X %c（更新 fonts/charset.txt 后跑 scripts/subset-watermark-font.sh）", s, r, r)
 			}
 		}
+		if miss := MissingWatermarkRunes(s); len(miss) != 0 {
+			t.Errorf("MissingWatermarkRunes(%q)=%q want empty", s, string(miss))
+		}
+	}
+}
+
+func TestMissingWatermarkRunesFindsUnsupported(t *testing.T) {
+	// 古彝文音节（U+A000 段）不在 Noto SC 子集内；用冷门字符探测 notdef。
+	miss := MissingWatermarkRunes("测试\uA000水印")
+	if len(miss) == 0 {
+		t.Fatal("应报告未覆盖字符")
+	}
+	found := false
+	for _, r := range miss {
+		if r == '\uA000' {
+			found = true
+		}
+	}
+	if !found {
+		t.Errorf("miss=%q 应含 U+A000", string(miss))
 	}
 }
 

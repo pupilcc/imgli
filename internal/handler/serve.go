@@ -324,14 +324,27 @@ func (h *ServeHandlers) streamWidthThumb(w http.ResponseWriter, r *http.Request,
 		// singleflight：同对象同边长并发 miss 只生成一次，防缓存击穿。
 		sfKey := file.Hash + "|w" + strconv.Itoa(width) + "|" + file.Surface
 		_, genErr, _ := h.thumbSF.Do(sfKey, func() (any, error) {
+			// 已知像素过大则跳过现场解码（pure-Go 全图 RGBA 可达数百 MB）。
+			if file.Width > 0 && file.Height > 0 {
+				if int64(file.Width)*int64(file.Height) > int64(imaging.MaxDecodePixels) {
+					return nil, errThumbGen
+				}
+			}
+			if file.Size > int64(imaging.MaxThumbSourceBytes) {
+				return nil, errThumbGen
+			}
 			src, oerr := d.Open(r.Context(), file.Path)
 			if oerr != nil {
 				return nil, oerr
 			}
-			raw, rerr := io.ReadAll(src)
+			// Thumbnail 内再 LimitReader；此处仍限流，避免先把巨型对象完整拉入堆。
+			raw, rerr := io.ReadAll(io.LimitReader(src, int64(imaging.MaxThumbSourceBytes)+1))
 			_ = src.Close()
 			if rerr != nil {
 				return nil, rerr
+			}
+			if len(raw) > imaging.MaxThumbSourceBytes {
+				return nil, errThumbGen
 			}
 			out, terr := h.proc().Thumbnail(bytes.NewReader(raw), width)
 			if terr != nil {
