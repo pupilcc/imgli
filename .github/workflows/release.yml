@@ -122,7 +122,32 @@ jobs:
             type=semver,pattern=v{{version}}
             type=raw,value=latest,enable=${{ !contains(github.ref_name, '-') }}
 
-      - uses: docker/build-push-action@v6
+      # GHCR push can hit secondary rate limits (403) even after a successful build
+      # (v0.9.10). One cooldown + retry usually clears it; GHA cache keeps rebuild cheap.
+      - name: Build and push (amd64)
+        id: push_amd64
+        continue-on-error: true
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          push: true
+          platforms: linux/amd64
+          build-args: |
+            VERSION=${{ github.ref_name }}
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Cooldown before GHCR push retry
+        if: steps.push_amd64.outcome == 'failure'
+        run: |
+          echo "amd64 push failed (often GHCR secondary rate limit); waiting 2m then retry"
+          sleep 120
+
+      - name: Build and push (amd64 retry)
+        if: steps.push_amd64.outcome == 'failure'
+        uses: docker/build-push-action@v6
         with:
           context: .
           push: true
