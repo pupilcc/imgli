@@ -91,3 +91,4 @@ func TestWebPEncodeUnavailableOnPureGo(t *testing.T) {
 		t.Errorf("err=%v want ErrUnsupported", err)
 	}
 }
+

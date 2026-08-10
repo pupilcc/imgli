@@ -226,11 +226,11 @@ func watermarkTextImage(base image.Image, text, position string, opacity, sizeRa
 	}
 
 	// 迭代收缩字号，直到描边+padding 后的层能完整放入画布。
-	// 旧实现单次线性缩放后仍可能因取整/描边导致 lw>w，再钳层宽会裁掉末尾字形（「字不全」）。
+	// 旧实现单次线性缩放后仍可能因取整导致 lw>w，再钳层宽会裁掉末尾字形（「字不全」）。
+	// pad=1 同时覆盖四向 1px 描边外扩（与历史行为一致，避免把层预算撑到 2+2）。
 	const pad = 1
-	const outline = 1 // 四向 1px 黑描边
 	var face font.Face
-	var textW, textH, ascent int
+	var textW, textH, ascent, descent int
 	for attempt := 0; attempt < 12; attempt++ {
 		if size < 1 {
 			size = 1
@@ -244,7 +244,7 @@ func watermarkTextImage(base image.Image, text, position string, opacity, sizeRa
 		textW = d.MeasureString(text).Ceil()
 		m := face.Metrics()
 		ascent = m.Ascent.Ceil()
-		descent := m.Descent.Ceil()
+		descent = m.Descent.Ceil()
 		textH = ascent + descent
 		if textW < 1 {
 			textW = 1
@@ -252,26 +252,25 @@ func watermarkTextImage(base image.Image, text, position string, opacity, sizeRa
 		if textH < 1 {
 			textH = 1
 		}
-		// 描边向外扩 outline px，层尺寸需预留
-		needW := textW + 2*(pad+outline)
-		needH := textH + 2*(pad+outline)
+		needW := textW + 2*pad
+		needH := textH + 2*pad
 		fitsW := w < 1 || needW <= w
 		fitsH := h < 1 || needH <= h
 		if fitsW && fitsH {
 			break
 		}
 		scale := 1.0
-		if !fitsW && textW > 0 && w > 2*(pad+outline) {
-			scale = float64(w-2*(pad+outline)) / float64(textW)
+		if !fitsW && textW > 0 && w > 2*pad {
+			scale = float64(w-2*pad) / float64(textW)
 		}
-		if !fitsH && textH > 0 && h > 2*(pad+outline) {
-			sh := float64(h-2*(pad+outline)) / float64(textH)
+		if !fitsH && textH > 0 && h > 2*pad {
+			sh := float64(h-2*pad) / float64(textH)
 			if sh < scale {
 				scale = sh
 			}
 		}
 		if scale >= 1 || scale <= 0 {
-			// 画布极小：落到最小字号后钳层（极端条带图保底）
+			// 画布极小（如 e2e 3×2）：落到最小字号后钳层，靠 Dot 钳制仍写出墨迹
 			if size <= 1 {
 				break
 			}
@@ -289,15 +288,15 @@ func watermarkTextImage(base image.Image, text, position string, opacity, sizeRa
 		size = next
 	}
 
-	lw := textW + 2*(pad+outline)
-	lh := textH + 2*(pad+outline)
+	lw := textW + 2*pad
+	lh := textH + 2*pad
 	if lw < 1 {
 		lw = 1
 	}
 	if lh < 1 {
 		lh = 1
 	}
-	// 极端画布仍装不下时钳层（条带图）；字号已尽量缩小
+	// 极端画布仍装不下时钳层（条带/微缩略图）；字号已尽量缩小
 	if w >= 1 && lw > w {
 		lw = w
 	}
@@ -307,8 +306,21 @@ func watermarkTextImage(base image.Image, text, position string, opacity, sizeRa
 	layer := image.NewRGBA(image.Rect(0, 0, lw, lh))
 	black := image.NewUniform(color.RGBA{A: 255})
 	white := image.NewUniform(color.RGBA{R: 255, G: 255, B: 255, A: 255})
-	baseDotX := pad + outline
-	baseDotY := pad + outline + ascent
+	// Dot 必须落在层内：层被钳到极小画布时若仍用 pad+ascent，baseline 会在层外 → 零像素水印 → 哈希不变误秒传
+	baseDotX := pad
+	if baseDotX >= lw {
+		baseDotX = 0
+	}
+	baseDotY := pad + ascent
+	if baseDotY >= lh {
+		baseDotY = lh - 1
+		if baseDotY < 1 {
+			baseDotY = 1
+		}
+	}
+	if baseDotY < 1 {
+		baseDotY = 1
+	}
 	for _, off := range [][2]int{{-1, 0}, {1, 0}, {0, -1}, {0, 1}} {
 		drawer := &font.Drawer{
 			Dst: layer, Src: black, Face: face,
