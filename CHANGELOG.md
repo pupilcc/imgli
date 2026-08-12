@@ -10,10 +10,18 @@ separate version in `go.mod` or `web/package.json`.
 
 ## [Unreleased]
 
+## [0.9.11] - 2026-08-12
+
+Theme: **Public homepage stats + album gallery click preference**.
+
 ### Added
 
 - **Public instance stats (optional, default off):** setting `public_stats` controls whether the guest homepage shows coarse local metrics (uptime days from a configurable `since` date, live image count, optional user count / used bytes). Exposed on `GET /api/v1/config` as a computed snapshot (60s process cache). Self-host stays unchanged until an operator enables it in Admin → 站点插槽.
 - **Album share click behavior:** per-album `click_to_immersive` (default on). When off, gallery thumbnails open the image share page instead of immersive; visitors can still enter immersive via toolbar / hero. Configure next to default view in album settings → share.
+
+### Changed
+
+- **Guest landing layout:** clearer hierarchy for announcement, instance stats strip, primary upload CTA, and secondary login when guest upload is off.
 
 ## [0.9.10] - 2026-08-10
 
@@ -492,7 +500,8 @@ Theme: **Workflow & Trust** — CLI/integrations, share landing, privacy
 - Bilingual UI (中文/English), PWA, dark mode, text watermark, admin audit logs.
 - Docker Compose quick start and GitHub Actions CI (Go matrix, web, e2e smoke).
 
-[Unreleased]: https://github.com/yixian-huang/imgli/compare/v0.9.10...HEAD
+[Unreleased]: https://github.com/yixian-huang/imgli/compare/v0.9.11...HEAD
+[0.9.11]: https://github.com/yixian-huang/imgli/compare/v0.9.10...v0.9.11
 [0.9.10]: https://github.com/yixian-huang/imgli/compare/v0.9.9...v0.9.10
 [0.9.9]: https://github.com/yixian-huang/imgli/compare/v0.9.8...v0.9.9
 [0.9.8]: https://github.com/yixian-huang/imgli/compare/v0.9.7...v0.9.8
