@@ -67,6 +67,11 @@ export default {
   defaultViewLabel: 'Visitor default view',
   defaultViewHint: 'What visitors see first when opening this album link; they can still switch.',
   defaultViewSaved: 'Visitor default view saved',
+  clickToImmersiveLabel: 'Click a photo',
+  clickToImmersiveHint: 'What happens when visitors tap a thumbnail in the gallery; they can still switch to immersive from the toolbar.',
+  clickToImmersiveOn: 'Open immersive',
+  clickToImmersiveOff: 'Open share page',
+  clickToImmersiveSaved: 'Click behavior saved',
   heroEnter: 'Enter immersive',
   scrollGallery: 'Browse album',
 

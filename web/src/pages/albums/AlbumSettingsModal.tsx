@@ -28,6 +28,7 @@ type Props = {
   onUpdate: (body: {
     visibility?: string
     default_view?: 'gallery' | 'immersive'
+    click_to_immersive?: boolean
     description?: string
     access_password?: string
     list_in_plaza?: boolean
@@ -67,6 +68,8 @@ export function AlbumSettingsModal({
   }, [open, album.id, album.description])
 
   const defaultView: AlbumPublicMode = album.default_view === 'immersive' ? 'immersive' : 'gallery'
+  /** 缺省 true：与后端默认一致 */
+  const clickToImmersive = album.click_to_immersive !== false
   const listInPlaza = album.list_in_plaza !== false
 
   const tabs: { value: AlbumSettingsTab; label: string }[] = [
@@ -149,6 +152,25 @@ export function AlbumSettingsModal({
                 if (v === defaultView) return
                 onUpdate({ default_view: v })
                 onSaved(t('albums.defaultViewSaved'))
+              }}
+            />
+          </section>
+
+          <section data-testid="album-click-to-immersive">
+            <div className="mb-0.5 text-[12.5px] font-semibold text-ink">{t('albums.clickToImmersiveLabel')}</div>
+            <div className="mb-2 text-[11.5px] text-muted">{t('albums.clickToImmersiveHint')}</div>
+            <Segmented<'on' | 'off'>
+              compact
+              options={[
+                { value: 'on', label: t('albums.clickToImmersiveOn') },
+                { value: 'off', label: t('albums.clickToImmersiveOff') },
+              ]}
+              value={clickToImmersive ? 'on' : 'off'}
+              onChange={(v) => {
+                const next = v === 'on'
+                if (next === clickToImmersive) return
+                onUpdate({ click_to_immersive: next })
+                onSaved(t('albums.clickToImmersiveSaved'))
               }}
             />
           </section>

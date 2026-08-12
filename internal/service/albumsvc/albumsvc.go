@@ -147,7 +147,7 @@ func (s *Service) Create(userID uint64, name, visibility string) (*model.Album, 
 	}
 	alb := &model.Album{
 		UserID: userID, Name: name, Visibility: vis,
-		DefaultView: "gallery", ListInPlaza: true,
+		DefaultView: "gallery", ClickToImmersive: true, ListInPlaza: true,
 	}
 	if err := s.db.Create(alb).Error; err != nil {
 		return nil, err
@@ -301,13 +301,14 @@ var timeNow = func() time.Time { return time.Now() }
 // AccessPassword：nil=不改；""=清除；非空=写入哈希。
 // CoverKey：nil=不改；""=清除手动封面；非空=校验图在相册内。
 type UpdatePatch struct {
-	Name           *string
-	Visibility     *string
-	DefaultView    *string
-	Description    *string
-	CoverKey       *string
-	AccessPassword *string
-	ListInPlaza    *bool
+	Name             *string
+	Visibility       *string
+	DefaultView      *string
+	ClickToImmersive *bool
+	Description      *string
+	CoverKey         *string
+	AccessPassword   *string
+	ListInPlaza      *bool
 }
 
 func (s *Service) Update(userID, id uint64, p UpdatePatch) (*model.Album, error) {
@@ -340,6 +341,9 @@ func (s *Service) Update(userID, id uint64, p UpdatePatch) (*model.Album, error)
 			return nil, err
 		}
 		updates["default_view"] = dv
+	}
+	if p.ClickToImmersive != nil {
+		updates["click_to_immersive"] = *p.ClickToImmersive
 	}
 	if p.Description != nil {
 		d := strings.TrimSpace(*p.Description)

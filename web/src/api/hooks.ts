@@ -289,6 +289,7 @@ export function useUpdateAlbum() {
         name?: string
         visibility?: string
         default_view?: 'gallery' | 'immersive'
+        click_to_immersive?: boolean
         description?: string
         cover_key?: string
         access_password?: string

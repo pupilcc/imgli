@@ -94,6 +94,8 @@ export interface Album {
   visibility: string
   /** 公开访客页默认：gallery | immersive */
   default_view?: 'gallery' | 'immersive' | string
+  /** 画廊点击单张是否进入沉浸；默认 true，false 时点图进分享页 */
+  click_to_immersive?: boolean
   description?: string
   image_count: number
   cover_key: string
@@ -108,6 +110,8 @@ export interface PublicAlbumMeta {
   name: string
   visibility: string
   default_view?: string
+  /** 画廊点击单张是否进入沉浸；缺省按 true */
+  click_to_immersive?: boolean
   description?: string
   image_count: number
   cover_key: string

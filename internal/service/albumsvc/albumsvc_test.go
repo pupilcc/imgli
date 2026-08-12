@@ -117,6 +117,9 @@ func TestUpdateDefaultView(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+	if !alb.ClickToImmersive {
+		t.Error("新建相册 ClickToImmersive 默认应为 true")
+	}
 	bad := "carousel"
 	if _, err := s.Update(uid, alb.ID, UpdatePatch{DefaultView: &bad}); !errors.Is(err, ErrInvalidDefaultView) {
 		t.Fatalf("非法 default_view 应 ErrInvalidDefaultView, got %v", err)
@@ -135,6 +138,37 @@ func TestUpdateDefaultView(t *testing.T) {
 	}
 	if NormalizeDefaultView(v.Album.DefaultView) != "immersive" {
 		t.Errorf("public DefaultView=%q", v.Album.DefaultView)
+	}
+}
+
+func TestUpdateClickToImmersive(t *testing.T) {
+	s, uid := setup(t)
+	alb, err := s.Create(uid, "点击", "public")
+	if err != nil {
+		t.Fatal(err)
+	}
+	off := false
+	got, err := s.Update(uid, alb.ID, UpdatePatch{ClickToImmersive: &off})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got.ClickToImmersive {
+		t.Error("ClickToImmersive 应为 false")
+	}
+	v, err := s.GetPublic(alb.ID)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if v.Album.ClickToImmersive {
+		t.Error("public ClickToImmersive 应为 false")
+	}
+	on := true
+	got, err = s.Update(uid, alb.ID, UpdatePatch{ClickToImmersive: &on})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !got.ClickToImmersive {
+		t.Error("ClickToImmersive 应为 true")
 	}
 }
 

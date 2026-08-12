@@ -13,6 +13,8 @@ type Props = {
   isFetchingNextPage: boolean
   onFetchMore: () => void
   onOpenImmersive: (index0: number) => void
+  /** 点击缩略图是否进入沉浸；false 时改为打开图片分享页。缺省 true。 */
+  clickToImmersive?: boolean
 }
 
 /** 瀑布流网格 + 触底无限滚动哨兵。 */
@@ -23,6 +25,7 @@ export function PublicAlbumMasonry({
   isFetchingNextPage,
   onFetchMore,
   onOpenImmersive,
+  clickToImmersive = true,
 }: Props) {
   const { t } = useT()
   const sentinelRef = useRef<HTMLDivElement>(null)
@@ -61,19 +64,9 @@ export function PublicAlbumMasonry({
         className="columns-2 gap-3.5 sm:columns-3 lg:columns-4 [column-gap:0.9rem]"
         data-testid="album-masonry"
       >
-        {rows.map((r, i) => (
-          <div
-            key={r.key}
-            className="group relative mb-3.5 break-inside-avoid overflow-hidden rounded-[3px] bg-soft shadow-[0_1px_0_rgba(0,0,0,0.04)] [content-visibility:auto] [contain-intrinsic-size:220px] animate-[rise_0.4s_both]"
-            style={{ animationDelay: `${Math.min(i, 12) * 28}ms` }}
-          >
-            <button
-              type="button"
-              className="relative block w-full cursor-pointer border-0 bg-transparent p-0 text-left"
-              style={aspectStyle(r)}
-              onClick={() => onOpenImmersive(i)}
-              aria-label={r.name}
-            >
+        {rows.map((r, i) => {
+          const media = (
+            <>
               <img
                 src={r.thumbnail_url}
                 alt=""
@@ -85,19 +78,49 @@ export function PublicAlbumMasonry({
               <span className="pointer-events-none absolute right-2 bottom-2 left-2 truncate text-[11px] font-medium text-white opacity-0 drop-shadow transition-opacity duration-300 group-hover:opacity-100">
                 {r.name}
               </span>
-            </button>
-            <button
-              type="button"
-              className="absolute top-2 right-2 z-[1] hidden cursor-pointer rounded-full border border-white/30 bg-black/45 px-2.5 py-1 text-[10.5px] font-semibold text-white backdrop-blur-sm group-hover:inline-flex group-focus-within:inline-flex"
-              onClick={(e) => {
-                e.stopPropagation()
-                void copyText(sharePageURL(r), t('albums.copyImageShare'))
-              }}
+            </>
+          )
+          const shellCls =
+            'relative block w-full cursor-pointer border-0 bg-transparent p-0 text-left no-underline'
+          return (
+            <div
+              key={r.key}
+              className="group relative mb-3.5 break-inside-avoid overflow-hidden rounded-[3px] bg-soft shadow-[0_1px_0_rgba(0,0,0,0.04)] [content-visibility:auto] [contain-intrinsic-size:220px] animate-[rise_0.4s_both]"
+              style={{ animationDelay: `${Math.min(i, 12) * 28}ms` }}
             >
-              {t('albums.copyImageShare')}
-            </button>
-          </div>
-        ))}
+              {clickToImmersive ? (
+                <button
+                  type="button"
+                  className={shellCls}
+                  style={aspectStyle(r)}
+                  onClick={() => onOpenImmersive(i)}
+                  aria-label={r.name}
+                >
+                  {media}
+                </button>
+              ) : (
+                <a
+                  href={r.share_path || `/s/${r.key}`}
+                  className={shellCls}
+                  style={aspectStyle(r)}
+                  aria-label={r.name}
+                >
+                  {media}
+                </a>
+              )}
+              <button
+                type="button"
+                className="absolute top-2 right-2 z-[1] hidden cursor-pointer rounded-full border border-white/30 bg-black/45 px-2.5 py-1 text-[10.5px] font-semibold text-white backdrop-blur-sm group-hover:inline-flex group-focus-within:inline-flex"
+                onClick={(e) => {
+                  e.stopPropagation()
+                  void copyText(sharePageURL(r), t('albums.copyImageShare'))
+                }}
+              >
+                {t('albums.copyImageShare')}
+              </button>
+            </div>
+          )
+        })}
       </div>
       <div
         ref={sentinelRef}

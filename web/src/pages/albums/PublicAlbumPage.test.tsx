@@ -15,6 +15,8 @@ function mockBackend(opts: {
   empty?: boolean
   plazaBrand?: 'off' | 'site' | 'links'
   publicProfile?: boolean
+  /** undefined/true → click opens immersive; false → share link */
+  clickToImmersive?: boolean
 } = {}) {
   const branding = opts.plazaBrand ?? 'site'
   vi.stubGlobal(
@@ -82,6 +84,7 @@ function mockBackend(opts: {
               image_count: opts.empty ? 0 : 2,
               cover_key: opts.empty ? '' : 'k1',
               default_view: 'gallery',
+              click_to_immersive: opts.clickToImmersive !== false,
               owner: {
                 username: 'alice',
                 nickname: 'Alice',
@@ -186,6 +189,16 @@ it('点图进入沉浸：胶片条、切换下一张、请求全屏', async () =
   await user.click(within(shell).getByRole('button', { name: 'two.png' }))
   expect(await within(shell).findByText('2 / 2')).toBeInTheDocument()
   expect(within(shell).getByRole('link', { name: '打开分享页 →' })).toHaveAttribute('href', '/s/k2')
+})
+
+it('click_to_immersive=false 时缩略图为分享页链接且不进沉浸', async () => {
+  mockBackend({ clickToImmersive: false })
+  renderPage()
+  await screen.findByTestId('album-masonry')
+  const thumb = await screen.findByRole('link', { name: 'one.png' })
+  expect(thumb).toHaveAttribute('href', '/s/k1')
+  expect(screen.queryByRole('button', { name: 'one.png' })).not.toBeInTheDocument()
+  expect(screen.queryByTestId('album-immersive')).not.toBeInTheDocument()
 })
 
 it('深链 ?view=immersive&i=2 直接进沉浸第二张', async () => {

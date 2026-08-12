@@ -153,6 +153,8 @@ type Album struct {
 	Visibility string `gorm:"size:8;default:private"`
 	// DefaultView 公开访客页默认模式：gallery | immersive（空=gallery）。
 	DefaultView string `gorm:"size:16;not null;default:gallery"`
+	// ClickToImmersive 画廊瀑布流点击单张是否进入沉浸（默认 true）；false 时点图进分享页。
+	ClickToImmersive bool `gorm:"not null;default:true"`
 	// Description 可选说明（公开页展示）。
 	Description string `gorm:"size:2000;not null;default:''"`
 	// CoverKey 手动封面图 key；空=自动取最新可展示图。

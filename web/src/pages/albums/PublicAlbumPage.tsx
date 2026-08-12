@@ -162,6 +162,7 @@ export function PublicAlbumPage() {
           void imgs.fetchNextPage()
         }}
         onOpenImmersive={openImmersive}
+        clickToImmersive={meta.data.click_to_immersive !== false}
       />
 
       {immersive && activeIndex != null && rows[activeIndex] && (

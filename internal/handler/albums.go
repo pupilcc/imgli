@@ -27,6 +27,7 @@ func albumViewDTO(v *albumsvc.AlbumView) map[string]any {
 		"name":                a.Name,
 		"visibility":          a.Visibility,
 		"default_view":        albumsvc.NormalizeDefaultView(a.DefaultView),
+		"click_to_immersive":  a.ClickToImmersive,
 		"description":         a.Description,
 		"image_count":         v.Count,
 		"cover_key":           v.CoverKey,
@@ -81,8 +82,9 @@ func (h *AlbumHandlers) Create(w http.ResponseWriter, r *http.Request) {
 	case err == nil:
 		OK(w, map[string]any{
 			"id": alb.ID, "name": alb.Name, "visibility": alb.Visibility,
-			"default_view": albumsvc.NormalizeDefaultView(alb.DefaultView),
-			"list_in_plaza": alb.ListInPlaza,
+			"default_view":       albumsvc.NormalizeDefaultView(alb.DefaultView),
+			"click_to_immersive": alb.ClickToImmersive,
+			"list_in_plaza":      alb.ListInPlaza,
 		})
 	case errors.Is(err, albumsvc.ErrInvalidName), errors.Is(err, albumsvc.ErrInvalidVisibility):
 		Fail(w, http.StatusBadRequest, CodeInvalidRequest, err.Error())
@@ -240,13 +242,14 @@ func (h *AlbumHandlers) Update(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	var req struct {
-		Name           *string `json:"name"`
-		Visibility     *string `json:"visibility"`
-		DefaultView    *string `json:"default_view"`
-		Description    *string `json:"description"`
-		CoverKey       *string `json:"cover_key"`
-		AccessPassword *string `json:"access_password"`
-		ListInPlaza    *bool   `json:"list_in_plaza"`
+		Name             *string `json:"name"`
+		Visibility       *string `json:"visibility"`
+		DefaultView      *string `json:"default_view"`
+		ClickToImmersive *bool   `json:"click_to_immersive"`
+		Description      *string `json:"description"`
+		CoverKey         *string `json:"cover_key"`
+		AccessPassword   *string `json:"access_password"`
+		ListInPlaza      *bool   `json:"list_in_plaza"`
 	}
 	if err := DecodeJSON(r, &req); err != nil {
 		Fail(w, http.StatusBadRequest, CodeInvalidRequest, "请求体无效")
@@ -254,6 +257,7 @@ func (h *AlbumHandlers) Update(w http.ResponseWriter, r *http.Request) {
 	}
 	alb, err := h.D.Alb.Update(PrincipalFrom(r).User.ID, id, albumsvc.UpdatePatch{
 		Name: req.Name, Visibility: req.Visibility, DefaultView: req.DefaultView,
+		ClickToImmersive: req.ClickToImmersive,
 		Description: req.Description, CoverKey: req.CoverKey,
 		AccessPassword: req.AccessPassword, ListInPlaza: req.ListInPlaza,
 	})
@@ -262,6 +266,7 @@ func (h *AlbumHandlers) Update(w http.ResponseWriter, r *http.Request) {
 		OK(w, map[string]any{
 			"id": alb.ID, "name": alb.Name, "visibility": alb.Visibility,
 			"default_view":        albumsvc.NormalizeDefaultView(alb.DefaultView),
+			"click_to_immersive":  alb.ClickToImmersive,
 			"description":         alb.Description,
 			"list_in_plaza":       alb.ListInPlaza,
 			"has_access_password": albumsvc.HasAccessPassword(alb),

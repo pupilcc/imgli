@@ -67,6 +67,11 @@ export default {
   defaultViewLabel: '访客默认视图',
   defaultViewHint: '访客打开相册链接时默认进入画廊或沉浸；对方仍可切换。',
   defaultViewSaved: '已保存访客默认视图',
+  clickToImmersiveLabel: '点击单张图片',
+  clickToImmersiveHint: '画廊瀑布流点击缩略图的行为；访客仍可通过顶栏切换到沉浸。',
+  clickToImmersiveOn: '进入沉浸',
+  clickToImmersiveOff: '打开分享页',
+  clickToImmersiveSaved: '已保存点击行为',
   heroEnter: '进入沉浸',
   scrollGallery: '浏览相册',
 
