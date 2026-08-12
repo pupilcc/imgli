@@ -25,6 +25,7 @@ import { Skeleton } from '../../ui/Skeleton'
 import { PageHeader } from '../../shell/PageHeader'
 import { UploadCard } from './UploadCard'
 import { FirstRunOnboarding } from './FirstRunOnboarding'
+import { InstanceStatsBar } from './InstanceStatsBar'
 
 const URL_RE = /^https?:\/\/\S+$/
 
@@ -277,80 +278,99 @@ export function UploadPage() {
           {t('upload.dropRelease')}
         </div>
       )}
-      <PageHeader kicker="UPLOAD" title={t('upload.title')} extra={<p className="m-0 text-[13px] text-muted">{t('upload.subtitle')}</p>} />
+      {/* 副标题跟在 sticky 标题条下方全宽左对齐，避免 right-extra 与统计条抢层级 */}
+      <PageHeader kicker="UPLOAD" title={t('upload.title')} className="mb-3" />
+      <p className="m-0 mb-5 max-w-[36rem] text-[13px] leading-relaxed text-muted">
+        {t('upload.subtitle')}
+      </p>
 
-      {isGuest && guestUploadOn && guestLimits && (
-        <div className="mb-[18px] flex items-center gap-2.5 border border-border bg-surface px-3.5 py-2.5 text-sm-plus text-muted">
-          <span className="shrink-0 border border-border px-1.5 py-px font-mono text-2xs tracking-[0.08em] text-ink">
-            {t('upload.guestMode')}
-          </span>
-          <span>
-            {t('upload.guestLimits', {
-              size: formatBytes(guestLimits.max_file_size),
-              perDay: guestLimits.per_day,
-            })}
-          </span>
-        </div>
-      )}
-
-      {/* 窄屏补位：顶栏 cluster 在 ≤900px 隐藏，上传页再露出用量，避免桌面双显 */}
-      {!isGuest && quota.data && (
-        <div
-          className="mb-3.5 hidden flex-wrap gap-x-6 gap-y-4 rounded border border-border bg-surface px-3 py-2.5 max-[900px]:flex"
-          data-testid="upload-quota-meters"
-        >
-          <QuotaBar used={quota.data.used} total={quota.data.total} kind="storage" to="/settings" />
-          {bwQuota > 0 && (
-            <QuotaBar used={bwUsed} total={bwQuota} kind="bandwidth" to="/settings" />
-          )}
-        </div>
-      )}
-
-      {needLogin && (
-        <div className="mb-3.5 rounded border border-border bg-surface px-[18px] py-4" data-testid="login-gate">
-          <div className="mb-1.5 text-[15px] font-bold tracking-[-0.01em]">{t('upload.loginRequiredTitle')}</div>
-          <p className="mb-3 mt-0 text-[13px] leading-normal text-muted">{t('upload.loginRequiredDesc')}</p>
-          <Link
-            to={loginTo}
-            className="inline-flex items-center rounded-sm bg-ink px-4 py-2 text-[13px] font-bold text-bg no-underline hover:opacity-90"
+      {/* 落地页节奏：标题 → 信任指标 → 主 CTA → 次级示意区；登录态保持原上传工作区顺序 */}
+      {needLogin ? (
+        <div className="mb-5 flex flex-col gap-3.5">
+          <InstanceStatsBar stats={config.data?.public_stats} />
+          <div
+            className="rounded border border-border bg-surface px-5 py-5 max-md:px-4"
+            data-testid="login-gate"
           >
-            {t('upload.loginRequiredCta')}
-          </Link>
-          {(!!config.data?.help_url?.trim() || !!config.data?.upgrade_url?.trim()) && (
-            <div className="mt-3 flex flex-wrap items-center gap-1.5 text-sm-plus">
-              {!!config.data?.help_url?.trim() && (
-                <a
-                  href={config.data.help_url.trim()}
-                  rel="noopener noreferrer"
-                  className="text-ink underline underline-offset-2"
-                >
-                  {t('upload.helpLink')}
-                </a>
+            <div className="mb-1.5 text-[15px] font-bold tracking-[-0.01em] text-ink">
+              {t('upload.loginRequiredTitle')}
+            </div>
+            <p className="mb-4 mt-0 max-w-[36rem] text-[13px] leading-relaxed text-muted">
+              {t('upload.loginRequiredDesc')}
+            </p>
+            <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
+              <Link
+                to={loginTo}
+                className="inline-flex h-[34px] items-center rounded-sm bg-btn px-4 text-[13px] font-bold text-btn-text no-underline hover:opacity-90"
+              >
+                {t('upload.loginRequiredCta')}
+              </Link>
+              {(!!config.data?.help_url?.trim() || !!config.data?.upgrade_url?.trim()) && (
+                <span className="flex flex-wrap items-center gap-1.5 text-sm-plus">
+                  {!!config.data?.help_url?.trim() && (
+                    <a
+                      href={config.data.help_url.trim()}
+                      rel="noopener noreferrer"
+                      className="text-ink underline underline-offset-2"
+                    >
+                      {t('upload.helpLink')}
+                    </a>
+                  )}
+                  {!!config.data?.help_url?.trim() && !!config.data?.upgrade_url?.trim() && (
+                    <span className="text-muted">·</span>
+                  )}
+                  {!!config.data?.upgrade_url?.trim() && (
+                    <a
+                      href={config.data.upgrade_url.trim()}
+                      rel="noopener noreferrer"
+                      className="text-ink underline underline-offset-2"
+                    >
+                      {t('upload.upgradeLink')}
+                    </a>
+                  )}
+                </span>
               )}
-              {!!config.data?.help_url?.trim() && !!config.data?.upgrade_url?.trim() && (
-                <span className="text-muted">·</span>
-              )}
-              {!!config.data?.upgrade_url?.trim() && (
-                <a
-                  href={config.data.upgrade_url.trim()}
-                  rel="noopener noreferrer"
-                  className="text-ink underline underline-offset-2"
-                >
-                  {t('upload.upgradeLink')}
-                </a>
+            </div>
+            <p className="mt-3 mb-0 text-xs leading-normal text-muted">{t('upload.loginRequiredHint')}</p>
+          </div>
+        </div>
+      ) : (
+        <>
+          <InstanceStatsBar stats={config.data?.public_stats} className="mb-3.5" />
+          {isGuest && guestUploadOn && guestLimits && (
+            <div className="mb-[18px] flex items-center gap-2.5 border border-border bg-surface px-3.5 py-2.5 text-sm-plus text-muted">
+              <span className="shrink-0 border border-border px-1.5 py-px font-mono text-2xs tracking-[0.08em] text-ink">
+                {t('upload.guestMode')}
+              </span>
+              <span>
+                {t('upload.guestLimits', {
+                  size: formatBytes(guestLimits.max_file_size),
+                  perDay: guestLimits.per_day,
+                })}
+              </span>
+            </div>
+          )}
+          {/* 窄屏补位：顶栏 cluster 在 ≤900px 隐藏，上传页再露出用量，避免桌面双显 */}
+          {!isGuest && quota.data && (
+            <div
+              className="mb-3.5 hidden flex-wrap gap-x-6 gap-y-4 rounded border border-border bg-surface px-3 py-2.5 max-[900px]:flex"
+              data-testid="upload-quota-meters"
+            >
+              <QuotaBar used={quota.data.used} total={quota.data.total} kind="storage" to="/settings" />
+              {bwQuota > 0 && (
+                <QuotaBar used={bwUsed} total={bwQuota} kind="bandwidth" to="/settings" />
               )}
             </div>
           )}
-          <p className="mt-2.5 mb-0 text-xs text-muted">{t('upload.loginRequiredHint')}</p>
-        </div>
+        </>
       )}
 
       <div
         data-testid="dropzone"
         className={cn(
-          'relative cursor-pointer rounded border border-dashed border-muted bg-surface px-6 py-12 text-center transition-[border-color] duration-150 hover:border-ink',
+          'relative cursor-pointer rounded border border-dashed border-muted bg-surface px-6 text-center transition-[border-color] duration-150 hover:border-ink',
+          needLogin ? 'cursor-default py-8 opacity-[0.78] hover:border-muted' : 'py-12',
           drag && 'border-ink',
-          needLogin && 'cursor-default opacity-[0.72] hover:border-muted',
         )}
         onClick={() => {
           if (needLogin) return pushToast(t('upload.toastLoginRequired'))
@@ -407,7 +427,7 @@ export function UploadPage() {
         <div className="mb-[7px] text-[15px] font-bold tracking-[-0.005em]">{t('upload.dropTitle')}</div>
         <div className="mb-5 flex justify-center font-mono text-[11px] tracking-[0.05em] text-muted">
           {needLogin ? (
-            t('upload.loginRequiredTitle')
+            t('upload.loginRequiredDropHint')
           ) : limits ? (
             `${extLabel(limits.allowedExts)} — MAX ${formatBytes(limits.maxFileSize)}`
           ) : (

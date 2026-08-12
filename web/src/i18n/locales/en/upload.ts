@@ -2,6 +2,13 @@ export default {
   title: 'Upload images',
   subtitle: 'Simple, fast, reliable image hosting',
 
+  statsAria: 'Public instance stats',
+  statsUptime: 'Online for',
+  statsDays: '{n} days',
+  statsImages: 'Images',
+  statsUsers: 'Registered users',
+  statsStorage: 'Stored objects',
+
   guestMode: 'Guest mode',
   guestLimits:
     'Max {size} each · {perDay}/day · images are public — sign in to manage, set private, and use albums',
@@ -10,6 +17,7 @@ export default {
     'Guest upload is off on this site. Create an account or sign in for direct links, library, and albums.',
   loginRequiredCta: 'Sign in / Register',
   loginRequiredHint: 'Already have an account? Sign in and return here to upload',
+  loginRequiredDropHint: 'Drag, paste, or choose files after you sign in',
   helpLink: 'Docs',
   upgradeLink: 'Self-host / upgrade',
   toastLoginRequired: 'Please sign in to upload',

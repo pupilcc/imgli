@@ -596,6 +596,29 @@ export interface AdminSettings {
   theme_bg_dim?: number
   /** Panel frosted opacity with background image, 0–1 (default 0.78) */
   theme_glass?: number
+  /** Operator public instance stats (default off). Admin form config. */
+  public_stats?: PublicStatsConfig
+}
+
+/** Admin settings shape for public instance stats (flags only). */
+export interface PublicStatsConfig {
+  enabled: boolean
+  /** YYYY-MM-DD anchor for uptime; empty = auto */
+  since?: string
+  show_uptime_days?: boolean
+  show_live_images?: boolean
+  show_users?: boolean
+  show_used_bytes?: boolean
+}
+
+/** Public /config snapshot (computed fields; omitted when flag off). */
+export interface PublicStatsSnapshot {
+  enabled: boolean
+  uptime_days?: number
+  live_image_count?: number
+  user_count?: number
+  used_bytes?: number
+  as_of?: string
 }
 
 export interface GuestLimits {
@@ -639,6 +662,8 @@ export interface PublicConfig {
   theme_bg_image_url?: string
   theme_bg_dim?: number
   theme_glass?: number
+  /** Present on public config; enabled false by default for self-host. */
+  public_stats?: PublicStatsSnapshot
 }
 
 export interface DiscoverAuthor {

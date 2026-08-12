@@ -46,6 +46,8 @@ const (
 	SettingThemeBgImageURL = "theme_bg_image_url" // 空 | http(s)/站内路径
 	SettingThemeBgDim      = "theme_bg_dim"       // 0–1 遮罩强度，默认 0.72
 	SettingThemeGlass      = "theme_glass"        // 0–1 面板毛玻璃不透明度，默认 0.78
+	// SettingPublicStats 公开实例统计 JSON（默认关闭）；见 adminsvc.PublicStatsConfig
+	SettingPublicStats = "public_stats"
 )
 
 // settingModerationDefaultJSON 是 moderation.DefaultConfig() 的 JSON 字面量，手写在此
@@ -249,6 +251,8 @@ func Seed(db *gorm.DB) error {
 			SettingThemeBgImageURL: `""`,
 			SettingThemeBgDim:      `0.72`,
 			SettingThemeGlass:      `0.78`,
+			// 默认关闭：自托管零配置不展示；运营站 Admin 打开
+			SettingPublicStats: `{"enabled":false,"since":"","show_uptime_days":true,"show_live_images":true,"show_users":false,"show_used_bytes":false}`,
 		} {
 			if err := tx.Where("key = ?", k).
 				FirstOrCreate(&Setting{Key: k, Value: v}).Error; err != nil {

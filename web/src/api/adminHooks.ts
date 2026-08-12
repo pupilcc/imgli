@@ -594,6 +594,7 @@ export interface SettingsBody {
   theme_bg_image_url?: string
   theme_bg_dim?: number
   theme_glass?: number
+  public_stats?: AdminSettings['public_stats']
 }
 
 export function useUpdateSettings() {

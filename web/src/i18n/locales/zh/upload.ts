@@ -2,6 +2,13 @@ export default {
   title: '上传图片',
   subtitle: '简单、快速、可靠的图片外链服务',
 
+  statsAria: '本站公开统计',
+  statsUptime: '稳定运行',
+  statsDays: '{n} 天',
+  statsImages: '图片',
+  statsUsers: '注册用户',
+  statsStorage: '已存对象',
+
   guestMode: '游客模式',
   guestLimits:
     '单张 ≤ {size} · 每日 {perDay} 张 · 图片公开可见 — 登录后可管理图片、私密与相册',
@@ -9,6 +16,7 @@ export default {
   loginRequiredDesc: '当前站点未开放游客上传。注册或登录后即可获取外链、管理图片与相册。',
   loginRequiredCta: '登录 / 注册',
   loginRequiredHint: '已有账号？登录后回到此页继续上传',
+  loginRequiredDropHint: '登录后可拖拽、粘贴或选择文件上传',
   helpLink: '帮助文档',
   upgradeLink: '自托管 / 升级',
   toastLoginRequired: '请先登录后再上传',

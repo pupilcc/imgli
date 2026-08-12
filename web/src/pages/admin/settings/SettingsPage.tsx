@@ -231,6 +231,14 @@ export function SettingsPage() {
         theme_bg_image_url: form.themeBgImageUrl.trim(),
         theme_bg_dim: form.themeBgDim,
         theme_glass: form.themeGlass,
+        public_stats: {
+          enabled: form.publicStatsEnabled,
+          since: form.publicStatsSince.trim(),
+          show_uptime_days: form.publicStatsShowUptime,
+          show_live_images: form.publicStatsShowImages,
+          show_users: form.publicStatsShowUsers,
+          show_used_bytes: form.publicStatsShowBytes,
+        },
       },
       {
         onSuccess: (data) => {

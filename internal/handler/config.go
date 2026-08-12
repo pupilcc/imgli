@@ -162,6 +162,17 @@ func (h *ConfigHandler) Config(w http.ResponseWriter, r *http.Request) {
 	if err := adminsvc.ValidateThemeGlass(themeGlass); err != nil {
 		themeGlass = adminsvc.DefaultThemeGlass
 	}
+	pubCfg := adminsvc.DefaultPublicStats()
+	if err := st.Get(model.SettingPublicStats, &pubCfg); err != nil && !errors.Is(err, settings.ErrNotFound) {
+		Fail(w, http.StatusInternalServerError, CodeInternal, "服务器内部错误")
+		return
+	}
+	pubCfg = adminsvc.NormalizePublicStats(pubCfg)
+	pubSnap, err := adminsvc.PublicStatsSnapshotFor(h.DB, pubCfg, time.Now())
+	if err != nil {
+		Fail(w, http.StatusInternalServerError, CodeInternal, "服务器内部错误")
+		return
+	}
 	helpURL = adminsvc.NormalizeOptionalURL(helpURL)
 	upgradeURL = adminsvc.NormalizeOptionalURL(upgradeURL)
 	faviconURL = adminsvc.NormalizeOptionalURL(faviconURL)
@@ -205,5 +216,6 @@ func (h *ConfigHandler) Config(w http.ResponseWriter, r *http.Request) {
 		"theme_bg_image_url":   themeBgImageURL,
 		"theme_bg_dim":         themeBgDim,
 		"theme_glass":          themeGlass,
+		"public_stats":         pubSnap,
 	})
 }

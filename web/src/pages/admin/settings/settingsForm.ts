@@ -114,6 +114,12 @@ export interface FormState {
   themeBgImageUrl: string
   themeBgDim: number
   themeGlass: number
+  publicStatsEnabled: boolean
+  publicStatsSince: string
+  publicStatsShowUptime: boolean
+  publicStatsShowImages: boolean
+  publicStatsShowUsers: boolean
+  publicStatsShowBytes: boolean
 }
 
 export type FormSet = <K extends keyof FormState>(k: K, v: FormState[K]) => void
@@ -218,5 +224,11 @@ export function formOf(s: AdminSettings): FormState {
       typeof s.theme_glass === 'number' && s.theme_glass >= 0 && s.theme_glass <= 1
         ? s.theme_glass
         : 0.78,
+    publicStatsEnabled: !!s.public_stats?.enabled,
+    publicStatsSince: s.public_stats?.since ?? '',
+    publicStatsShowUptime: s.public_stats?.show_uptime_days !== false,
+    publicStatsShowImages: s.public_stats?.show_live_images !== false,
+    publicStatsShowUsers: !!s.public_stats?.show_users,
+    publicStatsShowBytes: !!s.public_stats?.show_used_bytes,
   }
 }

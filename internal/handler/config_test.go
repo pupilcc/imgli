@@ -22,6 +22,10 @@ type configBody struct {
 		AllowedExts []string `json:"allowed_exts"`
 		PerDay      int      `json:"per_day"`
 	} `json:"guest"`
+	PublicStats *struct {
+		Enabled        bool   `json:"enabled"`
+		LiveImageCount *int64 `json:"live_image_count"`
+	} `json:"public_stats"`
 }
 
 // TestConfigDefaults 播种库默认值下：site_name="img.li"、registration_mode="open"、
@@ -80,6 +84,17 @@ func TestConfigDefaults(t *testing.T) {
 	}
 	if len(body.Guest.AllowedExts) == 0 {
 		t.Errorf("guest.allowed_exts 为空")
+	}
+
+	// 公开统计默认关闭（自托管零配置不展示数字）
+	if body.PublicStats == nil {
+		t.Fatal("public_stats missing")
+	}
+	if body.PublicStats.Enabled {
+		t.Error("public_stats.enabled default want false")
+	}
+	if body.PublicStats.LiveImageCount != nil {
+		t.Error("disabled public_stats must not include counts")
 	}
 
 	// NO 密钥/私密：响应体不得出现 api_key 等敏感字段。

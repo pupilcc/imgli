@@ -94,6 +94,67 @@ export function SlotsTab({ form, set, setForm, setAnn, patchFooterGroup, patchFo
             />
           </div>
           <span className={s.hint}>{t('adminB.registerNoticeHint')}</span>
+
+          <h2 className={s.h2}>{t('adminB.publicStats')}</h2>
+          <span className={s.hint}>{t('adminB.publicStatsHint')}</span>
+          <div className={s.field}>
+            <div className={s.sliderHead}>
+              <span className={s.label}>{t('adminB.publicStatsEnabled')}</span>
+              <Toggle
+                aria-label={t('adminB.publicStatsEnabled')}
+                checked={form.publicStatsEnabled}
+                onChange={(v) => set('publicStatsEnabled', v)}
+              />
+            </div>
+          </div>
+          <Input
+            label={t('adminB.publicStatsSince')}
+            value={form.publicStatsSince}
+            placeholder="YYYY-MM-DD"
+            onChange={(e) => set('publicStatsSince', e.target.value)}
+          />
+          <span className={s.hint}>{t('adminB.publicStatsSinceHint')}</span>
+          <div className={s.field}>
+            <div className={s.sliderHead}>
+              <span className={s.label}>{t('adminB.publicStatsShowUptime')}</span>
+              <Toggle
+                aria-label={t('adminB.publicStatsShowUptime')}
+                checked={form.publicStatsShowUptime}
+                onChange={(v) => set('publicStatsShowUptime', v)}
+              />
+            </div>
+          </div>
+          <div className={s.field}>
+            <div className={s.sliderHead}>
+              <span className={s.label}>{t('adminB.publicStatsShowImages')}</span>
+              <Toggle
+                aria-label={t('adminB.publicStatsShowImages')}
+                checked={form.publicStatsShowImages}
+                onChange={(v) => set('publicStatsShowImages', v)}
+              />
+            </div>
+          </div>
+          <div className={s.field}>
+            <div className={s.sliderHead}>
+              <span className={s.label}>{t('adminB.publicStatsShowUsers')}</span>
+              <Toggle
+                aria-label={t('adminB.publicStatsShowUsers')}
+                checked={form.publicStatsShowUsers}
+                onChange={(v) => set('publicStatsShowUsers', v)}
+              />
+            </div>
+          </div>
+          <div className={s.field}>
+            <div className={s.sliderHead}>
+              <span className={s.label}>{t('adminB.publicStatsShowBytes')}</span>
+              <Toggle
+                aria-label={t('adminB.publicStatsShowBytes')}
+                checked={form.publicStatsShowBytes}
+                onChange={(v) => set('publicStatsShowBytes', v)}
+              />
+            </div>
+          </div>
+
           <div className={s.field}>
             <span className={s.label}>{t('adminB.shareBranding')}</span>
             <Segmented<ShareBranding>

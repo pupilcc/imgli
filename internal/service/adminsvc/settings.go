@@ -161,6 +161,9 @@ func (s *Service) GetSettings() (map[string]any, error) {
 	if err := ValidateThemeGlass(themeGlass); err != nil {
 		themeGlass = DefaultThemeGlass
 	}
+	pubStats := DefaultPublicStats()
+	_ = st.Get(model.SettingPublicStats, &pubStats)
+	pubStats = NormalizePublicStats(pubStats)
 	regNotice = regNotice.Normalize()
 	aboutBody = aboutBody.Normalize()
 	shareBrand = NormalizeShareBranding(shareBrand)
@@ -224,6 +227,7 @@ func (s *Service) GetSettings() (map[string]any, error) {
 		"theme_bg_image_url":  themeBgImageURL,
 		"theme_bg_dim":        themeBgDim,
 		"theme_glass":         themeGlass,
+		"public_stats":        pubStats,
 	}, nil
 }
 
@@ -564,6 +568,17 @@ func (s *Service) PutSettings(patch map[string]json.RawMessage) error {
 			}
 			writes = append(writes, settingWrite{model.SettingThemeGlass, g})
 
+		case model.SettingPublicStats:
+			var cfg PublicStatsConfig
+			if err := json.Unmarshal(raw, &cfg); err != nil {
+				return ErrPublicStatsInvalid
+			}
+			cfg = NormalizePublicStats(cfg)
+			if err := ValidatePublicStats(cfg); err != nil {
+				return err
+			}
+			writes = append(writes, settingWrite{model.SettingPublicStats, cfg})
+
 		default:
 			return ErrUnknownSetting
 		}
@@ -572,6 +587,13 @@ func (s *Service) PutSettings(patch map[string]json.RawMessage) error {
 	for _, w := range writes {
 		if err := st.Set(w.key, w.value); err != nil {
 			return err
+		}
+	}
+	// 公开统计缓存：配置变更后立即失效
+	for _, w := range writes {
+		if w.key == model.SettingPublicStats {
+			InvalidatePublicStatsCache()
+			break
 		}
 	}
 	return nil

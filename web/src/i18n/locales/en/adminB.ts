@@ -319,6 +319,16 @@ export default {
   publicCopy: 'Public copy & CTAs',
   publicCopyHint:
     'Help/upgrade URLs and register notice are operator-owned (empty by default). Product credit “imgli” stays; use this for your docs and trial copy—do not strip open-source branding.',
+  publicStats: 'Public instance stats',
+  publicStatsHint:
+    'Off by default. When enabled, the guest homepage shows coarse local stats (uptime days, image count, etc.). Good for public trial instances; leave off for private self-host.',
+  publicStatsEnabled: 'Show public stats on homepage',
+  publicStatsSince: 'Uptime start date (optional)',
+  publicStatsSinceHint: 'YYYY-MM-DD. Empty = derive from earliest image (or earliest user). Prefer your public launch date.',
+  publicStatsShowUptime: 'Show days online',
+  publicStatsShowImages: 'Show image count (excludes trash)',
+  publicStatsShowUsers: 'Show registered user count',
+  publicStatsShowBytes: 'Show stored object size',
   helpUrl: 'Help / docs URL',
   upgradeUrl: 'Self-host / upgrade URL',
   registerNotice: 'Register notice (optional)',

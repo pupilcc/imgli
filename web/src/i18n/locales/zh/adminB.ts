@@ -318,6 +318,16 @@ export default {
   publicCopy: '公开文案与 CTA',
   publicCopyHint:
     '帮助/升级 URL 与注册说明由站长配置（默认空）。产品署名「imgli · 图鲤」始终保留；此处只补你的文档与试用话术，勿抹掉开源品牌。',
+  publicStats: '公开实例统计',
+  publicStatsHint:
+    '默认关闭。开启后游客首页展示本机粗粒度统计（运行天数、图片数等），适合公共试用站；自托管可保持关闭。',
+  publicStatsEnabled: '在首页展示公开统计',
+  publicStatsSince: '运行起点日期（可选）',
+  publicStatsSinceHint: '格式 YYYY-MM-DD。留空则按最早一张图（或最早用户）推算；建议填公开上线日。',
+  publicStatsShowUptime: '显示稳定运行天数',
+  publicStatsShowImages: '显示图片数量（不含回收站）',
+  publicStatsShowUsers: '显示注册用户数',
+  publicStatsShowBytes: '显示已用存储（字节合计）',
   helpUrl: '帮助 / 文档 URL',
   upgradeUrl: '自托管 / 升级说明 URL',
   registerNotice: '注册页说明（可空）',

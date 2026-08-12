@@ -10,6 +10,10 @@ separate version in `go.mod` or `web/package.json`.
 
 ## [Unreleased]
 
+### Added
+
+- **Public instance stats (optional, default off):** setting `public_stats` controls whether the guest homepage shows coarse local metrics (uptime days from a configurable `since` date, live image count, optional user count / used bytes). Exposed on `GET /api/v1/config` as a computed snapshot (60s process cache). Self-host stays unchanged until an operator enables it in Admin → 站点插槽.
+
 ## [0.9.10] - 2026-08-10
 
 Theme: **Stability patch — thumbnail memory, watermark/dedup, HTML inject scripts**.
