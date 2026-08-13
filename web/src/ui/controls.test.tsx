@@ -52,6 +52,28 @@ it('Segmented 高亮当前值并回调', async () => {
   expect(onChange).toHaveBeenCalledWith('reg')
 })
 
+it('Segmented mono 选中项保留反色字色类', () => {
+  // mono 会带上自定义字号 text-xs-plus；曾因 tailwind-merge 误判为颜色类而吃掉
+  // text-btn-text / text-muted，导致上传选项「有效期/访问次数」选中项看不见字。
+  render(
+    <Segmented
+      mono
+      options={[
+        { value: 'never', label: '永久' },
+        { value: '7d', label: '7 天' },
+      ]}
+      value="never"
+      onChange={vi.fn()}
+    />,
+  )
+  const active = screen.getByRole('button', { name: '永久' })
+  expect(active.className).toContain('text-btn-text')
+  expect(active.className).toContain('text-xs-plus')
+  const inactive = screen.getByRole('button', { name: '7 天' })
+  expect(inactive.className).toContain('text-muted')
+  expect(inactive.className).toContain('text-xs-plus')
+})
+
 it('Input 渲染 label 并透传属性', () => {
   render(<Input label="邮箱" placeholder="you@example.com" />)
   expect(screen.getByLabelText('邮箱')).toHaveAttribute('placeholder', 'you@example.com')

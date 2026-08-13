@@ -10,6 +10,10 @@ separate version in `go.mod` or `web/package.json`.
 
 ## [Unreleased]
 
+### Fixed
+
+- **Segmented control contrast:** keep selected labels readable in light and dark themes when controls use custom monospace font sizes; preserve explicit selected and hover colors when merging Tailwind utilities.
+
 ## [0.9.11] - 2026-08-12
 
 Theme: **Public homepage stats + album gallery click preference**.

@@ -10,7 +10,7 @@ interface Props<T extends string> {
   compact?: boolean
 }
 
-/** 选中态直接绑 CSS 变量，避免 text-btn-text / text-muted 等工具类冲突导致「要 hover 才看见字」。 */
+/** 选中态再绑一层 CSS 变量兜底，防旧构建产物/工具类冲突导致「要 hover 才看见字」。 */
 const activeStyle: CSSProperties = {
   backgroundColor: 'var(--btn)',
   color: 'var(--btnText)',
@@ -37,9 +37,9 @@ export function Segmented<T extends string>({ options, value, onChange, mono, co
               'min-w-0 flex-1 cursor-pointer border-0 px-4 py-2 text-xs font-semibold transition-[background-color,opacity] duration-150',
               'overflow-hidden text-ellipsis whitespace-nowrap',
               i > 0 && 'border-l border-border',
-              // 未选中：面板色 + 次要字色；选中：data-segmented-active + inline style 强制 --btn/--btnText
+              // 未选中：面板色 + 次要字色；选中：主按钮色反色（hover 也锁住字色，避免悬停丢色）
               !active && 'bg-surface text-muted hover:bg-soft',
-              active && 'hover:opacity-90',
+              active && 'bg-btn text-btn-text hover:bg-btn hover:text-btn-text hover:opacity-90',
               mono && 'font-mono text-xs-plus',
               compact && 'flex-[1_1_auto] px-2 py-1.5 text-xs-plus',
               compact && mono && 'text-2xs',
