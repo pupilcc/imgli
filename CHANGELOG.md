@@ -10,6 +10,10 @@ separate version in `go.mod` or `web/package.json`.
 
 ## [Unreleased]
 
+### Fixed
+
+- **Duplicate drag-and-drop uploads:** dropping an image onto the upload area no longer creates duplicate queue entries or upload requests.
+
 ## [0.9.12] - 2026-08-15
 
 Theme: **Private album privacy + origin serve cache**.
